@@ -26,6 +26,8 @@ public sealed class ReportDispatcher : IAsyncDisposable
     private long _epoch;
     private int _faulted, _resets;
     private long _sent;
+    private long _faultVersion;
+    private readonly List<Task> _inFlight = [];
     public bool Healthy => Volatile.Read(ref _faulted) == 0 && !_stop.IsCancellationRequested;
     public bool Settling => Volatile.Read(ref _resets) > 0;
     public long Sent => Interlocked.Read(ref _sent);
@@ -45,7 +47,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
         HidReports.Validate(frame);
         if (!Healthy || !_queue.Writer.TryWrite(new(target, epoch, frame)))
         {
-            Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。サービスを再起動してください。"));
+            Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
             return false;
         }
         return true;
@@ -53,6 +55,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
 
     private void Fail(string reason)
     {
+        Interlocked.Increment(ref _faultVersion);
         if (Interlocked.Exchange(ref _faulted, 1) == 0) Failed?.Invoke(reason);
     }
 
@@ -60,8 +63,40 @@ public sealed class ReportDispatcher : IAsyncDisposable
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(1));
-        await _transport.SendAsync(target, frame, timeout.Token).WaitAsync(TimeSpan.FromSeconds(1), cancellationToken);
+        var operation = _transport.SendAsync(target, frame, timeout.Token);
+        Track(operation);
+        await operation.WaitAsync(TimeSpan.FromSeconds(1), cancellationToken);
         Interlocked.Increment(ref _sent);
+    }
+
+    // Explicit activation may recover a failed connection, but only after both neutral reports
+    // succeed. Old queued epochs remain invalid and an unfinished timed-out send blocks recovery.
+    public async Task<bool> TryRecoverAsync(string target)
+    {
+        await _sendGate.WaitAsync(_stop.Token);
+        try
+        {
+            var epoch = Interlocked.Read(ref _epoch);
+            var version = Interlocked.Read(ref _faultVersion);
+            if (_inFlight.Any(task => !task.IsCompleted) || !_transport.IsReady(target)) return false;
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(1));
+            var operation = _transport.ReleaseAsync(target, timeout.Token);
+            Track(operation);
+            var released = await operation.WaitAsync(TimeSpan.FromSeconds(1), _stop.Token);
+            Interlocked.Add(ref _sent, released);
+            if (released != 2 || !_transport.IsReady(target) || epoch != Interlocked.Read(ref _epoch) || version != Interlocked.Read(ref _faultVersion)) return false;
+            Interlocked.Exchange(ref _faulted, 0);
+            return Healthy;
+        }
+        catch (Exception) when (!_stop.IsCancellationRequested) { return false; }
+        finally { _sendGate.Release(); }
+    }
+
+    private void Track(Task operation)
+    {
+        _inFlight.RemoveAll(task => task.IsCompleted);
+        _inFlight.Add(operation);
     }
 
     private async Task PumpAsync()
@@ -85,7 +120,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
     }
 
-    public async Task NeutralizeAsync(string target)
+    public async Task<bool> NeutralizeAsync(string target)
     {
         Interlocked.Increment(ref _resets);
         try
@@ -96,14 +131,18 @@ public sealed class ReportDispatcher : IAsyncDisposable
                 // Release may still be possible when a readiness snapshot has been revoked.
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
                 timeout.CancelAfter(TimeSpan.FromSeconds(1));
-                var released = await _transport.ReleaseAsync(target, timeout.Token).WaitAsync(TimeSpan.FromSeconds(1), _stop.Token);
+                var operation = _transport.ReleaseAsync(target, timeout.Token);
+                Track(operation);
+                var released = await operation.WaitAsync(TimeSpan.FromSeconds(1), _stop.Token);
                 Interlocked.Add(ref _sent, released);
+                return released == 2;
             }
             finally { _sendGate.Release(); }
         }
         catch (Exception ex) when (!_stop.IsCancellationRequested) { Fail(L.T("キー解放送信失敗: ") + ex.Message); }
         catch (OperationCanceledException) when (_stop.IsCancellationRequested) { }
         finally { Interlocked.Decrement(ref _resets); }
+        return false;
     }
 
     public async ValueTask DisposeAsync()

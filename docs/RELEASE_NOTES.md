@@ -1,23 +1,31 @@
-# Universal Bridge 0.3.1 — Preview
+# Universal Bridge 0.3.2 — Preview
 
 ## English
 
-- Faster two-finger scrolling: default gain is three times the previous default. Cumulative movement retains the start and final motion without counting duplicate samples twice.
-- Dedicated **Two-finger scroll sensitivity**, independent of the mouse wheel: **0.25–12.00 ×**, default/recommended **3.00 ×**, with numeric entry, 0.25 steps, and reset. Existing mouse and wheel preferences are retained.
-- New blue PC/tablet bridge icon in the executable, window, tray, and sidebar; nine Windows icon sizes. Artwork provenance and prompt are included in the source.
-- Japanese, English, and Simplified Chinese remain supported; new controls are translated.
-- **120 unit tests passed**. GUI verification produced **21 images in three languages**, including sensitivity editing/persistence/reset and icon loading. Physical iPad scroll feel still needs user acceptance.
+- Recover input delivery after iPad sleep/wake without restarting the app: replacement GATT sessions are monitored, closed-session Suspend state expires, and notifications select an active subscription. Activation refreshes connection information first.
+- After a send failure, the switch button and shortcut can recover the sender only after both keyboard and mouse release reports succeed. Old queued input is discarded; an unfinished timed-out send blocks recovery. Reconnection never captures input automatically.
+- Japanese **半角/全角** (including Alt+半角/全角) sends one **Control+Space** tap to cycle iPad input languages instead of typing punctuation. Holding the key does not cycle repeatedly; US backtick remains unchanged. Add Japanese and English keyboards on iPad.
+- **135 unit tests passed**, including sleep/reconnect, partial-release refusal, cancellation, unfinished sends, and JIS key regressions. Physical iPad sleep/wake and IME behavior still require user verification.
+- Retains adjustable two-finger scrolling, custom app icon, editable shortcuts, and Japanese/English/Simplified Chinese UI.
 
-Download the `win-x64.zip`, extract, and run `UniversalControl.exe`. Requires Windows 11 x64 and BLE Peripheral support. Touchpad capture needs compatible experimental APIs on 24H2 or later. Standard HID mappings do not transmit native iPad multitouch. Unsigned preview binary; no installer.
+Exit the old app, download and extract `UniversalBridge-0.3.2-win-x64.zip`, then run `UniversalControl.exe`. After waking iPad, unlock it, wait for both subscriptions, and activate again. If disconnected, connect to the PC in iPad Settings → Bluetooth. Windows 11 x64 and BLE Peripheral support are required. Unsigned, self-contained preview; no installer.
 
 ## 日本語
 
-2本指スクロールの既定反応を旧版の3倍にし、動き始めと終了直前の移動量を保持しました。「入力設定 → 2本指スクロール感度」で0.25～12.00倍（初期値・推奨値3.00）をマウスホイールとは独立して調整できます。数値入力・0.25刻み・推奨値復元に対応します。PCとタブレットをつなぐ新アイコンをexe・ウィンドウ・トレイ・サイドバーへ追加しました。自動テスト120件、3言語21画像のGUI検証が成功しています。実際のiPadでの操作感は確認が必要です。
+- iPadのスリープ復帰後にアプリ再起動が必要になる送信停止を修正しました。新しいGATTセッションを監視し、終了した接続の一時停止状態を解除します。通知先には有効な購読を選び、切り替え前に接続情報を更新します。
+- 送信失敗後もボタン／ショートカットから再試行できます。キーボードとマウス両方の解放送信が成功した場合だけ復帰し、古い入力は再送しません。未完了のタイムアウト送信が残る場合は拒否し、再接続だけでは自動で操作先を戻しません。
+- 日本語キーボードの**半角／全角**（Alt併用も対応）は記号ではなく**Control+Spaceを1回**送って入力言語を切り替えます。長押しの連続切り替えを防止し、US配列のバッククォートは維持します。iPadに日本語・英語キーボードを追加してください。
+- **自動テスト135件成功**。スリープ／再接続、片方だけの解放送信時の拒否、取り消し、未完了送信、JISキーを検証しました。iPad実機のスリープ復帰とIMEの再確認は残ります。
+- 2本指スクロール感度、アイコン、GUIショートカット編集、3言語対応は継続します。
 
-`win-x64.zip` を展開しexeを起動してください。Windows 11 x64／BLE Peripheralが必要です。ジェスチャーは24H2以降の対応する実験的APIが必要で、ネイティブ接点ではなくスクロール・キーへの変換です。署名なしのプレビュー版です。
+旧版を終了し、`UniversalBridge-0.3.2-win-x64.zip` を展開してexeを起動してください。iPad復帰後はロックを解除し、両購読が揃ってから再度切り替えます。切断中ならiPad「設定 → Bluetooth」からPCへ接続してください。Windows 11 x64／BLE Peripheral対応が必要な、ランタイム同梱・署名なしのプレビュー版です。
 
 ## 简体中文
 
-双指滚动默认增益提高至旧版的 3 倍，并保留手势开始和结束时的移动量。在“输入设置 → 双指滚动灵敏度”中独立调整0.25～12.00倍（默认／推荐3.00），支持数值输入、0.25步长和重置。新增连接电脑与平板的蓝色图标，应用于exe、窗口、托盘和侧栏。120项单元测试通过，三语GUI验证生成21张图像。iPad实际滚动体验仍需使用者确认。
+- 修复 iPad 睡眠唤醒后发送程序无法恢复的问题：跟踪新的 GATT 会话，清除已关闭会话的暂停状态，选择有效订阅发送通知，并在切换前刷新连接信息。
+- 发送失败后可通过按钮或快捷键重试；只有键盘和鼠标释放报告均成功才恢复。不会重发旧输入，未完成的超时发送会阻止恢复，重连不会自动捕获输入。
+- 日语键盘的**半角/全角**（支持 Alt 组合）发送一次 **Control+Space** 切换 iPad 输入语言，不再输入标点；长按不反复切换，美式反引号保持原有行为。请在 iPad 添加日语和英语键盘。
+- **135 项单元测试通过**，覆盖重连、部分释放、取消、未完成发送及日语按键。iPad 实机睡眠唤醒和输入法行为仍需使用者验证。
+- 保留双指滚动灵敏度、应用图标、可编辑快捷键及三语界面。
 
-下载并解压 `win-x64.zip`，运行 exe。需要 Windows 11 x64 和 BLE 外围设备支持。手势捕获需要 24H2 或更新系统的受支持实验性 API；仅转换滚动／按键，不传输原生多点触控。此为未签名预览版。
+退出旧版，下载并解压 `UniversalBridge-0.3.2-win-x64.zip`，运行 exe。唤醒后解锁 iPad，等待双报告订阅后重新切换；若未连接，请从 iPad“设置 → 蓝牙”连接电脑。需要 Windows 11 x64 和 BLE 外围设备支持；此为包含运行时的未签名预览版。

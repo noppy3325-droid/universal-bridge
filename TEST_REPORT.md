@@ -1,6 +1,13 @@
-# Verification report — 0.3.1
+# Verification report — 0.3.2
 
 検証日: **2026-10-17 / Asia/Tokyo**。このレポートは実行した検証と未検証部分を分けて記載します。
+
+## 0.3.2のスリープ復帰と日本語キー
+
+- **135成功、0失敗、0スキップ**。新規15件でSuspend／Resumeと接続終了、端末別の状態、送信失敗後の明示的な復帰、片方だけの解放送信時の拒否、未完了のタイムアウト送信、復帰中の取消、半角／全角のControl+Space化・長押し・Alt復元・USキーとWindows操作の維持を検証しました。`artifacts/sleep-jis-build.log`、`artifacts/tests/tests.trx`。
+- ビルドは警告0／エラー0、Windows x64の自己完結exeを生成しました。入力抑制なしのGUIスモークテストは**3言語・21画像・Success=True**。アイコン、感度保存、ショートカット欄を含みます。`artifacts/sleep-jis-gui/gui-smoke.json`。
+- 実Windowsの読み取り専用プローブ10回すべてで**KeyboardType=7（日本語キーボード）、PhysicalIdle=True**。IMEモード状態2個を押下と誤認しないことも継続確認しました。Bluetooth公開・フック・入力抑制なし。`artifacts/sleep-jis-readiness/input-readiness.json`。
+- iPad画面での実入力、物理スリープ復帰、日本語／英語IME切り替え自体は未検証です。`docs/MANUAL_TESTS.md`に実機での追加確認項目を記載しました。以下は過去版の検証履歴です。
 
 ## 0.3.1の2本指スクロールとアイコン
 

@@ -44,12 +44,13 @@ public sealed class InputRouter
         var requestedEpoch = Interlocked.Read(ref _epoch);
         try
         {
-            var status = CheckActivation(target, captureAvailable);
+            var status = CheckActivation(target, captureAvailable, checkSender: false);
             if (status != ActivationStatus.Activated) return status;
-            await _dispatcher.NeutralizeAsync(target);
+            var neutralized = !_dispatcher.Healthy ? await _dispatcher.TryRecoverAsync(target) : await _dispatcher.NeutralizeAsync(target);
             lock (_gate)
             {
                 if (_epoch != requestedEpoch) return ActivationStatus.Cancelled;
+                if (!neutralized) return _dispatcher.Healthy ? ActivationStatus.Disconnected : ActivationStatus.SenderStopped;
                 status = CheckActivation(target, captureAvailable);
                 if (status != ActivationStatus.Activated) return status;
                 _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
@@ -60,9 +61,9 @@ public sealed class InputRouter
         finally { _activation.Release(); }
     }
 
-    private ActivationStatus CheckActivation(string target, Func<bool> captureAvailable)
+    private ActivationStatus CheckActivation(string target, Func<bool> captureAvailable, bool checkSender = true)
     {
-        if (!_dispatcher.Healthy) return ActivationStatus.SenderStopped;
+        if (checkSender && !_dispatcher.Healthy) return ActivationStatus.SenderStopped;
         if (_dispatcher.Settling) return ActivationStatus.Releasing;
         if (!_transport.IsReady(target)) return ActivationStatus.Disconnected;
         if (!captureAvailable()) return ActivationStatus.CaptureUnavailable;
@@ -93,7 +94,7 @@ public sealed class InputRouter
     }
 
     private static long Identity(int vk, uint scan, bool extended) => scan == 0 ? 0x10000L + vk : scan | (extended ? 0x100L : 0);
-    public bool Key(int vk, uint scan, bool extended, bool down, long now)
+    public bool Key(int vk, uint scan, bool extended, bool down, long now, bool japaneseKeyboard = false)
     {
         lock (_gate)
         {
@@ -116,6 +117,20 @@ public sealed class InputRouter
             }
             if (_quarantine.Contains(id)) { if (!down) _quarantine.Remove(id); return true; }
             if (!_remote) return false;
+            if (VirtualKeyMap.IsJapaneseLanguageKey(vk, scan, extended, japaneseKeyboard))
+            {
+                // A tap, not a held/repeating key. Restore every other held key/modifier after
+                // Ctrl+Space so Alt+Hankaku also works without sending an apostrophe or Alt+Space.
+                if (down && !wasDown)
+                {
+                    FlushMotion();
+                    byte heldModifiers = 0;
+                    foreach (var key in _remoteKeys.Values) heldModifiers |= key.Modifier;
+                    _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(1, [0x2C]));
+                    _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(heldModifiers, _remoteKeys.Values.Select(k => k.Usage)));
+                }
+                return true;
+            }
             if (down && !wasDown)
             {
                 var modifier = HidReports.Modifier(vk, scan, extended);

@@ -38,7 +38,7 @@ public sealed class BridgeController : IAsyncDisposable
         Router.Changed += RouterChanged;
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.ActivationRequested += async () => { try { await ActivateRemoteAsync(); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.3.1を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 0.3.2を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }
@@ -87,6 +87,7 @@ public sealed class BridgeController : IAsyncDisposable
         if (Settings.CaptureTouchpad && !_input.TouchpadAvailable)
         { SwitchFailed(L.T("ジェスチャー取得未対応"), L.T("このWindowsではジェスチャー取得を開始できません。入力設定で取得をオフにするとマウス・キーボードのみ切り替えられます。")); return; }
         if (SelectedPeerId is not { } target) { SwitchFailed(L.T("端末未選択"), L.T("入力送信可能なiPadを一覧から選択してください。")); return; }
+        await Transport.RefreshPeersAsync(wait: true);
         if (!Transport.IsReady(target)) { SwitchFailed(L.T("接続準備待ち"), Transport.DescribeReadiness(target)); return; }
         var generation = Router.Generation;
         // Hotkey modifiers must be released locally before ownership changes.
@@ -119,7 +120,7 @@ public sealed class BridgeController : IAsyncDisposable
                 ActivationStatus.CaptureUnavailable => captureFailure ?? L.T("入力監視を確認して再試行してください。"),
                 ActivationStatus.InputHeld => L.T("キーまたはマウスボタンをすべて離してから再試行してください。"),
                 ActivationStatus.Disconnected => Transport.DescribeReadiness(target),
-                ActivationStatus.SenderStopped => L.T("送信処理が停止しています。アプリを終了して再起動してください。"),
+                ActivationStatus.SenderStopped => L.T("送信処理を復帰できませんでした。iPadの接続を確認し、少し待って再試行してください。"),
                 ActivationStatus.Releasing or ActivationStatus.AlreadyActivating => L.T("切り替え処理中です。少し待ってから再試行してください。"),
                 _ => L.T("切り替え操作が取り消されました。もう一度切り替えてください。")
             });

@@ -138,7 +138,7 @@ public partial class MainWindow : Window
             InputReason.Text = Controller.Router.Reason;
             StartButton.IsEnabled = !Controller.Busy && !Controller.Transport.Publishing && !Controller.SmokeMode;
             StopButton.IsEnabled = !Controller.Busy && Controller.Transport.Publishing;
-            SwitchButton.IsEnabled = selected is not null && Controller.Transport.IsReady(selected.Id) && Controller.Reports.Healthy && !Controller.Busy;
+            SwitchButton.IsEnabled = selected is not null && Controller.Transport.IsReady(selected.Id) && !Controller.Busy;
             MessageText.Text = Controller.Message;
             _tray.Text = "Universal Bridge · " + (Controller.Router.IsRemote ? "iPad" : "Windows");
             MouseValue.Text = $"{Controller.Settings.MouseSensitivity:0.00} ×"; ScrollValue.Text = $"{Controller.Settings.ScrollSensitivity:0.00} ×";
@@ -392,7 +392,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.1", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.2", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }

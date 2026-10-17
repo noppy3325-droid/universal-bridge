@@ -23,9 +23,9 @@ public sealed record PeerInfo(string Id, string Name, bool Paired, bool Connecte
 public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
 {
     private readonly ConcurrentDictionary<string, BluetoothLEDevice> _devices = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, byte> _suspended = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HidSuspensionState<GattSession> _suspended = new();
     private readonly ConcurrentDictionary<string, byte> _leds = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, GattSession> _sessions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<GattSession, byte> _sessions = new();
     private readonly ConcurrentDictionary<string, byte[]> _lastKeyboard = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, byte[]> _lastMouse = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _refresh = new(1);
@@ -126,7 +126,8 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         control.WriteRequested += async (sender, args) => await HandleWriteAsync(args, (id, bytes) =>
         {
             if (bytes.Length != 1 || bytes[0] > 1) return false;
-            if (bytes[0] == 0) _suspended[id] = 1; else _suspended.TryRemove(id, out _);
+            if (_sessions.TryAdd(args.Session, 0)) args.Session.SessionStatusChanged += SessionChanged;
+            _suspended.Set(id, args.Session, bytes[0] == 0);
             InvalidateReadiness(); _ = RefreshPeersAsync(); return true;
         });
         _keyboard = await InputAsync(HidDescriptors.KeyboardReportId, ReportKind.Keyboard);
@@ -217,23 +218,31 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
 
     private void SubscribersChanged(GattLocalCharacteristic sender, object args)
     { if (_disposed) return; InvalidateReadiness(); _ = RefreshPeersAsync(); }
-    public async Task RefreshPeersAsync()
+    public async Task RefreshPeersAsync(bool wait = false)
     {
-        if (_disposed || !await _refresh.WaitAsync(0)) return;
+        if (_disposed) return;
+        if (wait) await _refresh.WaitAsync(_stop.Token);
+        else if (!await _refresh.WaitAsync(0)) return;
         try
         {
             var revision = Interlocked.Read(ref _stateRevision);
             var clients = (_keyboard?.SubscribedClients ?? []).Concat(_mouse?.SubscribedClients ?? []).ToArray();
-            foreach (var client in clients)
+            var sessions = clients.Select(client => client.Session).Distinct().ToArray();
+            foreach (var session in sessions)
+                if (_sessions.TryAdd(session, 0)) session.SessionStatusChanged += SessionChanged;
+            foreach (var session in _sessions.Keys)
+                if (!sessions.Contains(session) && session.SessionStatus == GattSessionStatus.Closed && _sessions.TryRemove(session, out _)) session.SessionStatusChanged -= SessionChanged;
+            foreach (var group in clients.GroupBy(client => client.Session.DeviceId.Id, StringComparer.OrdinalIgnoreCase))
             {
+                var client = group.FirstOrDefault(client => client.Session.SessionStatus == GattSessionStatus.Active) ?? group.First();
                 var id = client.Session.DeviceId.Id;
-                if (!_sessions.ContainsKey(id))
-                { client.Session.SessionStatusChanged += SessionChanged; _sessions[id] = client.Session; }
-                if (_devices.ContainsKey(id)) continue;
+                if (_devices.TryGetValue(id, out var existing) && (existing.ConnectionStatus == BluetoothConnectionStatus.Connected || client.Session.SessionStatus != GattSessionStatus.Active)) continue;
                 var device = await BluetoothLEDevice.FromIdAsync(id).AsTask(_stop.Token).WaitAsync(TimeSpan.FromSeconds(5));
                 if (device is null) continue;
                 if (_disposed) { device.Dispose(); return; }
-                device.ConnectionStatusChanged += DeviceChanged; _devices[id] = device;
+                if (!ReferenceEquals(existing, device)) device.ConnectionStatusChanged += DeviceChanged;
+                _devices[id] = device;
+                if (existing is not null && !ReferenceEquals(existing, device)) { existing.ConnectionStatusChanged -= DeviceChanged; existing.Dispose(); }
             }
             UpdateSnapshots(revision);
         }
@@ -247,7 +256,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     {
         if (_disposed) return;
         if (sender.ConnectionStatus == BluetoothConnectionStatus.Disconnected)
-        { _lastKeyboard.TryRemove(sender.DeviceId, out _); _lastMouse.TryRemove(sender.DeviceId, out _); _suspended.TryRemove(sender.DeviceId, out _); }
+        { _lastKeyboard.TryRemove(sender.DeviceId, out _); _lastMouse.TryRemove(sender.DeviceId, out _); _suspended.Reset(sender.DeviceId); }
         InvalidateReadiness(); _ = RefreshPeersAsync();
     }
     private static bool Subscribed(GattLocalCharacteristic? characteristic, string id) => characteristic?.SubscribedClients.Any(
@@ -266,8 +275,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     }
     private void InvalidateReadiness()
     {
-        _lastKeyboard.Clear(); _lastMouse.Clear();
-        lock (_snapshotGate) { _stateRevision++; _readyTargets = new(StringComparer.OrdinalIgnoreCase); Interlocked.Exchange(ref _snapshotAt, 0); }
+        lock (_snapshotGate) { _lastKeyboard.Clear(); _lastMouse.Clear(); _stateRevision++; _readyTargets = new(StringComparer.OrdinalIgnoreCase); Interlocked.Exchange(ref _snapshotAt, 0); }
         Changed?.Invoke();
     }
     private void UpdateSnapshots(long revision)
@@ -278,7 +286,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
             var device = pair.Value; var paired = device.DeviceInformation.Pairing.IsPaired;
             var connected = device.ConnectionStatus == BluetoothConnectionStatus.Connected;
             var keyboard = Subscribed(_keyboard, pair.Key); var mouse = Subscribed(_mouse, pair.Key);
-            var suspended = _suspended.ContainsKey(pair.Key);
+            var suspended = _suspended.Observe(pair.Key, session => session.SessionStatus == GattSessionStatus.Active, keyboard || mouse);
             return new PeerInfo(pair.Key, string.IsNullOrWhiteSpace(device.Name) ? L.T("Bluetooth端末") : device.Name,
                 paired, connected, keyboard, mouse, _enabled && radioOn && paired && connected && keyboard && mouse && !suspended, suspended);
         }).OrderBy(peer => peer.Name).ToArray();
@@ -317,12 +325,17 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     private async Task<bool> NotifyTargetAsync(string targetId, HidFrame frame, CancellationToken cancellationToken)
     {
         var characteristic = frame.Kind == ReportKind.Keyboard ? _keyboard! : _mouse!;
-        var client = characteristic.SubscribedClients.FirstOrDefault(c => c.Session.DeviceId.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase));
-        if (client is null || client.Session.SessionStatus != GattSessionStatus.Active) return false;
+        var client = characteristic.SubscribedClients.FirstOrDefault(c => c.Session.DeviceId.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase) && c.Session.SessionStatus == GattSessionStatus.Active);
+        if (client is null) return false;
+        var revision = Interlocked.Read(ref _stateRevision);
         var result = await characteristic.NotifyValueAsync(CryptographicBuffer.CreateFromByteArray(frame.Payload), client).AsTask(cancellationToken);
         if (result.Status != GattCommunicationStatus.Success) return false;
-        if (frame.Kind == ReportKind.Keyboard) _lastKeyboard[targetId] = frame.Payload.ToArray();
-        else _lastMouse[targetId] = [(byte)(frame.Payload[0] & 7), 0, 0, 0, 0, 0, 0];
+        lock (_snapshotGate)
+        {
+            if (revision != _stateRevision) return true;
+            if (frame.Kind == ReportKind.Keyboard) _lastKeyboard[targetId] = frame.Payload.ToArray();
+            else _lastMouse[targetId] = [(byte)(frame.Payload[0] & 7), 0, 0, 0, 0, 0, 0];
+        }
         return true;
     }
     public async Task<int> ReleaseAsync(string targetId, CancellationToken cancellationToken)
@@ -360,7 +373,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         await _refresh.WaitAsync();
         try
         {
-            foreach (var session in _sessions.Values) session.SessionStatusChanged -= SessionChanged;
+            foreach (var session in _sessions.Keys) session.SessionStatusChanged -= SessionChanged;
             foreach (var device in _devices.Values) { device.ConnectionStatusChanged -= DeviceChanged; device.Dispose(); }
             foreach (var characteristic in _characteristics) characteristic.SubscribedClientsChanged -= SubscribersChanged;
             _devices.Clear(); _sessions.Clear(); _characteristics.Clear(); _keyboard = _mouse = null; _provider = null;

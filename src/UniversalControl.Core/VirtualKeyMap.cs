@@ -4,6 +4,9 @@ namespace UniversalControl.Core;
 /// <summary>Maps Windows virtual-key codes to HID keyboard usage IDs.</summary>
 public static class VirtualKeyMap
 {
+    public static bool IsJapaneseLanguageKey(int virtualKey, uint scanCode, bool extended, bool japaneseKeyboard)
+        => !extended && scanCode == 0x29 && (japaneseKeyboard || virtualKey is 0x19 or 0xF3 or 0xF4);
+
     /// <summary>
     /// Resolves a key from its physical identity rather than the virtual-key code Windows
     /// derived from it. A real keyboard has no Num Lock state of its own: it always reports the

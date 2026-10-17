@@ -6,7 +6,7 @@ using UniversalControl.Core;
 
 namespace UniversalControl.Windows;
 
-public sealed record PhysicalReadinessProbe(bool PhysicalIdle, bool AllVirtualKeysIdle, int ImeModeStatesActive, bool OnDefaultDesktop);
+public sealed record PhysicalReadinessProbe(bool PhysicalIdle, bool AllVirtualKeysIdle, int ImeModeStatesActive, bool OnDefaultDesktop, int KeyboardType);
 
 public sealed class NativeInput : IDisposable
 {
@@ -110,7 +110,7 @@ public sealed class NativeInput : IDisposable
             allIdle = false;
             if (key is >= 0xF0 and <= 0xF5) imeModes++;
         }
-        return new(PhysicalKeyboardIdle(), allIdle, imeModes, OnDefaultDesktop());
+        return new(PhysicalKeyboardIdle(), allIdle, imeModes, OnDefaultDesktop(), GetKeyboardType(0));
     }
     public static bool OnDefaultDesktop()
     {
@@ -237,7 +237,8 @@ public sealed class NativeInput : IDisposable
                 if ((key.Flags & 0x10) == 0)
                 {
                     var down = wParam == 0x100 || wParam == 0x104;
-                    if (_router.Key((int)key.VirtualKey, key.ScanCode, (key.Flags & 1) != 0, down, Environment.TickCount64)) return 1;
+                    if (_router.Key((int)key.VirtualKey, key.ScanCode, (key.Flags & 1) != 0, down, Environment.TickCount64,
+                        japaneseKeyboard: key.ScanCode == 0x29 && GetKeyboardType(0) == 7)) return 1;
                 }
             }
             catch (Exception ex) { NotifyFault(ex.Message); }
@@ -330,6 +331,7 @@ public sealed class NativeInput : IDisposable
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out Point point);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")] private static extern int GetKeyboardType(int typeFlag);
     [DllImport("user32.dll", SetLastError = true)] private static extern nint OpenInputDesktop(uint flags, bool inherit, uint access);
     [DllImport("user32.dll")] private static extern bool CloseDesktop(nint desktop);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool GetUserObjectInformation(nint handle, int index, StringBuilder value, int length, out int needed);

@@ -8,16 +8,16 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**Preview v0.3.1.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**Preview v0.3.2.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
 ## Download
 
-Open **[Releases — v0.3.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.1)**:
+Open **[Releases — v0.3.2](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2)**:
 
-- **[UniversalBridge-0.3.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.1/UniversalBridge-0.3.1-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-0.3.1-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-0.3.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.2/UniversalBridge-0.3.2-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-0.3.2-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -50,9 +50,13 @@ During gesture capture, a small foreground window receives touchpad input. Focus
 
 Upgrading from 0.1.x changes the mouse report from 6 to 7 bytes for horizontal scrolling. If mouse input stops, reconnect; if necessary, manually forget the PC on iPad and pair again.
 
-In v0.3.1, **Input settings → Two-finger scroll sensitivity** adjusts captured touchpad scrolling independently of the mouse wheel. The recommended 3.00 is three times the previous default. Numeric input, 0.25 steps, and a reset button are available. Cumulative motion preserves movement at gesture onset and completion. Standard HID still uses whole scroll ticks rather than pixel scrolling; no extra momentum is simulated.
+In v0.3.2, **Input settings → Two-finger scroll sensitivity** adjusts captured touchpad scrolling independently of the mouse wheel. The recommended 3.00 is three times the previous default. Numeric input, 0.25 steps, and a reset button are available. Cumulative motion preserves movement at gesture onset and completion. Standard HID still uses whole scroll ticks rather than pixel scrolling; no extra momentum is simulated.
 
 ## Privacy and recovery
+
+After iPad sleep/wake, unlock the iPad and wait for both report subscriptions, then press your iPad activation shortcut again. v0.3.2 tracks replacement GATT sessions and recovers a failed sender after successfully releasing both keyboard and mouse. Input is never recaptured automatically; an unfinished timed-out send must complete before recovery can proceed. If the iPad remains disconnected, reconnect the PC from iPad Settings → Bluetooth.
+
+On a Windows Japanese keyboard, **半角/全角** (also Alt+半角/全角) now sends one **Control+Space** tap to cycle iPad input languages instead of typing punctuation. Holding the key does not repeatedly cycle languages. US backtick keeps its usual mapping. Add both Japanese and English in iPad Settings → General → Keyboard → Keyboards; language switching follows [iPad's external-keyboard shortcut](https://support.apple.com/en-euro/guide/ipad/ipaddd28d7ed/ipados). Keyboard layout/IME behavior still depends on iPadOS settings.
 
 Input text and HID payloads are not logged. Settings/connection diagnostics stay in `%LOCALAPPDATA%\UniversalBridge`; logs rotate at 1 MiB. No telemetry or runtime cloud service is used.
 
@@ -75,7 +79,7 @@ pwsh -File scripts/Package.ps1
 
 SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
 
-**120 automated tests** cover HID, ownership/recovery, motion precision, shortcuts, catalog completeness, format placeholders, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**135 automated tests** cover HID, sleep/reconnect recovery, JIS language switching, motion precision, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
 
 See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable preview releases.
 

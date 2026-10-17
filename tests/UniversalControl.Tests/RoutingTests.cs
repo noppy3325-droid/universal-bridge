@@ -12,6 +12,7 @@ public sealed class FakeTransport : IHidTransport
     public Func<CancellationToken, Task>? BeforeSend;
     public bool NeutralChannelAvailableWhenNotReady;
     public int ReleaseCalls;
+    public int ReleaseReportLimit = 2;
     public ConcurrentQueue<(string Target, HidFrame Frame)> Sent { get; } = new();
     public bool IsReady(string targetId) => Ready && targetId == "iPad";
     public async Task<int> ReleaseAsync(string targetId, CancellationToken cancellationToken)
@@ -22,8 +23,9 @@ public sealed class FakeTransport : IHidTransport
             if (!NeutralChannelAvailableWhenNotReady) return 0;
             Sent.Enqueue((targetId, HidReports.Keyboard(0, []))); Sent.Enqueue((targetId, HidReports.Mouse(0))); return 2;
         }
-        await SendAsync(targetId, HidReports.Keyboard(0, []), cancellationToken);
-        await SendAsync(targetId, HidReports.Mouse(0), cancellationToken); return 2;
+        if (ReleaseReportLimit > 0) await SendAsync(targetId, HidReports.Keyboard(0, []), cancellationToken);
+        if (ReleaseReportLimit > 1) await SendAsync(targetId, HidReports.Mouse(0), cancellationToken);
+        return ReleaseReportLimit;
     }
     public async Task SendAsync(string targetId, HidFrame frame, CancellationToken cancellationToken)
     {
