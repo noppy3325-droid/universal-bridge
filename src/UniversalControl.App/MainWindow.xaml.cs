@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     public BridgeController Controller { get; }
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly System.Windows.Forms.NotifyIcon _tray;
+    private readonly System.Drawing.Icon _trayIcon;
     private readonly string _dataDirectory;
     private bool _updating = true, _exitRequested, _closing, _ticking, _trayNotice, _dragging;
     private Rect _sourcePreview;
@@ -45,7 +46,9 @@ public partial class MainWindow : Window
         InitializeComponent(); _dataDirectory = dataDirectory;
         Controller = new(dataDirectory, smokeMode);
         _pages = [DashboardPage, LayoutPage, InputPage, SettingsPage]; _nav = [DashboardNav, LayoutNav, InputNav, SettingsNav];
-        _tray = new System.Windows.Forms.NotifyIcon { Icon = System.Drawing.SystemIcons.Application, Text = "Universal Bridge · Windows", Visible = !smokeMode };
+        using (var iconStream = WpfApplication.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico")).Stream)
+        using (var icon = new System.Drawing.Icon(iconStream, 32, 32)) _trayIcon = (System.Drawing.Icon)icon.Clone();
+        _tray = new System.Windows.Forms.NotifyIcon { Icon = _trayIcon, Text = "Universal Bridge · Windows", Visible = !smokeMode };
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add(L.T("開く"), null, (_, _) => Dispatcher.Invoke(ShowWindow));
         menu.Items.Add(L.T("Windowsへ戻す"), null, (_, _) => Controller.Router.GoLocal());
@@ -93,7 +96,7 @@ public partial class MainWindow : Window
         SystemEvents.SessionSwitch -= SessionChanged; SystemEvents.PowerModeChanged -= PowerChanged; SystemEvents.DisplaySettingsChanged -= DisplaysChanged;
         Controller.Changed -= ControllerChanged;
         try { await Controller.DisposeAsync(); }
-        finally { _tray.Visible = false; _tray.Dispose(); WpfApplication.Current.Shutdown(); }
+        finally { _tray.Visible = false; _tray.Dispose(); _trayIcon.Dispose(); WpfApplication.Current.Shutdown(); }
     }
     private void LoadControls()
     {
@@ -106,6 +109,8 @@ public partial class MainWindow : Window
         EdgeCombo.SelectedIndex = (int)s.Edge;
         AutoSwitchCheck.IsChecked = s.AutoSwitch; PortalStartSlider.Value = s.PortalStart; PortalEndSlider.Value = s.PortalEnd;
         MouseSlider.Value = s.MouseSensitivity; ScrollSlider.Value = s.ScrollSensitivity; EstimatedCheck.IsChecked = s.EstimatedReturn;
+        TouchpadScrollSlider.Value = s.TouchpadScrollSensitivity;
+        TouchpadSensitivityBox.Text = s.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
         MouseSensitivityBox.Text = s.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture); RawMouseCheck.IsChecked = s.RawMouse;
         TouchpadCheck.IsChecked = s.CaptureTouchpad;
         LoadShortcutControls(s.ActivateShortcut, s.ReturnShortcut);
@@ -214,6 +219,7 @@ public partial class MainWindow : Window
             {
                 AutoSwitch = AutoSwitchCheck.IsChecked == true, EstimatedReturn = EstimatedCheck.IsChecked == true,
                 MouseSensitivity = MouseSlider.Value, ScrollSensitivity = ScrollSlider.Value,
+                TouchpadScrollSensitivity = TouchpadScrollSlider.Value,
                 RawMouse = RawMouseCheck.IsChecked == true,
                 CaptureTouchpad = TouchpadCheck.IsChecked == true,
                 CloseToTray = TrayCheck.IsChecked == true, Reconnect = ReconnectCheck.IsChecked == true, AutoStart = AutostartCheck.IsChecked == true,
@@ -223,6 +229,7 @@ public partial class MainWindow : Window
             var prior = _updating; _updating = true;
             PortalStartSlider.Value = Controller.Settings.PortalStart; PortalEndSlider.Value = Controller.Settings.PortalEnd;
             MouseSensitivityBox.Text = Controller.Settings.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
+            TouchpadSensitivityBox.Text = Controller.Settings.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
             _updating = prior;
             RefreshView(); DrawLayout();
         }
@@ -237,6 +244,31 @@ public partial class MainWindow : Window
         ActivateKeyCombo.ItemsSource = ReturnKeyCombo.ItemsSource = KeyChoices;
         ActivateModsCombo.SelectedItem = ModifierChoices.First(m => m.Value == activate.Modifiers); ActivateKeyCombo.SelectedItem = KeyChoices.First(k => k.Value == activate.Key);
         ReturnModsCombo.SelectedItem = ModifierChoices.First(m => m.Value == back.Modifiers); ReturnKeyCombo.SelectedItem = KeyChoices.First(k => k.Value == back.Key);
+    }
+    private void CommitTouchpadSensitivity(object sender, KeyboardFocusChangedEventArgs e) => ApplyTouchpadSensitivityText();
+    private void TouchpadSensitivityKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    { if (e.Key == Key.Enter) { ApplyTouchpadSensitivityText(); e.Handled = true; } }
+    private void ApplyTouchpadSensitivityText()
+    {
+        if (_updating) return;
+        if ((double.TryParse(TouchpadSensitivityBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value) || double.TryParse(TouchpadSensitivityBox.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out value)) && double.IsFinite(value))
+            SetTouchpadSensitivity(value);
+        else TouchpadSensitivityBox.Text = Controller.Settings.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
+    }
+    private void StepTouchpadSensitivity(object sender, RoutedEventArgs e)
+    { if (sender is Button button) SetTouchpadSensitivity(Controller.Settings.TouchpadScrollSensitivity + double.Parse((string)button.Tag, CultureInfo.InvariantCulture)); }
+    private void ResetTouchpadSensitivity(object sender, RoutedEventArgs e) => SetTouchpadSensitivity(3);
+    private void SetTouchpadSensitivity(double value)
+    {
+        try
+        {
+            Controller.Save(Controller.Settings with { TouchpadScrollSensitivity = value });
+            var previous = _updating; _updating = true;
+            TouchpadScrollSlider.Value = Controller.Settings.TouchpadScrollSensitivity;
+            TouchpadSensitivityBox.Text = Controller.Settings.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
+            _updating = previous; RefreshView();
+        }
+        catch (Exception ex) { Controller.NotifyError(ex); }
     }
     private void DefaultShortcuts(object sender, RoutedEventArgs e)
     { LoadShortcutControls(ShortcutBinding.DefaultActivate, ShortcutBinding.DefaultReturn); ShortcutStatusLabel.Text = L.T("初期値を入力しました。「適用」で保存します。"); }
@@ -360,7 +392,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.0", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.1", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }
@@ -381,6 +413,15 @@ public partial class MainWindow : Window
                     SelectPage(index); RefreshView(); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     Capture(Path.Combine(output, $"{language}-{index + 1}-light.png"));
                 }
+                SelectPage(2);
+                TouchpadSensitivityBox.Text = "4.50"; ApplyTouchpadSensitivityText();
+                if (new SettingsStore(_dataDirectory).Load().TouchpadScrollSensitivity != 4.5 || TouchpadScrollSlider.Value != 4.5)
+                    throw new InvalidOperationException("Touchpad sensitivity edit failed: " + language);
+                ResetTouchpadSensitivity(this, new RoutedEventArgs());
+                if (new SettingsStore(_dataDirectory).Load().TouchpadScrollSensitivity != 3 || TouchpadSensitivityBox.Text != "3.00")
+                    throw new InvalidOperationException("Touchpad sensitivity reset failed: " + language);
+                PageScroll.ScrollToVerticalOffset(280); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Capture(Path.Combine(output, $"{language}-3-scroll-light.png"));
                 SelectPage(2); PageScroll.ScrollToEnd(); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Capture(Path.Combine(output, $"{language}-3-shortcuts-light.png"));
                 Controller.Save(Controller.Settings with { Theme = "Dark" }); ApplyTheme(); SelectPage(0); RefreshView();
@@ -392,8 +433,9 @@ public partial class MainWindow : Window
             }
             Controller.Save(Controller.Settings with { MouseSensitivity = 1.25, Theme = "Dark" }); LoadControls(); ApplyTheme(); SelectPage(0); RefreshView();
             var restored = new SettingsStore(_dataDirectory).Load();
-            var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && !SwitchButton.IsEnabled;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 18, InputSuppressed = Controller.Router.IsRemote, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
+            var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
+            var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 21, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke-error.txt"), ex.ToString()); }
         RequestExit();

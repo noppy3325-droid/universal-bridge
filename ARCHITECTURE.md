@@ -2,6 +2,10 @@
 
 ## 構成
 
+0.3.1では`TouchpadScroll`でPhysicalGestureRecognizerの累積移動を差分化し、最初の更新に含まれる移動と終了直前の移動を保持します。既定3.00倍・範囲0.25～12.00倍の`TouchpadScrollSensitivity`を追加し、マウスホイールの`ScrollSensitivity`とは別経路で適用します。小数は従来のMotionAccumulatorで保持し、Windows復帰・再切り替え時には累積座標と小数を破棄します。HID descriptorは変更せず、標準HIDの整数スクロール単位を使います。
+
+アプリアイコンは`Assets/app-icon.png`から9サイズのICOへ変換し、exeのApplicationIcon・WPFウィンドウ・トレイ・サイドバーへ組み込みます。トレイ用Iconは所有権を持ち、終了時にDisposeします。生成元とプロンプトはAssets/README.md、変換はscripts/Build-Icon.ps1です。
+
 0.3.0ではCoreにオフライン翻訳カタログを埋め込みました。`L.T`／`L.F`とWPFのDynamicResourceで247項目を日本語・英語・簡体字に切り替えます。`AppSettings.Language`はauto／ja／en／zh-Hansを保存し、autoは日本語・中国語以外で英語にフォールバックします。変更時はWindowsへ戻し、画面・トレイ・選択肢を再構築します。旧設定ファイルも既定autoで読み込めます。OS例外文・過去ログは元の言語を保持します。
 
 配布手順は`Build.ps1`→`Package.ps1`です。3言語README、MIT／第三者通知、ソースZIP、SHA256SUMSを収録します。GitHub Actionsはpush／PRのビルド・テストと、バージョン一致タグからのプレビューRelease作成を行います。CIはBluetooth・入力フックを開始しません。

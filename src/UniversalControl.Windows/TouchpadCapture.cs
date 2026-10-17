@@ -58,7 +58,7 @@ internal sealed class TouchpadCapture : ITouchpadCapture
         if (!RegisterTouchpadCapableWindow(_window, true)) throw new Win32Exception(Marshal.GetLastWin32Error());
         _two = new PhysicalGestureRecognizer { GestureSettings = GestureSettings.ManipulationTranslateX | GestureSettings.ManipulationTranslateY | GestureSettings.ManipulationScale,
             TranslationMinContactCount = 2, TranslationMaxContactCount = 2 };
-        _two.ManipulationStarted += TwoStarted; _two.ManipulationUpdated += TwoUpdated;
+        _two.ManipulationStarted += TwoStarted; _two.ManipulationUpdated += TwoUpdated; _two.ManipulationCompleted += TwoCompleted;
         _multi = new PhysicalGestureRecognizer { GestureSettings = GestureSettings.ManipulationTranslateX | GestureSettings.ManipulationTranslateY,
             TranslationMinContactCount = 3, TranslationMaxContactCount = 5 };
         _multi.ManipulationCompleted += MultiCompleted;
@@ -97,12 +97,18 @@ internal sealed class TouchpadCapture : ITouchpadCapture
         try { if (_active && _router.IsRemote) { Events++; action(); } }
         catch (Exception ex) { _router.GoLocal(L.T("ジェスチャーの取得に失敗したためWindowsへ戻しました")); _fault(ex.Message); }
     }
-    private void TwoStarted(PhysicalGestureRecognizer sender, ManipulationStartedEventArgs args) => _gestures.Reset();
+    private void TwoStarted(PhysicalGestureRecognizer sender, ManipulationStartedEventArgs args)
+    { _gestures.Reset(); _router.BeginTouchpadScroll(); }
     private void TwoUpdated(PhysicalGestureRecognizer sender, ManipulationUpdatedEventArgs args) => Safe(() =>
     {
-        _router.Scroll(args.Delta.Translation.Y * .4, args.Delta.Translation.X * .4);
+        _router.ScrollTouchpad(args.Cumulative.Translation.X, args.Cumulative.Translation.Y);
         var zoom = _gestures.ZoomSteps(args.Delta.Scale);
         for (var index = 0; index < Math.Abs(zoom); index++) _router.Gesture(zoom > 0 ? GestureAction.ZoomIn : GestureAction.ZoomOut);
+    });
+    private void TwoCompleted(PhysicalGestureRecognizer sender, ManipulationCompletedEventArgs args) => Safe(() =>
+    {
+        _router.ScrollTouchpad(args.Cumulative.Translation.X, args.Cumulative.Translation.Y);
+        _router.FlushMotion();
     });
     private void MultiCompleted(PhysicalGestureRecognizer sender, ManipulationCompletedEventArgs args) => Safe(() =>
         _router.Gesture(TouchpadGestures.Swipe(args.Cumulative.Translation.X, args.Cumulative.Translation.Y, _settings)));
@@ -148,7 +154,7 @@ internal sealed class TouchpadCapture : ITouchpadCapture
             _controller.PointerPressed -= MultiPressed; _controller.PointerMoved -= MultiMoved; _controller.PointerReleased -= MultiReleased;
             _controller.GlobalActionPerformed -= GlobalAction; _controller = null;
         }
-        if (_two is not null) { _two.ManipulationStarted -= TwoStarted; _two.ManipulationUpdated -= TwoUpdated; _two = null; }
+        if (_two is not null) { _two.ManipulationStarted -= TwoStarted; _two.ManipulationUpdated -= TwoUpdated; _two.ManipulationCompleted -= TwoCompleted; _two = null; }
         if (_multi is not null) { _multi.ManipulationCompleted -= MultiCompleted; _multi = null; }
         if (_window != 0) { RegisterTouchpadCapableWindow(_window, false); DestroyWindow(_window); _window = 0; }
         if (_classRegistered) { UnregisterClass(_className, _instance); _classRegistered = false; }

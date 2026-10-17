@@ -13,6 +13,7 @@ public sealed class InputRouter
     private readonly HashSet<long> _quarantine = [];
     private readonly MotionAccumulator _motion = new();
     private readonly MotionAccumulator _horizontalScroll = new();
+    private readonly TouchpadScroll _touchpadScroll = new();
     private readonly SemaphoreSlim _activation = new(1);
     private MouseButtons _physicalButtons, _remoteButtons, _quarantineButtons;
     private string? _target;
@@ -52,7 +53,7 @@ public sealed class InputRouter
                 status = CheckActivation(target, captureAvailable);
                 if (status != ActivationStatus.Activated) return status;
                 _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
-                _remote = true; _motion.Clear(); _horizontalScroll.Clear(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
+                _remote = true; _motion.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
             }
             Changed?.Invoke(); return ActivationStatus.Activated;
         }
@@ -79,7 +80,7 @@ public sealed class InputRouter
             _remote = false; _epoch++; _dispatcher.SetEpoch(_epoch);
             _quarantine.UnionWith(_remoteKeys.Keys);
             _quarantineButtons |= _remoteButtons;
-            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _horizontalScroll.Clear(); Reason = reason;
+            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); Reason = reason;
         }
         if (previous is not null) _ = _dispatcher.NeutralizeAsync(previous);
         Changed?.Invoke();
@@ -176,6 +177,17 @@ public sealed class InputRouter
             CheckConnection(); if (!_remote) return;
             _motion.Add(0, 0, verticalDelta / 120 * _settings.ScrollSensitivity);
             _horizontalScroll.Add(0, 0, horizontalDelta / 120 * _settings.ScrollSensitivity);
+        }
+    }
+    public void BeginTouchpadScroll() { lock (_gate) _touchpadScroll.Reset(); }
+    public void ScrollTouchpad(double cumulativeX, double cumulativeY)
+    {
+        lock (_gate)
+        {
+            CheckConnection(); if (!_remote) return;
+            var (vertical, horizontal) = _touchpadScroll.Update(cumulativeX, cumulativeY, _settings.TouchpadScrollSensitivity);
+            _motion.Add(0, 0, vertical / 120);
+            _horizontalScroll.Add(0, 0, horizontal / 120);
         }
     }
     public bool Gesture(GestureAction action)

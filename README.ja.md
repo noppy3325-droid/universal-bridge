@@ -1,21 +1,23 @@
 # Universal Bridge
 
+<img src="docs/images/app-icon.png" width="96" height="96" alt="Universal Bridge アイコン">
+
 **[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
 
 Windows PCのキーボード・マウスと対応するトラックパッド操作を、Bluetooth経由でiPadと共有するWindows 11アプリです。C# / .NET 10 / WPFで実装し、[MITライセンス](LICENSE)のOSSとして公開しています。
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**プレビュー v0.3.0。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**プレビュー v0.3.1。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
 ## ダウンロード
 
-**[Releases — v0.3.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.0)** から取得します。
+**[Releases — v0.3.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.1)** から取得します。
 
-- **[UniversalBridge-0.3.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.0/UniversalBridge-0.3.0-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-0.3.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- **[UniversalBridge-0.3.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.1/UniversalBridge-0.3.1-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-0.3.1-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -28,9 +30,9 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 | 画面端切り替え | ディスプレイ・方向・範囲・押し続け時間を設定。隣接Windowsモニターとの境界を考慮します。 |
 | ショートカット編集 | 初期値はiPadへ **Ctrl+Alt+I**、Windowsへ **Ctrl+Alt+Q**。入力設定から変更可能。**Escを3回**の緊急復帰は常に有効です。 |
 | 細かいマウス操作 | Raw InputでWindowsの加速を回避。感度 **0.02～4.00**、0.01刻み、小数移動量の保持に対応します。 |
-| トラックパッド変換 | 2本指の縦横スクロール、ピンチの拡大縮小キー変換、3～5本指スワイプの割り当てに対応します。 |
+| トラックパッド変換 | 2本指の縦横スクロール感度を専用の **0.25～12.00倍**（初期値 **3.00倍**）で調整。ピンチのキー変換、3～5本指スワイプも対応します。 |
 | 3言語のGUI | 日本語・英語・中国語（簡体字）・システム言語。即時反映し次回起動時も保持します。 |
-| 常駐と診断 | ライト／ダーク、トレイ、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
+| 常駐と診断 | 専用アプリ／トレイアイコン、ライト／ダーク、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
 
 **iPadネイティブのマルチタッチ接点やMagic Trackpad固有プロトコルは転送しません。** 標準HIDのスクロール・対応キーへ変換します。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
@@ -47,6 +49,8 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 ジェスチャー取得中は小さな受け取り画面が前面に出ます。別のWindows画面へフォーカスが移るとWindowsへ戻ります。**Windows 11 24H2以降の対応する実験的Precision Touchpad API**を実行時に確認します。未対応なら取得をオフにするとキー・マウスのみ使えます。この場合、Windowsのシステムジェスチャーは抑制しません。
 
 0.1.xからの更新は、横スクロール追加でマウスレポートが6→7バイトになります。動かなければ再接続し、必要ならiPad側で人がPC登録を解除・再ペアリングしてください。
+
+v0.3.1では「入力設定 → 2本指スクロール感度」でマウスホイールとは独立して調整できます。推奨値3.00は旧版の既定値の3倍です。数値入力・0.25刻みの増減・推奨値へ戻す操作に対応し、動き始めと終了直前の移動量も累積値から拾います。標準HIDの整数スクロール単位であり、ピクセル単位の連続スクロールや追加の慣性は生成しません。
 
 ## プライバシーと復帰
 
@@ -69,7 +73,7 @@ pwsh -File scripts/Package.ps1
 
 SDKとパッケージは `.tools/` に保存。Windows SDK projectionは `10.0.26100.87` 固定で、実験的APIは分離・対応確認します。ドライバー、制限回避レジストリ、VM、OSのセキュリティ変更は導入しません。
 
-**自動テスト107件**でHID・入力所有権／復帰・精度・キー・翻訳網羅・書式引数・言語保存等を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
+**自動テスト120件**でHID・入力所有権／復帰・精度・キー・翻訳網羅・書式引数・言語保存等を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
 
 [開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグからプレビューReleaseを生成します。
 

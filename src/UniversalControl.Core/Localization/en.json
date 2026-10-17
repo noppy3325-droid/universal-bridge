@@ -56,7 +56,7 @@
   "iPad操作中 · 戻る: ": "iPad control · Return: ",
   "iPad操作中だけ小さな受け取り画面を前面に表示します。Windowsの別画面へフォーカスが移ると自動でWindowsへ戻ります。オフの場合、Windows側のジェスチャーは抑制しません。": "A small capture window stays in front while controlling iPad. Focusing another Windows window returns control to Windows. When this is off, Windows gestures are not suppressed.",
   "iPad操作中はジェスチャーをWindowsへ渡さず取得する": "Capture gestures while controlling iPad",
-  "Universal Bridge 0.3.0を起動しました。入力内容は記録しません。": "Universal Bridge 0.3.0 started. Input content is not logged.",
+  "Universal Bridge 0.3.1を起動しました。入力内容は記録しません。": "Universal Bridge 0.3.1 started. Input content is not logged.",
   "Universal Bridge 起動エラー": "Universal Bridge startup error",
   "Universal Bridgeは起動済みです。タスクトレイから開いてください。": "Universal Bridge is already running. Open it from the system tray.",
   "Windowsサインイン時に起動する（現在のユーザーのみ）": "Start at Windows sign-in (current user only)",
@@ -245,5 +245,9 @@
   "未ペア": "Not paired",
   "未確認": "Not checked",
   "未選択": "Not selected",
-  "隣に別のWindowsディスプレイがある部分では切り替えません。図は物理ピクセルを基準に表示します。": "Edges shared with another Windows display do not switch. The diagram uses physical pixels."
+  "隣に別のWindowsディスプレイがある部分では切り替えません。図は物理ピクセルを基準に表示します。": "Edges shared with another Windows display do not switch. The diagram uses physical pixels.",
+  "マウスホイール感度": "Mouse wheel sensitivity",
+  "2本指スクロール感度": "Two-finger scroll sensitivity",
+  "推奨値 3.00": "Recommended: 3.00",
+  "0.25～12.00倍。ジェスチャー取得時の2本指スクロール専用です。推奨値3.00は旧版の3倍で、マウスホイール感度とは独立しています。": "0.25–12.00 × for captured two-finger scrolling. Recommended 3.00 is three times the old default and is independent of mouse wheel sensitivity."
 }

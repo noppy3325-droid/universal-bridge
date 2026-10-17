@@ -1,21 +1,23 @@
 # Universal Bridge
 
+<img src="docs/images/app-icon.png" width="96" height="96" alt="Universal Bridge icon">
+
 **[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
 
 Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iPad over Bluetooth. A native Windows 11 app built with C# / .NET 10 / WPF, released under the [MIT license](LICENSE).
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**Preview v0.3.0.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**Preview v0.3.1.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
 ## Download
 
-Open **[Releases — v0.3.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.0)**:
+Open **[Releases — v0.3.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.1)**:
 
-- **[UniversalBridge-0.3.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.0/UniversalBridge-0.3.0-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-0.3.0-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-0.3.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.1/UniversalBridge-0.3.1-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-0.3.1-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -28,9 +30,9 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 | Screen-edge switching | Configure the display, edge, switching area, and hold time; respects adjacent Windows monitors. |
 | Editable shortcuts | **Ctrl+Alt+I** to iPad; **Ctrl+Alt+Q** to Windows by default. Edit both in Input settings. **Esc three times** always provides emergency return. |
 | Precise relative mouse input | Raw Input avoids Windows acceleration; sensitivity **0.02–4.00** in 0.01 steps, preserving fractional movements. |
-| Trackpad mappings | Two-finger vertical/horizontal scrolling, pinch-to-zoom shortcuts, and configurable three-to-five-finger swipes. |
+| Trackpad mappings | Two-finger vertical/horizontal scrolling with dedicated **0.25–12.00 ×** sensitivity (default **3.00 ×**), pinch-to-zoom shortcuts, and configurable three-to-five-finger swipes. |
 | Three UI languages | Japanese, English, Simplified Chinese, or system language; applies immediately and persists. |
-| Desktop integration | Light/dark theme, system tray, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
+| Desktop integration | Custom application/tray icon, light/dark theme, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
 
 **Gesture mappings do not forward native iPad multitouch contacts or Magic Trackpad's protocol.** They generate scroll reports and supported keyboard shortcuts. Zoom, Home, and other actions depend on iPadOS and the app.
 
@@ -47,6 +49,8 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 During gesture capture, a small foreground window receives touchpad input. Focusing another Windows window returns control to Windows. Capture needs compatible **experimental Precision Touchpad APIs on Windows 11 24H2 or later**, checked at runtime. If unavailable, turn capture off to share keyboard/mouse only; Windows system gestures are then not blocked.
 
 Upgrading from 0.1.x changes the mouse report from 6 to 7 bytes for horizontal scrolling. If mouse input stops, reconnect; if necessary, manually forget the PC on iPad and pair again.
+
+In v0.3.1, **Input settings → Two-finger scroll sensitivity** adjusts captured touchpad scrolling independently of the mouse wheel. The recommended 3.00 is three times the previous default. Numeric input, 0.25 steps, and a reset button are available. Cumulative motion preserves movement at gesture onset and completion. Standard HID still uses whole scroll ticks rather than pixel scrolling; no extra momentum is simulated.
 
 ## Privacy and recovery
 
@@ -71,7 +75,7 @@ pwsh -File scripts/Package.ps1
 
 SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
 
-**107 automated tests** cover HID, ownership/recovery, motion precision, shortcuts, catalog completeness, format placeholders, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**120 automated tests** cover HID, ownership/recovery, motion precision, shortcuts, catalog completeness, format placeholders, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
 
 See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable preview releases.
 

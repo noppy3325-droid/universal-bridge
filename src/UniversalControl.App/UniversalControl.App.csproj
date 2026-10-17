@@ -8,9 +8,11 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>UniversalControl</AssemblyName>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <Product>Universal Bridge</Product>
+    <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <Description>Local Bluetooth keyboard and mouse sharing for Windows and iPad</Description>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../UniversalControl.Windows/UniversalControl.Windows.csproj" /></ItemGroup>
+  <ItemGroup><Resource Include="Assets/app.ico" /><Resource Include="Assets/app-icon.png" /></ItemGroup>
 </Project>

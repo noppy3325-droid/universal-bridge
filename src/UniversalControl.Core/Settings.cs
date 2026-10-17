@@ -18,6 +18,7 @@ public sealed record AppSettings
     public GestureAction SwipeUp { get; init; } = GestureAction.NextApp;
     public GestureAction SwipeDown { get; init; } = GestureAction.Home;
     public double ScrollSensitivity { get; init; } = 1;
+    public double TouchpadScrollSensitivity { get; init; } = 3;
     public bool AutoSwitch { get; init; }
     public ScreenEdge Edge { get; init; } = ScreenEdge.Right;
     public string MonitorId { get; init; } = "";
@@ -47,6 +48,7 @@ public sealed record AppSettings
         SwipeDown = Enum.IsDefined(SwipeDown) ? SwipeDown : GestureAction.Home,
         MouseSensitivity = double.IsFinite(MouseSensitivity) ? Math.Round(Math.Clamp(MouseSensitivity, .02, 4), 2) : 1,
         ScrollSensitivity = double.IsFinite(ScrollSensitivity) ? Math.Clamp(ScrollSensitivity, .1, 4) : 1,
+        TouchpadScrollSensitivity = double.IsFinite(TouchpadScrollSensitivity) ? Math.Round(Math.Clamp(TouchpadScrollSensitivity, .25, 12), 2) : 3,
         Edge = Enum.IsDefined(Edge) ? Edge : ScreenEdge.Right,
         MonitorId = MonitorId ?? "",
         PortalStart = start,
