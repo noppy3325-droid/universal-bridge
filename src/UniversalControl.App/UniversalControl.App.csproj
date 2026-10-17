@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <WindowsSdkPackageVersion>10.0.26100.87</WindowsSdkPackageVersion>
+    <SupportedOSPlatformVersion>10.0.22000.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>UniversalControl</AssemblyName>
+    <Version>0.3.0</Version>
+    <Product>Universal Bridge</Product>
+    <Description>Local Bluetooth keyboard and mouse sharing for Windows and iPad</Description>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../UniversalControl.Windows/UniversalControl.Windows.csproj" /></ItemGroup>
+</Project>

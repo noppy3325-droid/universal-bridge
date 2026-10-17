@@ -1,0 +1,42 @@
+name: Preview release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+        with:
+          global-json-file: global.json
+      - name: Verify version tag
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup.Version
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version") { throw 'Run this workflow on a tag matching the source version.' }
+      - name: Build and package
+        shell: pwsh
+        run: |
+          ./scripts/Build.ps1 -Test -Publish
+          ./scripts/Package.ps1
+      - name: Publish preview assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup.Version
+          $tag = "v$version"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --verify-tag --title "Universal Bridge $version (Preview)" --notes-file docs/RELEASE_NOTES.md --prerelease
+            if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
+          }
+          gh release upload $tag "dist/UniversalBridge-$version-win-x64.zip" "dist/UniversalBridge-$version-source.zip" dist/SHA256SUMS.txt
+          if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed. Existing assets are never overwritten automatically.' }

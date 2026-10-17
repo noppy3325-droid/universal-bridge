@@ -1,0 +1,207 @@
+namespace UniversalControl.Core;
+
+public enum ActivationStatus { Activated, AlreadyActivating, SenderStopped, Releasing, Disconnected, CaptureUnavailable, InputHeld, Cancelled }
+
+/// <summary>All suppression decisions are synchronous and independent of GUI/Bluetooth awaits.</summary>
+public sealed class InputRouter
+{
+    private readonly object _gate = new();
+    private readonly IHidTransport _transport;
+    private readonly ReportDispatcher _dispatcher;
+    private readonly Dictionary<long, int> _physical = [];
+    private readonly Dictionary<long, (byte Modifier, byte Usage)> _remoteKeys = [];
+    private readonly HashSet<long> _quarantine = [];
+    private readonly MotionAccumulator _motion = new();
+    private readonly MotionAccumulator _horizontalScroll = new();
+    private readonly SemaphoreSlim _activation = new(1);
+    private MouseButtons _physicalButtons, _remoteButtons, _quarantineButtons;
+    private string? _target;
+    private long _epoch, _lastEscape;
+    private int _escapes;
+    private volatile bool _remote;
+    private AppSettings _settings = new();
+    public bool IsRemote => _remote;
+    public long Generation => Interlocked.Read(ref _epoch);
+    public bool PhysicalIdle { get { lock (_gate) return _physical.Count == 0 && _physicalButtons == 0 && _quarantine.Count == 0 && _quarantineButtons == 0; } }
+    public VirtualCursor Cursor { get; } = new();
+    public string Reason { get; private set; } = L.T("Windowsで操作中");
+    public event Action? Changed;
+
+    public InputRouter(IHidTransport transport, ReportDispatcher dispatcher)
+    {
+        _transport = transport; _dispatcher = dispatcher;
+        _dispatcher.Failed += GoLocal;
+    }
+    public void Configure(AppSettings settings) { lock (_gate) _settings = settings.Normalize(); }
+
+    public async Task<bool> ActivateAsync(string target, Func<bool> captureAvailable)
+        => await TryActivateAsync(target, captureAvailable) == ActivationStatus.Activated;
+
+    public async Task<ActivationStatus> TryActivateAsync(string target, Func<bool> captureAvailable)
+    {
+        if (!await _activation.WaitAsync(0)) return ActivationStatus.AlreadyActivating;
+        var requestedEpoch = Interlocked.Read(ref _epoch);
+        try
+        {
+            var status = CheckActivation(target, captureAvailable);
+            if (status != ActivationStatus.Activated) return status;
+            await _dispatcher.NeutralizeAsync(target);
+            lock (_gate)
+            {
+                if (_epoch != requestedEpoch) return ActivationStatus.Cancelled;
+                status = CheckActivation(target, captureAvailable);
+                if (status != ActivationStatus.Activated) return status;
+                _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
+                _remote = true; _motion.Clear(); _horizontalScroll.Clear(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
+            }
+            Changed?.Invoke(); return ActivationStatus.Activated;
+        }
+        finally { _activation.Release(); }
+    }
+
+    private ActivationStatus CheckActivation(string target, Func<bool> captureAvailable)
+    {
+        if (!_dispatcher.Healthy) return ActivationStatus.SenderStopped;
+        if (_dispatcher.Settling) return ActivationStatus.Releasing;
+        if (!_transport.IsReady(target)) return ActivationStatus.Disconnected;
+        if (!captureAvailable()) return ActivationStatus.CaptureUnavailable;
+        if (!PhysicalIdle) return ActivationStatus.InputHeld;
+        return ActivationStatus.Activated;
+    }
+
+    public void GoLocal(string? reason = null)
+    {
+        reason ??= L.T("Windowsへ戻しました");
+        string? previous;
+        lock (_gate)
+        {
+            previous = _remote ? _target : null;
+            _remote = false; _epoch++; _dispatcher.SetEpoch(_epoch);
+            _quarantine.UnionWith(_remoteKeys.Keys);
+            _quarantineButtons |= _remoteButtons;
+            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _horizontalScroll.Clear(); Reason = reason;
+        }
+        if (previous is not null) _ = _dispatcher.NeutralizeAsync(previous);
+        Changed?.Invoke();
+    }
+
+    public void CheckConnection()
+    {
+        if (_remote && (_target is null || !_transport.IsReady(_target) || !_dispatcher.Healthy))
+            GoLocal(L.T("接続断を検出しWindowsへ戻しました"));
+    }
+
+    private static long Identity(int vk, uint scan, bool extended) => scan == 0 ? 0x10000L + vk : scan | (extended ? 0x100L : 0);
+    public bool Key(int vk, uint scan, bool extended, bool down, long now)
+    {
+        lock (_gate)
+        {
+            CheckConnection();
+            var id = Identity(vk, scan, extended);
+            var wasDown = _physical.ContainsKey(id);
+            if (down) _physical[id] = vk; else _physical.Remove(id);
+            if (down && !wasDown)
+            {
+                if (vk == 0x1B) { _escapes = now - _lastEscape <= 800 ? _escapes + 1 : 1; _lastEscape = now; }
+                else _escapes = 0;
+                var mods = _physical.Values.Select(v => HidReports.Modifier(v, 0, false)).Aggregate((byte)0, (a, b) => (byte)(a | b));
+                if (_remote && (_settings.ReturnShortcut.Matches(vk, mods) || _escapes >= 3))
+                {
+                    _quarantine.Add(id); GoLocal(L.T("緊急復帰ショートカットでWindowsへ戻しました")); return true;
+                }
+                // The activation chord is reserved locally; repeating it must not type I into iPad.
+                if (_remote && _settings.ActivateShortcut.Matches(vk, mods))
+                { _quarantine.Add(id); return true; }
+            }
+            if (_quarantine.Contains(id)) { if (!down) _quarantine.Remove(id); return true; }
+            if (!_remote) return false;
+            if (down && !wasDown)
+            {
+                var modifier = HidReports.Modifier(vk, scan, extended);
+                VirtualKeyMap.TryGetUsage(vk, scan, extended, out var usage);
+                _remoteKeys[id] = (modifier, modifier == 0 ? usage : (byte)0);
+            }
+            else if (!down) _remoteKeys.Remove(id);
+            else return true; // Let iPadOS perform key repeat from the held HID state.
+            FlushMotion();
+            byte modifiers = 0;
+            foreach (var key in _remoteKeys.Values) modifiers |= key.Modifier;
+            _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(modifiers, _remoteKeys.Values.Select(k => k.Usage)));
+            return true;
+        }
+    }
+
+    public bool Button(MouseButtons button, bool down)
+    {
+        lock (_gate)
+        {
+            CheckConnection();
+            if (down) _physicalButtons |= button; else _physicalButtons &= ~button;
+            if ((_quarantineButtons & button) != 0)
+            { if (!down) _quarantineButtons &= ~button; return true; }
+            if (!_remote) return false;
+            FlushMotion();
+            if (down) _remoteButtons |= button; else _remoteButtons &= ~button;
+            _dispatcher.Enqueue(_target!, _epoch, HidReports.Mouse(_remoteButtons));
+            return true;
+        }
+    }
+
+    public void Move(double dx, double dy, int wheelDelta = 0)
+    {
+        lock (_gate)
+        {
+            CheckConnection(); if (!_remote) return;
+            var x = dx * _settings.MouseSensitivity; var y = dy * _settings.MouseSensitivity;
+            _motion.Add(x, y, wheelDelta / 120d * _settings.ScrollSensitivity);
+            if (Cursor.Move(x, y, _settings) && _settings.EstimatedReturn)
+                GoLocal(L.T("推定カーソルが境界に達したためWindowsへ戻しました"));
+        }
+    }
+
+    public void FlushMotion()
+    {
+        lock (_gate)
+        {
+            if (!_remote) return;
+            var (x, y, wheel) = _motion.Take();
+            var pan = _horizontalScroll.Take().Wheel;
+            if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.Enqueue(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
+        }
+    }
+    public void Scroll(double verticalDelta, double horizontalDelta = 0)
+    {
+        lock (_gate)
+        {
+            CheckConnection(); if (!_remote) return;
+            _motion.Add(0, 0, verticalDelta / 120 * _settings.ScrollSensitivity);
+            _horizontalScroll.Add(0, 0, horizontalDelta / 120 * _settings.ScrollSensitivity);
+        }
+    }
+    public bool Gesture(GestureAction action)
+    {
+        lock (_gate)
+        {
+            CheckConnection();
+            if (!_remote || _remoteKeys.Count != 0 || _remoteButtons != 0) return false;
+            var (modifiers, usage) = TouchpadGestures.Shortcut(action);
+            if (usage == 0) return false;
+            FlushMotion();
+            return _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(modifiers, [usage])) &&
+                _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(0, []));
+        }
+    }
+
+    // Reconcile keys released on another desktop (UAC/lock) where hooks cannot observe them.
+    public void ReconcilePhysical(Func<int, bool> isDown)
+    {
+        lock (_gate)
+        {
+            if (_remote) return;
+            foreach (var pair in _physical.Where(p => !isDown(p.Value)).ToArray()) { _physical.Remove(pair.Key); _quarantine.Remove(pair.Key); }
+            if (!isDown(1)) { _physicalButtons &= ~MouseButtons.Left; _quarantineButtons &= ~MouseButtons.Left; }
+            if (!isDown(2)) { _physicalButtons &= ~MouseButtons.Right; _quarantineButtons &= ~MouseButtons.Right; }
+            if (!isDown(4)) { _physicalButtons &= ~MouseButtons.Middle; _quarantineButtons &= ~MouseButtons.Middle; }
+        }
+    }
+}
