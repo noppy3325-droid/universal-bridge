@@ -4,13 +4,31 @@
 
 **[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
 
+**Windowsの隣のiPadも、いつものキーボードとマウスで。**
+
 Windows PCのキーボード・マウスと対応するトラックパッド操作を、Bluetooth経由でiPadと共有するWindows 11アプリです。C# / .NET 10 / WPFで実装し、[MITライセンス](LICENSE)のOSSとして公開しています。
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
 **プレビュー v0.3.2。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
+**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
+
+## こんな使い方に
+
+- **WindowsとiPadを机に並べている方：** PCで作業しながら、同じキーボードとマウスをiPadへ切り替えて検索やメモに。
+- **ノートPCを使い、机を広く使いたい方：** 対応PCなら、2組目のキーボードやVMを用意せずに、手元の入力機器を共有できます。
+- **プレビューを試す方・開発に参加する方：** 日本語・英語・簡体字GUIを備えた、C# / WPFによるBLE HIDの実装を公開しています。
+
+Appleの[ユニバーサルコントロールにはMacが必要](https://support.apple.com/en-us/102459)です。Universal BridgeはWindowsからiPadへの入力共有を扱い、画面ミラーリング・クリップボード共有・ファイル転送・iPadネイティブのマルチタッチ転送は提供しません。
+
+## ダウンロード前に
+
+必要なのは **Windows 11 x64・iPad・BLE Peripheral対応のBluetoothアダプターとドライバー** です。Bluetooth搭載だけでは対応を判断できません。アプリで対応状況を確認し、非対応なら理由を表示します。ジェスチャー取得には、Windows 11 24H2以降の対応する実験的APIも必要です。取得をオフにしてキーボードとマウスのみ共有することもできます。
+
+実機の確認範囲が限られた **署名なしのプレビュー版** です。非対応の場合も、追加購入は不要です。任意の[動作環境レポート](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)で、動く構成・動かない構成を共有できます。
 
 ## ダウンロード
 

@@ -4,13 +4,31 @@
 
 **[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
 
+**Windows on your desk. iPad beside it. One keyboard and mouse.**
+
 Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iPad over Bluetooth. A native Windows 11 app built with C# / .NET 10 / WPF, released under the [MIT license](LICENSE).
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
 **Preview v0.3.2.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
+**[Download the preview](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
+
+## Who is it for?
+
+- **Windows + iPad desks:** keep working on your PC, then switch the same keyboard and mouse to an iPad for a search or a note.
+- **Laptop users with limited desk space:** try sharing the controls you already have, without a second keyboard or a VM on supported PCs.
+- **Early adopters and contributors:** explore a native C# / WPF BLE HID implementation with Japanese, English, and Simplified Chinese UI.
+
+Apple's [Universal Control requires a Mac](https://support.apple.com/en-us/102459). Universal Bridge focuses on Windows-to-iPad input sharing. It does not provide screen mirroring, shared clipboard, file transfer, or native iPad multitouch forwarding.
+
+## Before you download
+
+You need **Windows 11 x64**, an iPad, and a PC Bluetooth adapter **and driver supporting BLE Peripheral**. Bluetooth support alone does not establish compatibility; the app checks the adapter and reports unsupported configurations. Gesture capture additionally requires supported experimental APIs on Windows 11 24H2 or later. Keyboard/mouse sharing can be used with gesture capture off.
+
+This is an **unsigned preview** with limited real-device coverage. If your hardware is unsupported, no purchase is needed to report the result. Optional [compatibility reports](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml) help identify which setups work.
 
 ## Download
 

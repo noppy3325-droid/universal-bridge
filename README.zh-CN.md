@@ -4,13 +4,31 @@
 
 **[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
 
+**Windows 旁边的 iPad，也用同一套键盘和鼠标。**
+
 通过蓝牙，将 Windows 电脑的键盘、鼠标和受支持的触控板操作共享给 iPad。这是一款使用 C# / .NET 10 / WPF 开发的 Windows 11 原生应用，以 [MIT 许可证](LICENSE) 开源。
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
 **预览版 v0.3.2。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
+**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+
 ![连接面板](docs/images/dashboard-zh-Hans.png)
+
+## 适合哪些使用场景？
+
+- **同时使用 Windows 和 iPad：** 在电脑上工作，再将同一套键鼠切换到 iPad 搜索资料或记笔记。
+- **希望节省桌面空间的笔记本用户：** 在受支持的电脑上，无需第二套键盘或虚拟机即可尝试共享现有输入设备。
+- **愿意试用预览版或参与开发的用户：** 查看带有日语、英语和简体中文界面的 C# / WPF BLE HID 实现。
+
+Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，不提供屏幕镜像、剪贴板共享、文件传输或 iPad 原生多点触控转发。
+
+## 下载前请确认
+
+需要 **Windows 11 x64、iPad，以及支持 BLE 外围设备角色的蓝牙适配器和驱动程序**。仅有蓝牙功能不代表兼容；应用会检查支持情况并说明不兼容的原因。手势捕获还需要 Windows 11 24H2 或更新系统的受支持实验性 API。可关闭手势捕获，仅共享键盘和鼠标。
+
+这是实机验证范围有限的 **未签名预览版**。若硬件不支持，无需额外购买设备。欢迎自愿提交[兼容性报告](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)，帮助确认可用及不可用的配置。
 
 ## 下载
 

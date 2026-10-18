@@ -1,0 +1,59 @@
+name: Compatibility report / 動作環境 / 兼容性报告
+description: Share a working, partially working, or unsupported setup. 日本語・English・简体中文歓迎。
+title: "[Compatibility] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for trying Universal Bridge. Reports are optional; unsupported setups are useful too.
+        動く環境・動かない環境のどちらも歓迎します。报告可使用日本語、English 或简体中文。
+        Do not include typed content, Bluetooth/MAC addresses, device IDs, serial numbers, or unredacted logs.
+  - type: input
+    id: version
+    attributes:
+      label: Universal Bridge version / バージョン / 版本
+      placeholder: e.g. 0.3.2
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and build / Windows版・ビルド / Windows版本
+      placeholder: e.g. Windows 11 24H2, build 26100
+    validations:
+      required: true
+  - type: input
+    id: ipad
+    attributes:
+      label: iPad model and iPadOS / iPad機種・OS / iPad型号与系统
+      placeholder: Model and OS version; no serial number
+    validations:
+      required: true
+  - type: input
+    id: bluetooth
+    attributes:
+      label: Bluetooth adapter and driver / Bluetooth機器・ドライバー / 蓝牙适配器与驱动
+      placeholder: Model and driver version if known; no device address
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Result / 結果 / 结果
+      options:
+        - Keyboard and mouse work / キー・マウス動作 / 键鼠可用
+        - Partially working / 一部動作 / 部分可用
+        - Unsupported BLE Peripheral / BLE Peripheral非対応 / 不支持BLE外围设备
+        - Pairing or input fails / 接続・入力失敗 / 配对或输入失败
+        - Not tested yet / 未確認 / 尚未测试
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What you actually tested / 確認した操作 / 实际测试的操作
+      description: |
+        Mention typing, clicks, scrolling, return shortcut, sleep/wake, and gestures only if tested.
+        Include keyboard layout and whether gesture capture was on. Mark anything untested explicitly.
+        実際に確認した操作と未確認の操作を区別してください。请区分已测试和未测试的操作。
+      placeholder: "Typing: works. Clicks: work. Scrolling: untested. Gesture capture: off."
+    validations:
+      required: true
