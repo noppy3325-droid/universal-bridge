@@ -38,7 +38,7 @@ public sealed class BridgeController : IAsyncDisposable
         Router.Changed += RouterChanged;
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.ActivationRequested += async () => { try { await ActivateRemoteAsync(); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.3.2を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 0.3.3を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }
@@ -129,7 +129,16 @@ public sealed class BridgeController : IAsyncDisposable
         Changed?.Invoke();
     }
     private void SwitchFailed(string reason, string detail)
-    { Message = L.T("切り替えできませんでした。") + detail; Log.Write(L.F("入力切り替え拒否 [{0}]: {1}", reason, detail)); Changed?.Invoke(); }
+    {
+        Message = L.T("切り替えできませんでした。") + detail; Log.Write(L.F("入力切り替え拒否 [{0}]: {1}", reason, detail));
+        if (reason is nameof(ActivationStatus.InputHeld) or nameof(ActivationStatus.CaptureUnavailable))
+        {
+            var held = Router.HeldState;
+            Log.Write(L.F("入力解放診断: 追跡キー={0}, 解放待ちキー={1}, マウス押下={2}, マウス解放待ち={3}, OS物理入力なし={4}",
+                held.TrackedKeys, held.ReleasePendingKeys, held.MouseHeld, held.MouseReleasePending, NativeInput.PhysicalKeyboardIdle()));
+        }
+        Changed?.Invoke();
+    }
     public async Task TickAsync()
     {
         if (_disposed || SmokeMode) return;

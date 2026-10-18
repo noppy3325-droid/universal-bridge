@@ -1,6 +1,7 @@
 namespace UniversalControl.Core;
 
 public enum ActivationStatus { Activated, AlreadyActivating, SenderStopped, Releasing, Disconnected, CaptureUnavailable, InputHeld, Cancelled }
+public sealed record InputHoldState(int TrackedKeys, int ReleasePendingKeys, bool MouseHeld, bool MouseReleasePending);
 
 /// <summary>All suppression decisions are synchronous and independent of GUI/Bluetooth awaits.</summary>
 public sealed class InputRouter
@@ -24,6 +25,7 @@ public sealed class InputRouter
     public bool IsRemote => _remote;
     public long Generation => Interlocked.Read(ref _epoch);
     public bool PhysicalIdle { get { lock (_gate) return _physical.Count == 0 && _physicalButtons == 0 && _quarantine.Count == 0 && _quarantineButtons == 0; } }
+    public InputHoldState HeldState { get { lock (_gate) return new(_physical.Count, _quarantine.Count, _physicalButtons != 0, _quarantineButtons != 0); } }
     public VirtualCursor Cursor { get; } = new();
     public string Reason { get; private set; } = L.T("Windowsで操作中");
     public event Action? Changed;
@@ -101,7 +103,7 @@ public sealed class InputRouter
             CheckConnection();
             var id = Identity(vk, scan, extended);
             var wasDown = _physical.ContainsKey(id);
-            if (down) _physical[id] = vk; else _physical.Remove(id);
+            if (down) _physical[id] = PhysicalInputState.PollingKey(vk, scan, extended); else _physical.Remove(id);
             if (down && !wasDown)
             {
                 if (vk == 0x1B) { _escapes = now - _lastEscape <= 800 ? _escapes + 1 : 1; _lastEscape = now; }
@@ -226,6 +228,8 @@ public sealed class InputRouter
         {
             if (_remote) return;
             foreach (var pair in _physical.Where(p => !isDown(p.Value)).ToArray()) { _physical.Remove(pair.Key); _quarantine.Remove(pair.Key); }
+            // No released physical key may leave an orphaned quarantine entry behind.
+            _quarantine.IntersectWith(_physical.Keys);
             if (!isDown(1)) { _physicalButtons &= ~MouseButtons.Left; _quarantineButtons &= ~MouseButtons.Left; }
             if (!isDown(2)) { _physicalButtons &= ~MouseButtons.Right; _quarantineButtons &= ~MouseButtons.Right; }
             if (!isDown(4)) { _physicalButtons &= ~MouseButtons.Middle; _quarantineButtons &= ~MouseButtons.Middle; }

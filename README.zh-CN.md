@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**预览版 v0.3.2。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**预览版 v0.3.3。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.3) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,10 +32,10 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v0.3.2](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.2)**：
+前往 **[Releases — v0.3.3](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.3.3)**：
 
-- **[UniversalBridge-0.3.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.2/UniversalBridge-0.3.2-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-0.3.2-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-0.3.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.3.3/UniversalBridge-0.3.3-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-0.3.3-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -68,11 +68,13 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 从 0.1.x 升级时，为加入水平滚动，鼠标报告由 6 字节变为 7 字节。若无法工作，请重新连接；必要时由使用者在 iPad 上忽略此电脑并重新配对。
 
-v0.3.2 可在“输入设置 → 双指滚动灵敏度”中独立调整触控板，与鼠标滚轮互不影响。推荐值 3.00 为旧版默认值的 3 倍，支持数值输入、0.25 步长和重置。累积位移保留手势开始和结束时的移动量。标准 HID 仍使用整数滚动刻度，不生成像素级滚动或额外惯性。
+v0.3.3 可在“输入设置 → 双指滚动灵敏度”中独立调整触控板，与鼠标滚轮互不影响。推荐值 3.00 为旧版默认值的 3 倍，支持数值输入、0.25 步长和重置。累积位移保留手势开始和结束时的移动量。标准 HID 仍使用整数滚动刻度，不生成像素级滚动或额外惯性。
 
 ## 隐私与恢复
 
-iPad 唤醒后，请解锁并等待键盘、鼠标均恢复订阅，再按切换到 iPad 的快捷键。v0.3.2 会跟踪新的 GATT 会话，成功发送键盘和鼠标的释放报告后恢复发送程序。不会自动将控制切回 iPad；超时发送尚未完成时不能恢复。如果仍未连接，请从 iPad“设置 → 蓝牙”连接电脑。
+v0.3.3 修复了 iPad 保持连接却因“按键未释放”拒绝切换的可复现问题：半角/全角键的输入法模式值可能残留在返回 Windows 后的检测中，现在改为检查物理 OEM 键，并清理已释放的等待状态。拒绝诊断仅记录按键数量及鼠标／空闲状态，不记录键名或输入内容。尚未确认所有偶发问题都已解决。
+
+iPad 唤醒后，请解锁并等待键盘、鼠标均恢复订阅，再按切换到 iPad 的快捷键。v0.3.3 会跟踪新的 GATT 会话，成功发送键盘和鼠标的释放报告后恢复发送程序。不会自动将控制切回 iPad；超时发送尚未完成时不能恢复。如果仍未连接，请从 iPad“设置 → 蓝牙”连接电脑。
 
 Windows 识别为日语键盘时，**半角/全角**（支持 Alt 组合）会发送一次 **Control+Space** 来切换 iPad 输入语言，不再输入标点。长按不会反复切换；美式键盘的反引号保持原有映射。请在 iPad“设置 → 通用 → 键盘 → 键盘”中添加日语和英语。使用 [iPad 外接键盘的语言切换快捷键](https://support.apple.com/en-euro/guide/ipad/ipaddd28d7ed/ipados)，最终布局及输入法行为取决于 iPadOS 设置。
 
@@ -95,7 +97,7 @@ pwsh -File scripts/Package.ps1
 
 SDK／包位于 `.tools/`。Windows SDK projection 固定为 `10.0.26100.87`，实验性 API 已隔离并检查。不会安装驱动、修改注册表绕过限制、使用 VM 或更改系统安全设置。
 
-**135 项自动测试**覆盖 HID、睡眠／重连恢复、日语输入语言切换、精度、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
+**141 项自动测试**覆盖 HID、睡眠／重连恢复、返回 Windows 后残留的日语按键状态、语言切换、精度、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
 
 参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成预览发行版。
 

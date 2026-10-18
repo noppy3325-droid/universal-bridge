@@ -8,7 +8,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>UniversalControl</AssemblyName>
-    <Version>0.3.2</Version>
+    <Version>0.3.3</Version>
     <Product>Universal Bridge</Product>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <Description>Local Bluetooth keyboard and mouse sharing for Windows and iPad</Description>

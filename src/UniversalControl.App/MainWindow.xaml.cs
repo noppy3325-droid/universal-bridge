@@ -392,8 +392,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.2", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
-                Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.3", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+                Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }
     }
