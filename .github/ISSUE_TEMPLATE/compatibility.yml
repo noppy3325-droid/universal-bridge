@@ -38,12 +38,13 @@ body:
     id: outcome
     attributes:
       label: Result / 結果 / 结果
+      default: 0
       options:
+        - Not tested yet / 未確認 / 尚未测试
         - Keyboard and mouse work / キー・マウス動作 / 键鼠可用
         - Partially working / 一部動作 / 部分可用
         - Unsupported BLE Peripheral / BLE Peripheral非対応 / 不支持BLE外围设备
         - Pairing or input fails / 接続・入力失敗 / 配对或输入失败
-        - Not tested yet / 未確認 / 尚未测试
     validations:
       required: true
   - type: textarea
