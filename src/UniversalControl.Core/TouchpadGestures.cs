@@ -1,6 +1,6 @@
 namespace UniversalControl.Core;
 
-public enum GestureAction { None, NextApp, PreviousApp, Home, Search, ZoomIn, ZoomOut }
+public enum GestureAction { None, NextApp, PreviousApp, Home, Search, ZoomIn, ZoomOut, Screenshot, Undo, Redo, CloseWindow }
 public sealed class TouchpadGestures
 {
     private double _scaleRemainder;
@@ -21,6 +21,8 @@ public sealed class TouchpadGestures
     {
         GestureAction.NextApp => (8, 0x2B), GestureAction.PreviousApp => (10, 0x2B),
         GestureAction.Home => (8, 0x0B), GestureAction.Search => (8, 0x2C),
-        GestureAction.ZoomIn => (10, 0x2E), GestureAction.ZoomOut => (8, 0x2D), _ => (0, 0)
+        GestureAction.ZoomIn => (10, 0x2E), GestureAction.ZoomOut => (8, 0x2D),
+        GestureAction.Screenshot => (10, 0x20), GestureAction.Undo => (8, 0x1D), GestureAction.Redo => (10, 0x1D),
+        GestureAction.CloseWindow => (8, 0x1A), _ => (0, 0)
     };
 }

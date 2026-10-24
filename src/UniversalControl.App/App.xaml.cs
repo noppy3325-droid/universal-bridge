@@ -17,7 +17,7 @@ public partial class App : WpfApplication
         try
         {
             L.SetLanguage(new SettingsStore(dataDirectory).Load().Language);
-            if (e.Args.FirstOrDefault(a => a is "--verify-motion-input" or "--verify-motion-timer" or "--verify-server" or "--verify-local-input" or "--hold-local-input" or "--verify-input-readiness" or "--probe-touchpad") is { } verification)
+            if (e.Args.FirstOrDefault(a => a is "--verify-pointer-precision" or "--verify-edge-input" or "--verify-motion-input" or "--verify-motion-timer" or "--verify-server" or "--verify-local-input" or "--hold-local-input" or "--verify-input-readiness" or "--probe-touchpad") is { } verification)
             { Shutdown(await HeadlessVerification.RunAsync(verification, dataDirectory)); return; }
             if (e.Args.Contains("--diagnose") || e.Args.Contains("--probe-gatt"))
             {
@@ -30,6 +30,7 @@ public partial class App : WpfApplication
             _instance = new Mutex(true, smoke ? @"Local\UniversalBridge-Smoke-" + Guid.NewGuid() : @"Local\UniversalBridge-0F741DCC-2D65-4E50-A8B1-9F8DC8D214A7", out var first);
             if (!first) { System.Windows.MessageBox.Show(L.T("Universal Bridgeは起動済みです。タスクトレイから開いてください。"), "Universal Bridge"); Shutdown(1); return; }
             var window = new MainWindow(dataDirectory, e.Args.Contains("--smoke-test") || e.Args.Contains("--preview"), e.Args.Contains("--smoke-test")); MainWindow = window;
+            if (smoke) { window.ShowActivated = false; window.IsHitTestVisible = false; }
             DispatcherUnhandledException += (_, args) => { window.Controller.NotifyError(args.Exception); args.Handled = true; };
             window.Show();
             if (e.Args.Contains("--background")) { window.Hide(); await window.Controller.StartAsync(); }

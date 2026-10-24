@@ -1,4 +1,4 @@
-name: Preview release
+name: Release
 on:
   push:
     tags: ['v*']
@@ -20,22 +20,28 @@ jobs:
         shell: pwsh
         run: |
           $version = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup.Version
-          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version") { throw 'Run this workflow on a tag matching the source version.' }
+          $releaseTag = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup.ReleaseTag
+          if (!$releaseTag) { $releaseTag = "v$version" }
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne $releaseTag) { throw 'Run this workflow on the configured release tag.' }
       - name: Build and package
         shell: pwsh
         run: |
           ./scripts/Build.ps1 -Test -Publish
           ./scripts/Package.ps1
-      - name: Publish preview assets
+      - name: Publish release assets
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup.Version
-          $tag = "v$version"
+          $properties = ([xml](Get-Content src/UniversalControl.App/UniversalControl.App.csproj -Raw)).Project.PropertyGroup
+          $tag = $properties.ReleaseTag
+          if (!$tag) { $tag = "v$version" }
+          $displayVersion = $properties.DisplayVersion
+          if (!$displayVersion) { $displayVersion = $version }
           gh release view $tag *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create $tag --verify-tag --title "Universal Bridge $version (Preview)" --notes-file docs/RELEASE_NOTES.md --prerelease
+            gh release create $tag --verify-tag --title "Universal Bridge v$displayVersion" --notes-file docs/RELEASE_NOTES.md --latest
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
           }
           gh release upload $tag "dist/UniversalBridge-$version-win-x64.zip" "dist/UniversalBridge-$version-source.zip" dist/SHA256SUMS.txt

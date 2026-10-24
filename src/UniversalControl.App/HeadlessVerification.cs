@@ -12,7 +12,23 @@ public static class HeadlessVerification
         Directory.CreateDirectory(directory);
         try
         {
-            if (mode == "--verify-motion-input")
+            if (mode == "--verify-pointer-precision")
+            {
+                var motion = new PointerMotion(); var reference = PointerTransfer.Scale(2300, 9, 8);
+                var old = PointerTransfer.Apply(2300, 9, 8); var x = 0; var y = 0; var maximumError = 0d;
+                for (var index = 1; index <= 1000; index++)
+                {
+                    motion.Add(2300, 9); var sample = motion.Take(true, 8); x += sample.X; y += sample.Y;
+                    maximumError = Math.Max(maximumError, Math.Max(Math.Abs(x - reference.X * index), Math.Abs(y - reference.Y * index)));
+                }
+                var stopped = Enumerable.Range(0, 100).All(_ => motion.Take(true, 8) == (0, 0));
+                var success = maximumError <= .5000001 && stopped && y > 0 && old.Y == 0;
+                await WriteAsync(directory, "pointer-precision.json", new { Success = success, SyntheticSamples = 1000,
+                    LegacyMinorAxisCounts = old.Y * 1000, ImprovedMinorAxisCounts = y, ReferenceMinorAxisCounts = reference.Y * 1000,
+                    MaximumCumulativeError = maximumError, NoMotionAfterStop = stopped, InputCaptured = false, BluetoothMeasured = false });
+                return success ? 0 : 2;
+            }
+            if (mode is "--verify-motion-input" or "--verify-edge-input")
             {
                 // No advertising and no activation; unusual temporary hotkeys avoid a running app.
                 await using var transport = new BleHidTransport(); await using var dispatcher = new ReportDispatcher(transport);
@@ -21,6 +37,12 @@ public static class HeadlessVerification
                     ActivateShortcut = new(ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Shift, 0x86),
                     ReturnShortcut = new(ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Shift, 0x87) }, DisplayCatalog.Read());
                 await input.StartAsync();
+                if (mode == "--verify-edge-input")
+                {
+                    var edgeProbe = await input.ProbeEdgeHandoffAsync(); input.Dispose();
+                    await WriteAsync(directory, "edge-input.json", edgeProbe);
+                    return edgeProbe.Success ? 0 : 2;
+                }
                 var precise = input.PreciseMotionTiming; var pulses = await input.ProbeMotionTimingAsync();
                 var responsive = input.Available; var raw = input.RawMouseAvailable;
                 input.Dispose();

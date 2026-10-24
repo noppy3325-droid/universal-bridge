@@ -13,6 +13,7 @@ public sealed class InputRouter
     private readonly Dictionary<long, (byte Modifier, byte Usage)> _remoteKeys = [];
     private readonly HashSet<long> _quarantine = [];
     private readonly MotionAccumulator _motion = new();
+    private readonly PointerMotion _pointer = new();
     private readonly MotionAccumulator _horizontalScroll = new();
     private readonly TouchpadScroll _touchpadScroll = new();
     private readonly MotionAccumulator _touchpadWheel = new();
@@ -62,7 +63,7 @@ public sealed class InputRouter
                 status = CheckActivation(target, captureAvailable);
                 if (status != ActivationStatus.Activated) return status;
                 _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
-                _remote = true; _motion.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false;
+                _remote = true; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false;
                 _lastNativeFrame = null; _lastPointerReport = _clock.GetTimestamp(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
             }
             Changed?.Invoke(); return ActivationStatus.Activated;
@@ -91,7 +92,7 @@ public sealed class InputRouter
             _remote = false; _epoch++; _dispatcher.SetEpoch(_epoch);
             _quarantine.UnionWith(_remoteKeys.Keys);
             _quarantineButtons |= _remoteButtons;
-            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false; _lastNativeFrame = null; Reason = reason;
+            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false; _lastNativeFrame = null; Reason = reason;
         }
         if (previous is not null) _ = _dispatcher.NeutralizeAsync(previous);
         Changed?.Invoke();
@@ -129,6 +130,8 @@ public sealed class InputRouter
                     var action = _settings.HomeShortcut.Matches(vk, mods) ? GestureAction.Home
                         : _settings.SearchShortcut.Matches(vk, mods) ? GestureAction.Search
                         : _settings.NextAppShortcut.Matches(vk, mods) ? GestureAction.NextApp : GestureAction.None;
+                    if (action == GestureAction.None)
+                        action = _settings.AdditionalShortcuts.FirstOrDefault(entry => entry.Enabled && entry.Binding.Matches(vk, mods))?.Action ?? GestureAction.None;
                     if (action != GestureAction.None)
                     {
                         _quarantine.Add(id); // Consume the trigger, its repeats, and its eventual release.
@@ -192,7 +195,7 @@ public sealed class InputRouter
             CheckConnection(); if (!_remote) return;
             if (_nativeContactsActive) return;
             var x = dx * _settings.MouseSensitivity; var y = dy * _settings.MouseSensitivity;
-            _motion.Add(x, y, wheelDelta / 120d * _settings.ScrollSensitivity);
+            _pointer.Add(x, y); _motion.Add(0, 0, wheelDelta / 120d * _settings.ScrollSensitivity);
         }
     }
 
@@ -201,19 +204,14 @@ public sealed class InputRouter
         lock (_gate)
         {
             if (!_remote) return;
-            var (x, y, wheel) = _motion.Take();
+            var wheel = _motion.Take().Wheel;
             var pan = _horizontalScroll.Take().Wheel;
             var touch = _touchpadWheel.Take(127); wheel += touch.Y; pan += touch.X;
             var wheelOverflow = wheel - Math.Clamp(wheel, -127, 127); var panOverflow = pan - Math.Clamp(pan, -127, 127);
             _motion.Add(0, 0, wheelOverflow); _horizontalScroll.Add(0, 0, panOverflow);
             wheel -= wheelOverflow; pan -= panOverflow;
             var now = _clock.GetTimestamp(); var elapsed = _clock.GetElapsedTime(_lastPointerReport, now).TotalMilliseconds; _lastPointerReport = now;
-            if (_settings.StabilizeFastPointer)
-            {
-                var stable = PointerTransfer.Apply(x, y, elapsed);
-                if (stable != (x, y)) _motion.ClearPointer(); // Compressed overshoot must not emerge as a late cursor tail.
-                (x, y) = stable;
-            }
+            var (x, y) = _pointer.Take(_settings.StabilizeFastPointer, elapsed);
             if (Cursor.Move(x, y, _settings) && _settings.EstimatedReturn)
             { GoLocal(L.T("推定カーソルが境界に達したためWindowsへ戻しました")); return; }
             if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.EnqueueMotion(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
@@ -248,7 +246,7 @@ public sealed class InputRouter
         {
             CheckConnection();
             if (!_remote || !_settings.NativeTouchpad || !_transport.IsTouchpadReady(_target!)) return false;
-            if (!_nativeContactsActive && activeContacts) { _motion.ClearPointer(); _touchpadWheel.Clear(); }
+            if (!_nativeContactsActive && activeContacts) { _pointer.Clear(); _touchpadWheel.Clear(); }
             _nativeContactsActive = activeContacts;
             var transition = _lastNativeFrame is null || frame.Payload[2] != _lastNativeFrame[2] ||
                 Enumerable.Range(0, 5).Any(slot => frame.Payload[3 + slot * 5] != _lastNativeFrame[3 + slot * 5]);

@@ -2,6 +2,12 @@
 
 調査日: 2026-10-17（Asia/Tokyo）。参照コードの実行結果と、本プロジェクトで測定した結果を区別します。
 
+## v1.00の再調査
+
+ユーザーの診断で0.5.1のCaptureUnavailable／「画面端から離れたため切り替えを取り消しました」と入力解放済みを確認しました。到着／接続確認とも1pxの境界を要求していたため、微小な揺れを許容する二段階の判定へ変更しました。[MSLLHOOKSTRUCT](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-msllhookstruct)の座標と、[GetPhysicalCursorPos](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getphysicalcursorpos)の物理位置を確認し、フックで実移動を記録した後の入力タイマーで位置を読みます。
+
+操作キーは[Apple公式の外付けキーボード操作](https://support.apple.com/en-us/102393)のスクリーンショット⇧⌘3・検索⌘Space・アプリ切り替え⌘Tabと、標準的な編集／Zoomキーを使います。ホームは⌘H互換を維持し、GlobeキーやApple機器を偽装しません。各コマンドの実iPad／アプリでの結果は受け入れ項目へ残します。
+
 ## 2026-10-24：操作キーと画面端
 
 [Appleの外付けキーボード操作](https://support.apple.com/en-us/102393)を確認しました。現行資料は検索⌘Space、アプリ切り替え⌘Tab、ホームGlobe+Hを案内します。本アプリは検索と次のアプリを標準キーボードHIDで送り、ホームは既存の⌘H互換経路を使います。Apple固有のGlobeキーやAppleのVIDを偽装せず、ホームを全iPadOSで実機確認済みとはしません。

@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**预览版 v0.5.1。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.00（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -20,7 +20,7 @@
 
 - **同时使用 Windows 和 iPad：** 在电脑上工作，再将同一套键鼠切换到 iPad 搜索资料或记笔记。
 - **希望节省桌面空间的笔记本用户：** 在受支持的电脑上，无需第二套键盘或虚拟机即可尝试共享现有输入设备。
-- **愿意试用预览版或参与开发的用户：** 查看带有日语、英语和简体中文界面的 C# / WPF BLE HID 实现。
+- **愿意使用或参与开发的用户：** 查看带有日语、英语和简体中文界面的 C# / WPF BLE HID 实现。
 
 Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，不提供屏幕镜像、剪贴板共享或文件传输。触点转发为下述需主动开启的实验性模式。
 
@@ -28,14 +28,14 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 需要 **Windows 11 x64、iPad，以及支持 BLE 外围设备角色的蓝牙适配器和驱动程序**。仅有蓝牙功能不代表兼容；应用会检查支持情况并说明不兼容的原因。手势捕获还需要 Windows 11 24H2 或更新系统的受支持实验性 API。可关闭手势捕获，仅共享键盘和鼠标。
 
-这是实机验证范围有限的 **未签名预览版**。若硬件不支持，无需额外购买设备。欢迎自愿提交[兼容性报告](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)，帮助确认可用及不可用的配置。
+这是实机验证范围有限的 **未签名正式版本**。若硬件不支持，无需额外购买设备。欢迎自愿提交[兼容性报告](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)，帮助确认可用及不可用的配置。
 
 ## 下载
 
-前往 **[Releases — v0.5.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1)**：
+前往 **[Releases — v1.00](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00)**：
 
-- **[UniversalBridge-0.5.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.1/UniversalBridge-0.5.1-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-0.5.1-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-1.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.00/UniversalBridge-1.0.0-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -53,6 +53,24 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 | 桌面集成 | 专用应用／托盘图标、浅色／深色主题、可选登录启动、诊断和有限次数重连。 |
 
 **默认兼容模式**将手势转换为标准滚动报告和受支持的按键操作。真实触点转发需开启下述实验性模式，不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+
+## v1.00：边缘切换、精度及更多操作
+
+这是正式发布。边缘检测改为在Windows完成鼠标更新后读取物理指针位置。到达判定使用约4像素的区域，连接确认期间允许向内12像素的轻微晃动。离开范围、按键／按钮、失去就绪状态或设置变化会取消请求，5秒后过期。诊断仅记录取消原因，不记录坐标或输入内容。请在显示器布局中启用边缘切换。
+
+快速指针抑制现在保留变换后两个轴的小数误差，修复浅斜向移动时短轴被舍入为零的问题。1000次人工输入得到短轴249计数，旧方式为0，数学基准为248.69，累计误差小于0.5计数。停止后不会补发被压缩的距离。关闭抑制时，Raw Input仅乘以灵敏度，保持线性转发。**尚未测量iPad实际无线延迟、主机加速或是否达到Apple原生设备的操作感。**
+
+在主页、搜索和下一个应用之外新增七项操作，可分别启用、修改组合并点击应用保存；控制Windows时保持普通按键。
+
+| 新增操作 | 默认组合 | 发送至iPad |
+|---|---|---|
+| 上一个应用 | Ctrl+Alt+P | ⇧⌘Tab |
+| 截屏 | Ctrl+Alt+C | ⇧⌘3 |
+| 撤销／重做 | Ctrl+Alt+Z／Y | ⌘Z／⇧⌘Z |
+| 放大／缩小 | Ctrl+Alt+U／D | ⇧⌘=／⌘− |
+| 关闭窗口 | Ctrl+Alt+W，默认禁用 | ⌘W |
+
+缩放和编辑操作取决于应用，主页仍使用⌘H兼容方式，并非模拟Globe键。待完成的实机验收见[检查步骤](docs/MANUAL_TESTS.md)。
 
 ## 0.5.0：iPad操作快捷键与边缘切换
 
@@ -127,9 +145,9 @@ pwsh -File scripts/Package.ps1
 
 SDK／包位于 `.tools/`。Windows SDK projection 固定为 `10.0.26100.87`，实验性 API 已隔离并检查。不会安装驱动、修改注册表绕过限制、使用 VM 或更改系统安全设置。
 
-**192 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
+**216 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
 
-参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成预览发行版。
+参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成普通发行版。
 
 ## 许可证与致谢
 

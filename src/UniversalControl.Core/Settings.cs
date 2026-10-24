@@ -19,6 +19,7 @@ public sealed record AppSettings
     public ShortcutBinding SearchShortcut { get; init; } = ShortcutBinding.DefaultSearch;
     public ShortcutBinding NextAppShortcut { get; init; } = ShortcutBinding.DefaultNextApp;
     public bool IPadShortcutsEnabled { get; init; } = true;
+    public IReadOnlyList<ActionShortcut> AdditionalShortcuts { get; init; } = ActionShortcuts.Defaults;
     public GestureAction SwipeLeft { get; init; } = GestureAction.NextApp;
     public GestureAction SwipeRight { get; init; } = GestureAction.PreviousApp;
     public GestureAction SwipeUp { get; init; } = GestureAction.NextApp;
@@ -54,6 +55,7 @@ public sealed record AppSettings
         ActivateShortcut = validShortcuts ? ActivateShortcut! : ShortcutBinding.DefaultActivate,
         ReturnShortcut = validShortcuts ? ReturnShortcut! : ShortcutBinding.DefaultReturn,
         HomeShortcut = home, SearchShortcut = search, NextAppShortcut = nextApp,
+        AdditionalShortcuts = ActionShortcuts.Normalize(AdditionalShortcuts, used),
         SwipeLeft = Enum.IsDefined(SwipeLeft) ? SwipeLeft : GestureAction.NextApp,
         SwipeRight = Enum.IsDefined(SwipeRight) ? SwipeRight : GestureAction.PreviousApp,
         SwipeUp = Enum.IsDefined(SwipeUp) ? SwipeUp : GestureAction.NextApp,
@@ -97,7 +99,12 @@ public sealed class SettingsStore(string directory)
         try
         {
             File.WriteAllText(temp, JsonSerializer.Serialize(settings.Normalize(), new JsonSerializerOptions { WriteIndented = true }));
-            File.Move(temp, _path, true);
+            for (var attempt = 0; ; attempt++)
+            {
+                try { File.Move(temp, _path, true); break; }
+                catch (Exception ex) when (attempt < 4 && ex is IOException or UnauthorizedAccessException && (ex.HResult & 0xFFFF) is 5 or 32 or 33)
+                { Thread.Sleep(15 << attempt); } // A short scanner/cloud-sync read lock must not lose the user's setting.
+            }
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }

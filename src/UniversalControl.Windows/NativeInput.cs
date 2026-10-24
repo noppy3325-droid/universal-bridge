@@ -8,6 +8,9 @@ namespace UniversalControl.Windows;
 
 public sealed record PhysicalReadinessProbe(bool PhysicalIdle, bool AllVirtualKeysIdle, int ImeModeStatesActive, bool OnDefaultDesktop, int KeyboardType);
 public sealed record NativeContactApiProbe(bool Available, int PointerInfoBytes, int TouchInfoBytes);
+public sealed record EdgeHandoffStatus(long Attempts, long Completed, EdgeCancellation LastCancellation);
+public sealed record EdgeInputProbe(bool Success, bool ArrivalBandValidated, bool ReadinessCancellationValidated, long Attempts,
+    bool PhysicalCursorMoved, bool InputReadinessScripted = true, bool CursorScripted = true, bool InputCaptured = false, bool BluetoothAdvertised = false);
 
 public sealed class NativeInput : IDisposable
 {
@@ -30,9 +33,15 @@ public sealed class NativeInput : IDisposable
     private volatile bool _rawFallback;
     private nuint _timerId;
     private Point _anchor, _returnPoint;
-    private sealed record EdgeRequest(AppSettings Settings, IReadOnlyList<DisplayInfo> Displays, DisplayInfo Source, int Revision);
+    private sealed record EdgeRequest(EdgeActivationLease Lease);
     private volatile EdgeRequest? _edgeRequest;
     private int _edgeRevision, _observedEdgeRevision = -1, _activationPending;
+    private int _edgeMotionPending, _lastEdgeCancellation;
+    private long _edgeAttempts, _edgeCompleted;
+    private volatile bool _edgeProbeIdle;
+    private sealed record ProbeCursor(PixelPoint Position);
+    private volatile ProbeCursor? _edgeProbeCursor;
+    private bool EdgeInputIdle => _edgeProbeIdle || (_router.PhysicalIdle && PhysicalKeyboardIdle());
     private AppSettings _settings = new();
     private IReadOnlyList<DisplayInfo> _displays = [];
     public bool Available => _running && ReturnHotkeyRegistered && _keyboardHook != 0 && _mouseHook != 0 && Environment.TickCount64 - Interlocked.Read(ref _lastPulse) < 1500;
@@ -69,9 +78,71 @@ public sealed class NativeInput : IDisposable
     public string MouseMode => UsesRawMouse ? L.T("相対入力（Windowsの加速なし）") : _settings.RawMouse ? L.T("互換入力（相対入力を使用できないため）") : L.T("互換入力（Windowsのカーソル座標）");
     public event Func<bool, Task>? ActivationRequested;
     public Func<bool>? EdgeActivationAllowed { get; set; }
-    public bool EdgeActivationCurrent => _edgeRequest is { } request && request.Revision == Volatile.Read(ref _edgeRevision) &&
-        !_router.IsRemote && _settings.AutoSwitch && EdgeActivationAllowed?.Invoke() == true && GetCursorPos(out var point) &&
-        EdgeDetector.IsAtPortal(new(point.X, point.Y), request.Source, request.Displays, request.Settings);
+    public EdgeHandoffStatus EdgeStatus => new(Interlocked.Read(ref _edgeAttempts), Interlocked.Read(ref _edgeCompleted), (EdgeCancellation)Volatile.Read(ref _lastEdgeCancellation));
+    public async Task<EdgeInputProbe> ProbeEdgeHandoffAsync()
+    {
+        if (_router.IsRemote || ActivationRequested is not null) throw new InvalidOperationException("Edge probe requires an unused, local-only input instance.");
+        var oldSettings = _settings; var oldDisplays = _displays; var oldAllowed = EdgeActivationAllowed;
+        var origin = ReadPhysicalCursor() ?? throw new InvalidOperationException("Physical cursor unavailable.");
+        var ready = true; var scenario = 0; var before = EdgeStatus.Attempts;
+        var completed = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task Handle(bool fromEdge)
+        {
+            var valid = fromEdge && EdgeActivationCurrent;
+            if (scenario == 0) { await Task.Delay(40); valid &= EdgeActivationCurrent; }
+            else
+            {
+                await InvokeAsync(() => { ready = false; CheckEdge(false); ready = true; return null; });
+                valid &= !EdgeActivationCurrent && EdgeStatus.LastCancellation == EdgeCancellation.NotReady;
+            }
+            completed.TrySetResult(valid);
+        }
+        async Task Prepare()
+        {
+            var deadline = Environment.TickCount64 + 1000;
+            while (Volatile.Read(ref _activationPending) != 0)
+            { if (Environment.TickCount64 > deadline) throw new TimeoutException("Previous edge probe is still running."); await Task.Delay(5); }
+            await InvokeAsync(() =>
+            {
+                // The physical pointer stays untouched. Only the test display rectangle is virtual.
+                var display = new DisplayInfo("edge-probe", origin.X - 1917, origin.Y - 500, 1920, 1080);
+                Configure(oldSettings with { AutoSwitch = true, CaptureTouchpad = false, NativeTouchpad = false, Edge = ScreenEdge.Right,
+                    MonitorId = display.Id, PortalStart = 0, PortalEnd = 1, EdgeDwellMs = 150 }, [display]);
+                _observedEdgeRevision = Volatile.Read(ref _edgeRevision); _edge.Reset(false);
+                Interlocked.Exchange(ref _edgeMotionPending, 1); return null;
+            });
+        }
+        ActivationRequested += Handle; EdgeActivationAllowed = () => ready; _edgeProbeIdle = true; _edgeProbeCursor = new(origin);
+        try
+        {
+            await Prepare(); var first = await completed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            scenario = 1; completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            await Prepare(); var second = await completed.Task.WaitAsync(TimeSpan.FromSeconds(3));
+            return new(first && second, first, second, EdgeStatus.Attempts - before, GetPhysicalCursorPos(out var actual) && new PixelPoint(actual.X, actual.Y) != origin);
+        }
+        catch (TimeoutException ex)
+        {
+            throw new TimeoutException($"Edge probe timed out: scenario={scenario}, attempts={EdgeStatus.Attempts - before}, cancellation={EdgeStatus.LastCancellation}, physicalIdle={PhysicalKeyboardIdle()}, trackedIdle={_router.PhysicalIdle}, cursorSame={ReadPhysicalCursor() == origin}, desktop={OnDefaultDesktop()}, available={Available}.", ex);
+        }
+        finally
+        {
+            ActivationRequested -= Handle; EdgeActivationAllowed = oldAllowed; _edgeProbeIdle = false; _edgeProbeCursor = null;
+            await InvokeAsync(() => { Configure(oldSettings, oldDisplays); CancelEdge(EdgeCancellation.SettingsChanged); return null; });
+        }
+    }
+    public bool EdgeActivationCurrent
+    {
+        get
+        {
+            if (_edgeRequest is not { } request) return false;
+            var valid = request.Lease.Validate(ReadPhysicalCursor(), Volatile.Read(ref _edgeRevision), _settings.AutoSwitch && EdgeActivationAllowed?.Invoke() == true,
+                EdgeInputIdle, Environment.TickCount64);
+            if (!valid) Volatile.Write(ref _lastEdgeCancellation, (int)request.Lease.Cancellation);
+            return valid;
+        }
+    }
+    private PixelPoint? ReadPhysicalCursor() => _edgeProbeCursor?.Position ?? (GetPhysicalCursorPos(out var cursor) ? new PixelPoint(cursor.X, cursor.Y) : null);
+    private void CancelEdge(EdgeCancellation reason) { _edge.Reset(); _edgeRequest?.Lease.Cancel(reason); }
     public event Action<string>? Faulted;
 
     public NativeInput(InputRouter router)
@@ -201,6 +272,7 @@ public sealed class NativeInput : IDisposable
             {
                 SynchronizeMode();
                 if (_router.IsRemote && UsesRawMouse) _router.Move(x, y);
+                else if (!_router.IsRemote) Interlocked.Exchange(ref _edgeMotionPending, 1);
             }, text => { _rawFallback = true; ThreadPool.QueueUserWorkItem(_ => Faulted?.Invoke(text + L.T(" 互換入力へ切り替えました。"))); });
             try { _rawMouse.Start(); }
             catch (Exception ex)
@@ -220,7 +292,7 @@ public sealed class NativeInput : IDisposable
                 if (message.Message == TimerMessage)
                 {
                     SynchronizeMode(); var now = Environment.TickCount64;
-                    CheckEdge(physicalMotion: false);
+                    CheckEdge(physicalMotion: Interlocked.Exchange(ref _edgeMotionPending, 0) != 0);
                     if (_motionTimer is null && now >= _lastFlush)
                     {
                         _router.FlushMotion();
@@ -287,28 +359,37 @@ public sealed class NativeInput : IDisposable
     {
         if (Interlocked.CompareExchange(ref _activationPending, 1, 0) != 0) return;
         _edgeRequest = request;
+        if (request is not null) { Interlocked.Increment(ref _edgeAttempts); Volatile.Write(ref _lastEdgeCancellation, 0); }
         _ = Task.Run(async () =>
         {
             try { if (ActivationRequested is { } activate) await activate(request is not null); }
             catch (Exception ex) { NotifyFault(ex.Message); }
-            finally { _edgeRequest = null; Volatile.Write(ref _activationPending, 0); }
+            finally
+            {
+                if (request is not null)
+                {
+                    if (_router.IsRemote) { Interlocked.Increment(ref _edgeCompleted); Volatile.Write(ref _lastEdgeCancellation, 0); }
+                    else Volatile.Write(ref _lastEdgeCancellation, (int)request.Lease.Cancellation);
+                }
+                _edgeRequest = null; Volatile.Write(ref _activationPending, 0);
+            }
         });
     }
-    private void CheckEdge(bool physicalMotion, PixelPoint? physicalPoint = null)
+    private void CheckEdge(bool physicalMotion)
     {
         var revision = Volatile.Read(ref _edgeRevision);
-        if (_observedEdgeRevision != revision) { _edge.Reset(); _observedEdgeRevision = revision; }
-        if (_router.IsRemote || !_settings.AutoSwitch || !_router.PhysicalIdle || EdgeActivationAllowed?.Invoke() != true || SelectedDisplay is not { } display)
-        { _edge.Reset(); _edgeRequest = null; return; }
-        PixelPoint point;
-        if (physicalPoint is { } physical) point = physical;
-        else if (GetCursorPos(out var cursor)) point = new(cursor.X, cursor.Y);
-        else { _edge.Reset(); return; }
+        if (_observedEdgeRevision != revision) { CancelEdge(EdgeCancellation.SettingsChanged); _observedEdgeRevision = revision; }
+        if (_router.IsRemote) { _edge.Reset(); return; } // A committed handoff must not cancel its own request.
+        if (!_settings.AutoSwitch || EdgeActivationAllowed?.Invoke() != true || SelectedDisplay is not { } display)
+        { CancelEdge(EdgeCancellation.NotReady); return; }
+        if (!EdgeInputIdle) { CancelEdge(EdgeCancellation.InputHeld); return; }
+        if (ReadPhysicalCursor() is not { } point) { CancelEdge(EdgeCancellation.CursorUnavailable); return; }
         var settings = _settings; var displays = _displays;
-        if (_edgeRequest is { } request && !EdgeDetector.IsAtPortal(point, request.Source, request.Displays, request.Settings)) _edgeRequest = null;
+        if (_edgeRequest is { } request)
+        { request.Lease.Validate(point, revision, true, true, Environment.TickCount64); return; }
         var ready = physicalMotion ? _edge.Observe(point, display, displays, settings, Environment.TickCount64)
             : _edge.Poll(point, display, displays, settings, Environment.TickCount64);
-        if (ready && PhysicalKeyboardIdle() && OnDefaultDesktop()) RequestActivation(new(settings, displays, display, revision));
+        if (ready && EdgeInputIdle && OnDefaultDesktop()) RequestActivation(new(new(display, displays, settings, revision, Environment.TickCount64)));
     }
     private void NotifyFault(string text)
     { _router.GoLocal(L.T("入力監視の異常によりWindowsへ戻しました")); ThreadPool.QueueUserWorkItem(_ => Faulted?.Invoke(text)); }
@@ -323,7 +404,7 @@ public sealed class NativeInput : IDisposable
                 if ((key.Flags & 0x10) == 0)
                 {
                     var down = wParam == 0x100 || wParam == 0x104;
-                    if (down && !_router.IsRemote) { _edge.Reset(); _edgeRequest = null; }
+                    if (down && !_router.IsRemote && !_edgeProbeIdle) CancelEdge(EdgeCancellation.InputHeld);
                     if (_router.Key((int)key.VirtualKey, key.ScanCode, (key.Flags & 1) != 0, down, Environment.TickCount64,
                         japaneseKeyboard: key.ScanCode == 0x29 && GetKeyboardType(0) == 7)) return 1;
                 }
@@ -352,10 +433,10 @@ public sealed class NativeInput : IDisposable
                 };
                 if (button != 0)
                 {
-                    if (!_router.IsRemote) { _edge.Reset(); _edgeRequest = null; }
+                    if (!_router.IsRemote && !_edgeProbeIdle) CancelEdge(EdgeCancellation.InputHeld);
                     return _router.Button(button, down) ? 1 : CallNextHookEx(0, code, wParam, lParam);
                 }
-                if (!_router.IsRemote && message is 0x20A or 0x20E) { _edge.Reset(); _edgeRequest = null; }
+                if (!_router.IsRemote && !_edgeProbeIdle && message is 0x20A or 0x20E) CancelEdge(EdgeCancellation.InputHeld);
                 if (_router.IsRemote)
                 {
                     if (message == 0x200)
@@ -386,7 +467,9 @@ public sealed class NativeInput : IDisposable
                     else if (message == 0x20E) _router.Scroll(0, unchecked((short)(mouse.Data >> 16)));
                     return 1;
                 }
-                if (message == 0x200) CheckEdge(physicalMotion: true, new(mouse.Position.X, mouse.Position.Y));
+                // A low-level hook runs before Windows finishes the cursor update. Sample its
+                // physical, clipped position on the input timer rather than validating stale coordinates.
+                if (message == 0x200) Interlocked.Exchange(ref _edgeMotionPending, 1);
             }
             catch (Exception ex) { NotifyFault(ex.Message); }
         }
@@ -422,6 +505,7 @@ public sealed class NativeInput : IDisposable
     [DllImport("user32.dll")] private static extern bool KillTimer(nint window, nuint id);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] private static extern bool GetPhysicalCursorPos(out Point point);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] private static extern int GetKeyboardType(int typeFlag);
     [DllImport("user32.dll", SetLastError = true)] private static extern nint OpenInputDesktop(uint flags, bool inherit, uint access);

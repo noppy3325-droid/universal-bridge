@@ -97,5 +97,7 @@
   "IPadShortcutsHelp": "ホームは⌘H、検索は⌘Space、次のアプリは⌘Tabへ変換します。iPad操作中だけ有効です。ほかの文字キーやマウスボタンを離して使ってください。iPadOSや設定により対応が異なります。",
   "IPadHomeLabel": "iPadのホーム",
   "IPadSearchLabel": "iPadの検索",
-  "IPadNextAppLabel": "次のアプリ"
+  "IPadNextAppLabel": "次のアプリ",
+  "AdditionalShortcutsLabel": "追加のiPad操作",
+  "AdditionalShortcutsHelp": "各操作のチェックで有効・無効を選び、「適用」でキーと一緒に保存します。閉じる操作は初期値オフです。拡大・縮小、取り消し等はアプリの対応に従います。"
 }

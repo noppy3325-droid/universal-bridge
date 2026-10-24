@@ -28,6 +28,25 @@ public partial class MainWindow : Window
     private sealed record KeyChoice(int Value, string Label) { public override string ToString() => Label; }
     private sealed record GestureChoice(GestureAction Value, string Label) { public override string ToString() => Label; }
     private sealed record LanguageChoice(string Code, string Label) { public override string ToString() => Label; }
+    private sealed class ActionShortcutRow : INotifyPropertyChanged
+    {
+        private bool _enabled;
+        public GestureAction Action { get; }
+        public string Label => ActionShortcuts.Label(Action);
+        public bool Enabled { get => _enabled; set { _enabled = value; PropertyChanged?.Invoke(this, new(nameof(Enabled))); } }
+        public ModifierChoice SelectedModifier { get; set; }
+        public KeyChoice SelectedKey { get; set; }
+        public IEnumerable<ModifierChoice> ModifierOptions => ModifierChoices;
+        public IEnumerable<KeyChoice> KeyOptions => KeyChoices;
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public ActionShortcutRow(ActionShortcut entry)
+        {
+            Action = entry.Action; _enabled = entry.Enabled;
+            SelectedModifier = ModifierChoices.First(option => option.Value == entry.Binding.Modifiers);
+            SelectedKey = KeyChoices.First(option => option.Value == entry.Binding.Key);
+        }
+        public ActionShortcut ToSetting() => new(Action, new(SelectedModifier.Value, SelectedKey.Value), Enabled);
+    }
     private static readonly ModifierChoice[] ModifierChoices = [new(ShortcutModifiers.Control | ShortcutModifiers.Alt, "Ctrl + Alt"), new(ShortcutModifiers.Control | ShortcutModifiers.Shift, "Ctrl + Shift"), new(ShortcutModifiers.Alt | ShortcutModifiers.Shift, "Alt + Shift"), new(ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Shift, "Ctrl + Alt + Shift"), new(ShortcutModifiers.Control, "Ctrl"), new(ShortcutModifiers.Alt, "Alt")];
     private static readonly KeyChoice[] KeyChoices = Enumerable.Range(0x41, 26).Concat(Enumerable.Range(0x30, 10)).Concat(Enumerable.Range(0x70, 24)).Select(v => new KeyChoice(v, new ShortcutBinding(ShortcutModifiers.Control, v).KeyLabel)).ToArray();
     private static GestureChoice[] GestureChoices => [new(GestureAction.None, L.T("操作しない（Windowsへも渡さない）")), new(GestureAction.NextApp, L.T("次のアプリ（⌘Tab）")), new(GestureAction.PreviousApp, L.T("前のアプリ（⇧⌘Tab）")), new(GestureAction.Home, L.T("ホーム（⌘H、対応するiPadOS）")), new(GestureAction.Search, L.T("検索（⌘Space）")), new(GestureAction.ZoomIn, L.T("拡大（⇧⌘=、対応アプリ）")), new(GestureAction.ZoomOut, L.T("縮小（⌘−、対応アプリ）"))];
@@ -118,6 +137,7 @@ public partial class MainWindow : Window
         FastPointerCheck.IsChecked = s.StabilizeFastPointer; NativeTouchpadCheck.IsChecked = s.NativeTouchpad;
         TouchpadCheck.IsEnabled = !s.NativeTouchpad;
         LoadShortcutControls(s.ActivateShortcut, s.ReturnShortcut, s.HomeShortcut, s.SearchShortcut, s.NextAppShortcut);
+        AdditionalShortcutsList.ItemsSource = s.AdditionalShortcuts.Select(entry => new ActionShortcutRow(entry)).ToArray();
         var gestureChoices = GestureChoices;
         foreach (var pair in new[] { (SwipeLeftCombo, s.SwipeLeft), (SwipeRightCombo, s.SwipeRight), (SwipeUpCombo, s.SwipeUp), (SwipeDownCombo, s.SwipeDown) })
         { pair.Item1.ItemsSource = gestureChoices; pair.Item1.SelectedItem = gestureChoices.First(g => g.Value == pair.Item2); }
@@ -284,14 +304,19 @@ public partial class MainWindow : Window
         catch (Exception ex) { Controller.NotifyError(ex); }
     }
     private void DefaultShortcuts(object sender, RoutedEventArgs e)
-    { LoadShortcutControls(ShortcutBinding.DefaultActivate, ShortcutBinding.DefaultReturn, ShortcutBinding.DefaultHome, ShortcutBinding.DefaultSearch, ShortcutBinding.DefaultNextApp); ShortcutStatusLabel.Text = L.T("初期値を入力しました。「適用」で保存します。"); }
+    {
+        LoadShortcutControls(ShortcutBinding.DefaultActivate, ShortcutBinding.DefaultReturn, ShortcutBinding.DefaultHome, ShortcutBinding.DefaultSearch, ShortcutBinding.DefaultNextApp);
+        AdditionalShortcutsList.ItemsSource = ActionShortcuts.Defaults.Select(entry => new ActionShortcutRow(entry)).ToArray();
+        ShortcutStatusLabel.Text = L.T("初期値を入力しました。「適用」で保存します。");
+    }
     private static ShortcutBinding ReadShortcut(ComboBox modifiers, ComboBox key)
     {
         if (modifiers.SelectedItem is not ModifierChoice selectedModifiers || key.SelectedItem is not KeyChoice selectedKey) throw new ArgumentException(L.T("修飾キーとキーを選択してください。"));
         return new(selectedModifiers.Value, selectedKey.Value);
     }
     private Task SaveShortcutControlsAsync() => Controller.ApplyShortcutsAsync(ReadShortcut(ActivateModsCombo, ActivateKeyCombo), ReadShortcut(ReturnModsCombo, ReturnKeyCombo),
-        ReadShortcut(HomeModsCombo, HomeKeyCombo), ReadShortcut(SearchModsCombo, SearchKeyCombo), ReadShortcut(NextAppModsCombo, NextAppKeyCombo));
+        ReadShortcut(HomeModsCombo, HomeKeyCombo), ReadShortcut(SearchModsCombo, SearchKeyCombo), ReadShortcut(NextAppModsCombo, NextAppKeyCombo),
+        AdditionalShortcutsList.Items.Cast<ActionShortcutRow>().Select(row => row.ToSetting()).ToArray());
     private async void ApplyShortcuts(object sender, RoutedEventArgs e)
     {
         if (!ApplyShortcutsButton.IsEnabled) return;
@@ -419,9 +444,9 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.5.1", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.00", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Reports.CoalescedMotion,
-                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.NativeContactFrames, Controller.MaximumNativeContacts, Controller.MaximumValidNativeContacts,
+                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.EdgeHandoff, Controller.NativeContactFrames, Controller.MaximumNativeContacts, Controller.MaximumValidNativeContacts,
                 NativeContactApi = NativeInput.ProbeNativeContacts(), Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }
@@ -463,6 +488,11 @@ public partial class MainWindow : Window
                 if (!rejected || new SettingsStore(_dataDirectory).Load().NextAppShortcut.Key != 0x7B)
                     throw new InvalidOperationException("Duplicate shortcuts were not rejected atomically.");
                 DefaultShortcuts(this, new RoutedEventArgs()); await SaveShortcutControlsAsync();
+                var extra = AdditionalShortcutsList.Items.Cast<ActionShortcutRow>().First(row => row.Action == GestureAction.Screenshot);
+                extra.SelectedKey = KeyChoices.First(key => key.Value == 0x78); await SaveShortcutControlsAsync();
+                if (new SettingsStore(_dataDirectory).Load().AdditionalShortcuts.First(entry => entry.Action == GestureAction.Screenshot).Binding.Key != 0x78)
+                    throw new InvalidOperationException("Additional shortcut edits were not saved.");
+                DefaultShortcuts(this, new RoutedEventArgs()); await SaveShortcutControlsAsync();
                 IPadShortcutsCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
                 if (new SettingsStore(_dataDirectory).Load().IPadShortcutsEnabled) throw new InvalidOperationException("Action shortcut enable setting failed.");
                 IPadShortcutsCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
@@ -483,8 +513,10 @@ public partial class MainWindow : Window
                     throw new InvalidOperationException("Touchpad sensitivity reset failed: " + language);
                 PageScroll.ScrollToVerticalOffset(280); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Capture(Path.Combine(output, $"{language}-3-scroll-light.png"));
-                SelectPage(2); PageScroll.ScrollToEnd(); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                SelectPage(2); ScrollToControl(IPadShortcutsCheck); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                 Capture(Path.Combine(output, $"{language}-3-shortcuts-light.png"));
+                ScrollToControl(AdditionalShortcutsHeading); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Capture(Path.Combine(output, $"{language}-3-additional-light.png"));
                 Controller.Save(Controller.Settings with { Theme = "Dark" }); ApplyTheme(); SelectPage(0); RefreshView();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); Capture(Path.Combine(output, $"{language}-1-dark.png"));
                 var saved = new SettingsStore(_dataDirectory).Load();
@@ -496,7 +528,8 @@ public partial class MainWindow : Window
             var restored = new SettingsStore(_dataDirectory).Load();
             var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
             var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 27, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 30, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+                AdditionalShortcutRoundTrip = restored.AdditionalShortcuts.SequenceEqual(ActionShortcuts.Defaults),
                 IPadShortcutRoundTrip = restored.HomeShortcut == ShortcutBinding.DefaultHome && restored.SearchShortcut == ShortcutBinding.DefaultSearch && restored.NextAppShortcut == ShortcutBinding.DefaultNextApp && restored.IPadShortcutsEnabled,
                 DuplicateShortcutsRejected = true, EdgeSwitchRoundTrip = restored.EdgeDwellMs == 300 && !restored.AutoSwitch,
                 NativeModeRoundTrip = !restored.NativeTouchpad, FastPointerRoundTrip = restored.StabilizeFastPointer, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
@@ -510,5 +543,10 @@ public partial class MainWindow : Window
         var bitmap = new RenderTargetBitmap((int)Math.Ceiling(surface.ActualWidth), (int)Math.Ceiling(surface.ActualHeight), 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(surface); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(path); encoder.Save(stream);
+    }
+    private void ScrollToControl(FrameworkElement control)
+    {
+        UpdateLayout();
+        PageScroll.ScrollToVerticalOffset(PageScroll.VerticalOffset + control.TransformToAncestor(PageScroll).Transform(new Point()).Y);
     }
 }

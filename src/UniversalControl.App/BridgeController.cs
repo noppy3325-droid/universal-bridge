@@ -22,6 +22,16 @@ public sealed class BridgeController : IAsyncDisposable
     public string MouseMode => !_nativeStarted && Settings.RawMouse ? L.T("相対入力（HID公開後に開始）") : _input.MouseMode;
     public bool PreciseMotionTiming => _input.PreciseMotionTiming;
     public int MouseReportIntervalMs => _input.ReportIntervalMs;
+    public EdgeHandoffStatus EdgeHandoff => _input.EdgeStatus;
+    private string EdgeFailureText => _input.EdgeStatus.LastCancellation switch
+    {
+        EdgeCancellation.PointerLeft => L.T("画面端から十分離れたため切り替えを取り消しました。端へ移動し直してください。"),
+        EdgeCancellation.SettingsChanged => L.T("配置または設定が変わったため切り替えを取り消しました。"),
+        EdgeCancellation.NotReady => L.T("接続または入力取得の準備が変わりました。準備完了後に端へ移動し直してください。"),
+        EdgeCancellation.InputHeld => L.T("キーまたはマウス操作が入ったため端の切り替えを取り消しました。"),
+        EdgeCancellation.Expired => L.T("画面端の切り替えがタイムアウトしました。接続を確認して再試行してください。"),
+        _ => L.T("画面端の位置を確認できません。通常のデスクトップで再試行してください。")
+    };
     public long NativeContactFrames => _input.NativeContactFrames;
     public int MaximumNativeContacts => _input.MaximumNativeContacts;
     public int MaximumValidNativeContacts => _input.MaximumValidNativeContacts;
@@ -61,7 +71,7 @@ public sealed class BridgeController : IAsyncDisposable
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.EdgeActivationAllowed = CanActivateAtEdge;
         _input.ActivationRequested += async fromEdge => { try { await ActivateRemoteAsync(fromEdge); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.5.1を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 1.00を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }
@@ -107,7 +117,7 @@ public sealed class BridgeController : IAsyncDisposable
     public async Task ActivateRemoteAsync(bool fromEdge = false)
     {
         if (_disposed || SmokeMode || Router.IsRemote) return;
-        if (fromEdge && !_input.EdgeActivationCurrent) return;
+        if (fromEdge && !_input.EdgeActivationCurrent) { SwitchFailed("Edge" + _input.EdgeStatus.LastCancellation, EdgeFailureText); return; }
         var generation = Router.Generation;
         if (Settings.CaptureTouchpad && !_input.TouchpadAvailable)
         { SwitchFailed(L.T("ジェスチャー取得未対応"), L.T("このWindowsではジェスチャー取得を開始できません。入力設定で取得をオフにするとマウス・キーボードのみ切り替えられます。")); return; }
@@ -123,7 +133,7 @@ public sealed class BridgeController : IAsyncDisposable
         var deadline = Environment.TickCount64 + 2000;
         while (true)
         {
-            if (fromEdge && (!_input.EdgeActivationCurrent || !NativeInput.PhysicalKeyboardIdle())) return;
+            if (fromEdge && !_input.EdgeActivationCurrent) { SwitchFailed("Edge" + _input.EdgeStatus.LastCancellation, EdgeFailureText); return; }
             _input.ReconcilePhysical();
             if ((NativeInput.PhysicalKeyboardIdle() && Router.PhysicalIdle) || Environment.TickCount64 >= deadline) break;
             await Task.Delay(25);
@@ -132,7 +142,7 @@ public sealed class BridgeController : IAsyncDisposable
         bool CaptureAvailable()
         {
             captureFailure = _disposed || SelectedPeerId != target || Router.Generation != generation ? L.T("切り替え操作が取り消されました。端末を選び直してください。")
-                : fromEdge && !_input.EdgeActivationCurrent ? L.T("画面端から離れたため切り替えを取り消しました。")
+                : fromEdge && !_input.EdgeActivationCurrent ? EdgeFailureText
                 : !_input.Available ? L.T("入力監視が応答していません。アプリを終了して再起動してください。")
                 : !NativeInput.OnDefaultDesktop() ? L.T("通常のWindowsデスクトップへ戻ってから再試行してください。")
                 : !NativeInput.PhysicalKeyboardIdle() ? L.T("キーまたはマウスボタンをすべて離してから再試行してください。") : null;
@@ -189,14 +199,16 @@ public sealed class BridgeController : IAsyncDisposable
         _store.Save(normalized); Settings = normalized;
         Router.Configure(Settings); _input.Configure(Settings, Displays); Changed?.Invoke();
     }
-    public async Task ApplyShortcutsAsync(ShortcutBinding activate, ShortcutBinding back, ShortcutBinding? home = null, ShortcutBinding? search = null, ShortcutBinding? nextApp = null)
+    public async Task ApplyShortcutsAsync(ShortcutBinding activate, ShortcutBinding back, ShortcutBinding? home = null, ShortcutBinding? search = null, ShortcutBinding? nextApp = null, IReadOnlyList<ActionShortcut>? additional = null)
     {
         home ??= Settings.HomeShortcut; search ??= Settings.SearchShortcut; nextApp ??= Settings.NextAppShortcut;
         ShortcutBinding.ValidateAll(activate, back, home, search, nextApp);
+        additional ??= Settings.AdditionalShortcuts;
+        ActionShortcuts.Validate(additional, activate, back, home, search, nextApp);
         Router.GoLocal(L.T("ショートカットの設定を変更するためWindowsへ戻しました"));
         var previous = Settings;
         if (_nativeStarted && await _input.UpdateShortcutsAsync(activate, back) is { } conflict) throw new InvalidOperationException(conflict);
-        var updated = Settings with { ActivateShortcut = activate, ReturnShortcut = back, HomeShortcut = home, SearchShortcut = search, NextAppShortcut = nextApp };
+        var updated = Settings with { ActivateShortcut = activate, ReturnShortcut = back, HomeShortcut = home, SearchShortcut = search, NextAppShortcut = nextApp, AdditionalShortcuts = additional.ToArray() };
         try { _store.Save(updated); }
         catch { if (_nativeStarted) await _input.UpdateShortcutsAsync(previous.ActivateShortcut, previous.ReturnShortcut); throw; }
         Settings = updated; Router.Configure(Settings); _input.Configure(Settings, Displays);

@@ -11,6 +11,8 @@ public sealed record DisplayInfo(string Id, int Left, int Top, int Width, int He
 
 public sealed class EdgeDetector
 {
+    public const int ArrivalTolerance = 3;
+    public const int RetentionTolerance = 12;
     private long? _enteredAt;
     private bool _mustLeave;
     public bool Pending => _enteredAt.HasValue;
@@ -21,24 +23,24 @@ public sealed class EdgeDetector
         => Update(point, source, all, settings, now, physicalMotion: false);
     private bool Update(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings, long now, bool physicalMotion)
     {
-        if (!IsAtPortal(point, source, all, settings))
+        if (!IsAtPortal(point, source, all, settings, ArrivalTolerance))
         { _enteredAt = null; _mustLeave = false; return false; }
         if (_mustLeave || (_enteredAt is null && !physicalMotion)) return false;
         _enteredAt ??= now;
         if (now - _enteredAt.Value < settings.EdgeDwellMs) return false;
         Reset(); return true;
     }
-    public static bool IsAtPortal(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings)
+    public static bool IsAtPortal(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings, int tolerance = 0)
     {
         if (source.Width <= 0 || source.Height <= 0) return false;
         var along = settings.Edge is ScreenEdge.Left or ScreenEdge.Right
             ? (point.Y - source.Top) / (double)source.Height : (point.X - source.Left) / (double)source.Width;
         var atEdge = source.Contains(point.X, point.Y) && along >= settings.PortalStart && along <= settings.PortalEnd && settings.Edge switch
         {
-            ScreenEdge.Right => point.X >= source.Right - 1,
-            ScreenEdge.Left => point.X <= source.Left,
-            ScreenEdge.Top => point.Y <= source.Top,
-            ScreenEdge.Bottom => point.Y >= source.Bottom - 1, _ => false
+            ScreenEdge.Right => point.X >= source.Right - 1 - tolerance,
+            ScreenEdge.Left => point.X <= source.Left + tolerance,
+            ScreenEdge.Top => point.Y <= source.Top + tolerance,
+            ScreenEdge.Bottom => point.Y >= source.Bottom - 1 - tolerance, _ => false
         };
         var beyond = settings.Edge switch
         {

@@ -1,28 +1,31 @@
-# Universal Bridge 0.5.1 — Preview
+# Universal Bridge v1.00
 
 ## English
 
-- Adds dedicated iPad-only action shortcuts: **Ctrl+Alt+H Home (⌘H compatibility), Ctrl+Alt+S Search, Ctrl+Alt+N Next app**. Edit all five bindings in Input settings and apply; duplicates are rejected. Holding a trigger runs it once and keeps local Ctrl/Alt out of the command. Actions can be disabled and remain ordinary keys on Windows.
-- Finishes edge switching: arriving at the edge starts the wait and a timer completes it even when the mouse stops. Display layout exposes the 150–1500ms delay (default 300ms), enable checkbox and readiness reason. Drag the iPad to any of four sides. The preview marks only segments not shared with another Windows monitor.
-- Cancels pending edge activation when the pointer leaves, a key/button is pressed, settings change or readiness is lost. Reconnection or remaining at an edge does not automatically recapture input.
-- 192 automated tests and three-language GUI verification. New actions and physical edge switching still need iPad hardware confirmation. Home uses ⌘H rather than Apple's Globe key; compatibility depends on iPadOS/settings. The iPad cursor resumes at its previous position, with no absolute coordinate warp.
+- Regular release. Display/tag: v1.00; executable/package version: 1.0.0.
+- Fixes overly strict edge handoff validation. Physical cursor position is sampled after mouse processing; arrival and handoff use separate tolerance bands. Small inward jitter no longer cancels connection checks. Deliberate departure, input, settings/readiness changes and expiry still cancel permanently. Diagnostics distinguish cancellation reasons without coordinates.
+- Preserves fractional XY errors after fast-motion stabilization, fixing the minor axis disappearing during shallow diagonals. A synthetic 1000-sample trace improved from 0 to 249 minor-axis counts against a 248.69-count reference, with cumulative error below 0.5 count and no motion after stopping. Direct mode remains available.
+- Adds seven configurable actions: Previous app (Ctrl+Alt+P), Screenshot (C), Undo (Z), Redo (Y), Zoom in (U), Zoom out (D), and Close window (W, disabled by default), all with Ctrl+Alt. They join Home, Search and Next app. Apply to save bindings and per-action enable flags.
+- 216 automated tests; three-language GUI checks. Standard HID format and existing settings are retained. Actual iPad cursor feel, wireless latency and parity with Apple's controls remain unmeasured. Home uses compatibility ⌘H; action support depends on iPadOS/apps.
 
-Exit the old app, extract UniversalBridge-0.5.1-win-x64.zip and run UniversalControl.exe. Existing settings and the HID report format are retained. Enable edge switching in Display layout after connecting/selecting iPad. Windows 11 x64 / BLE Peripheral; unsigned, self-contained preview.
+Exit the old app, extract UniversalBridge-1.0.0-win-x64.zip and run UniversalControl.exe. Enable edge switching in Display layout after starting HID and selecting iPad. The iPad cursor resumes at its previous position. Windows 11 x64 / BLE Peripheral required; unsigned, self-contained release.
 
 ## 日本語
 
-- iPad操作中だけの専用キーを追加：**Ctrl+Alt+Hでホーム（⌘H互換）、Ctrl+Alt+Sで検索、Ctrl+Alt+Nで次のアプリ**。「入力設定」で切り替え・復帰を含む5組を編集・適用でき、重複を拒否します。長押しは1回、Ctrl／Altを変換先へ混ぜず解放します。専用キーはオフにでき、Windowsでは通常キーとして使えます。
-- 画面端に到着後、手を止めてもタイマーで待機を完了して切り替えます。「ディスプレイ配置」でオン／オフ、150～1500msの待ち時間（初期値300ms）、準備状況を表示。iPadの図は上下左右へ配置でき、隣接Windows画面と重ならない有効範囲だけを青く描きます。
-- 待機中の端からの離脱、キー／ボタン入力、設定変更、準備状態の消失で取り消します。再接続や同じ端での静止だけで再捕捉しません。
-- 自動テスト192件、3言語GUI検証。新しい操作キーと物理的なiPad切り替えは実機確認が残ります。ホームはApple固有Globeではなく⌘Hの互換経路で、iPadOS／設定に依存します。iPadカーソルは前回位置から操作し、実座標へのワープはしません。
+- 通常リリースです。表示・タグはv1.00、実行ファイル・配布物の内部バージョンは1.0.0です。
+- 画面端の厳しすぎる位置確認を修正。マウス処理後の物理位置を読み、到着帯と接続確認中の許容範囲を分けました。小さな内側の揺れで取り消さず、明確な離脱・入力・設定／準備変更・期限切れは取り消します。診断は座標なしで理由を区別します。
+- 高速移動の抑制後もXYの小数誤差を保持し、浅い斜め移動で短い軸が消える問題を修正。人工入力1000回で旧0→249カウント、基準248.69、累積誤差0.5カウント未満、停止後の移動なしを確認。線形モードも使えます。
+- ホーム・検索・次のアプリに、前のアプリ（Ctrl+Alt+P）、スクリーンショット（C）、取り消す（Z）、やり直す（Y）、拡大（U）、縮小（D）、閉じる（W、初期値オフ）を追加。すべてCtrl+Altとの組み合わせで、GUIからキーと有効化を変更・適用できます。
+- 自動テスト216件、3言語GUI確認。既存設定と標準HID形式を維持します。iPadの実操作感・無線遅延・純正との同等性は未測定です。ホームは⌘H互換、各操作はiPadOS／アプリに依存します。
 
-旧版を完全終了しUniversalBridge-0.5.1-win-x64.zipを展開してexeを起動してください。既存設定とHID形式は引き継ぎます。接続・iPad選択後、配置画面で自動切り替えを有効にします。Windows 11 x64／BLE Peripheral対応、ランタイム同梱・署名なしのプレビューです。
+旧版を完全終了し、UniversalBridge-1.0.0-win-x64.zipを展開してexeを起動してください。HID公開とiPad選択後、「ディスプレイ配置」で画面端切り替えを有効にします。iPadカーソルは前回位置から操作します。Windows 11 x64／BLE Peripheral対応、ランタイム同梱・署名なしの通常リリースです。
 
 ## 简体中文
 
-- 新增仅控制iPad时生效的操作键：**Ctrl+Alt+H主页（⌘H兼容）、Ctrl+Alt+S搜索、Ctrl+Alt+N下一个应用**。可在输入设置一起编辑五种快捷键，拒绝重复组合。长按仅执行一次，不将本地Ctrl／Alt混入目标命令。可独立关闭，控制Windows时保持普通按键。
-- 完成边缘切换：到达边缘后即使停止移动，也会由定时器完成等待。显示器布局提供开关、150～1500ms等待时间（默认300ms）及就绪状态。iPad图可拖到上下左右，仅将不与其他Windows显示器相邻的有效区域画为蓝线。
-- 离开边缘、按键／鼠标按钮、更改设置或失去就绪状态会取消待执行切换。重连或静止停留在边缘不会自动重新捕获。
-- 192项自动测试及三语GUI验证。新操作及物理iPad切换仍需实机确认。主页使用⌘H兼容通道，不模拟Apple的Globe键，依赖iPadOS及设置。iPad指针从原有位置继续操作，不执行绝对坐标跳转。
+- 正式发布。显示名及标签为v1.00，程序和压缩包内部版本为1.0.0。
+- 修复边缘切换位置检查过于严格的问题。鼠标更新后读取物理位置，分别设置到达及交接容差，小幅向内晃动不再取消连接确认。明确离开、输入、设置／就绪变化及超时仍会永久取消。诊断区分原因，不记录坐标。
+- 快速移动抑制后保留XY小数误差，修复浅斜向移动短轴消失。1000次人工输入由0改善为249计数，数学基准248.69，累计误差小于0.5计数，停止后无额外移动。仍可使用线性模式。
+- 新增七项可配置操作：上一个应用（Ctrl+Alt+P）、截屏（C）、撤销（Z）、重做（Y）、放大（U）、缩小（D）及关闭窗口（W，默认禁用），均与Ctrl+Alt组合。与主页、搜索、下一个应用一起在GUI修改并应用保存。
+- 216项自动测试及三语GUI验证。保留原设置及标准HID格式，尚未测量iPad实际操作感、无线延迟或与Apple原生设备的同等性。主页使用⌘H兼容方式，各操作依赖iPadOS／应用。
 
-退出旧版，解压UniversalBridge-0.5.1-win-x64.zip并运行exe，保留原设置及HID格式。连接并选择iPad后，在布局页面启用自动切换。需要Windows 11 x64及BLE外围支持，包含运行时的未签名预览版。
+完全退出旧版，解压UniversalBridge-1.0.0-win-x64.zip并运行exe。启动HID并选择iPad后，在显示器布局启用边缘切换。iPad指针从原位置继续操作。需要Windows 11 x64及BLE外围支持，包含运行时的未签名正式版本。

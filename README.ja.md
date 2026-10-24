@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**プレビュー v0.5.1。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v1.00（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -20,7 +20,7 @@ iPad用アプリ、追加機器、使用中のインターネットは不要で�
 
 - **WindowsとiPadを机に並べている方：** PCで作業しながら、同じキーボードとマウスをiPadへ切り替えて検索やメモに。
 - **ノートPCを使い、机を広く使いたい方：** 対応PCなら、2組目のキーボードやVMを用意せずに、手元の入力機器を共有できます。
-- **プレビューを試す方・開発に参加する方：** 日本語・英語・簡体字GUIを備えた、C# / WPFによるBLE HIDの実装を公開しています。
+- **利用・開発に参加する方：** 日本語・英語・簡体字GUIを備えた、C# / WPFによるBLE HIDの実装を公開しています。
 
 Appleの[ユニバーサルコントロールにはMacが必要](https://support.apple.com/en-us/102459)です。Universal BridgeはWindowsからiPadへの入力共有を扱い、画面ミラーリング・クリップボード共有・ファイル転送は提供しません。接点転送は下記の実験的モードです。
 
@@ -28,14 +28,14 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 必要なのは **Windows 11 x64・iPad・BLE Peripheral対応のBluetoothアダプターとドライバー** です。Bluetooth搭載だけでは対応を判断できません。アプリで対応状況を確認し、非対応なら理由を表示します。ジェスチャー取得には、Windows 11 24H2以降の対応する実験的APIも必要です。取得をオフにしてキーボードとマウスのみ共有することもできます。
 
-実機の確認範囲が限られた **署名なしのプレビュー版** です。非対応の場合も、追加購入は不要です。任意の[動作環境レポート](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)で、動く構成・動かない構成を共有できます。
+実機の確認範囲が限られた **署名なしの通常リリース** です。非対応の場合も、追加購入は不要です。任意の[動作環境レポート](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)で、動く構成・動かない構成を共有できます。
 
 ## ダウンロード
 
-**[Releases — v0.5.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1)** から取得します。
+**[Releases — v1.00](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00)** から取得します。
 
-- **[UniversalBridge-0.5.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.1/UniversalBridge-0.5.1-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-0.5.1-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- **[UniversalBridge-1.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.00/UniversalBridge-1.0.0-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -53,6 +53,24 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 | 常駐と診断 | 専用アプリ／トレイアイコン、ライト／ダーク、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
 
 **既定の互換モード**は標準HIDのスクロール・対応キーへ変換します。接点転送は下記の試験版を明示的に有効化します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
+
+## v1.00：画面端・精度・追加操作
+
+通常リリースです。画面端の処理を、マウス通知の後に確定した物理カーソル位置を確認する方式へ変更しました。端の到着は約4pxの帯、接続確認中は端から12pxまでの小さな揺れを許容します。端を離れた場合・キーやボタン操作・接続準備の消失・設定変更は取り消し、5秒で期限切れになります。拒否時の診断は原因別とし、座標や入力内容は記録しません。自動切り替えは「ディスプレイ配置」で有効にしてください。
+
+急な移動の抑制を使う場合も、変換後の小数をXYそれぞれ持ち越します。これにより、浅い斜め方向の短い軸が丸めで消える問題を修正しました。人工入力1000回では旧処理の短い軸0カウントに対して249カウント、計算上の基準248.69カウント、累積誤差0.5カウント未満でした。停止後に抑えた距離を再生しません。抑制オフはRaw Inputに感度だけを掛ける線形方式です。**iPadの実際の無線遅延・カーソル加速・純正と同等の操作感は測定していません。**
+
+ホーム・検索・次のアプリに、次の7操作を追加しました。各操作をオン／オフにし、キーを変更して「ショートカットを適用」で保存できます。Windows操作中は通常のキーです。
+
+| 追加操作 | 初期値 | iPadへの送信 |
+|---|---|---|
+| 前のアプリ | Ctrl+Alt+P | ⇧⌘Tab |
+| スクリーンショット | Ctrl+Alt+C | ⇧⌘3 |
+| 取り消す／やり直す | Ctrl+Alt+Z／Y | ⌘Z／⇧⌘Z |
+| 拡大／縮小 | Ctrl+Alt+U／D | ⇧⌘=／⌘− |
+| ウィンドウを閉じる | Ctrl+Alt+W（初期値オフ） | ⌘W |
+
+拡大・縮小や編集操作はアプリに依存します。ホームは引き続き⌘H互換で、Globeキーの生成ではありません。実機の最終受け入れ項目は[チェック手順](docs/MANUAL_TESTS.md)へ記載しています。
 
 ## 0.5.0：iPad操作キーと画面端切り替え
 
@@ -127,9 +145,9 @@ pwsh -File scripts/Package.ps1
 
 SDKとパッケージは `.tools/` に保存。Windows SDK projectionは `10.0.26100.87` 固定で、実験的APIは分離・対応確認します。ドライバー、制限回避レジストリ、VM、OSのセキュリティ変更は導入しません。
 
-**自動テスト192件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
+**自動テスト216件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
 
-[開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグからプレビューReleaseを生成します。
+[開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグから通常Releaseを生成します。
 
 ## ライセンスと謝辞
 
