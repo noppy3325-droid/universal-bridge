@@ -30,6 +30,9 @@ public sealed class NativeInput : IDisposable
     private volatile bool _rawFallback;
     private nuint _timerId;
     private Point _anchor, _returnPoint;
+    private sealed record EdgeRequest(AppSettings Settings, IReadOnlyList<DisplayInfo> Displays, DisplayInfo Source, int Revision);
+    private volatile EdgeRequest? _edgeRequest;
+    private int _edgeRevision, _observedEdgeRevision = -1, _activationPending;
     private AppSettings _settings = new();
     private IReadOnlyList<DisplayInfo> _displays = [];
     public bool Available => _running && ReturnHotkeyRegistered && _keyboardHook != 0 && _mouseHook != 0 && Environment.TickCount64 - Interlocked.Read(ref _lastPulse) < 1500;
@@ -64,7 +67,11 @@ public sealed class NativeInput : IDisposable
     public long RawMousePackets => _rawMouse?.Packets ?? 0;
     private bool UsesRawMouse => _settings.RawMouse && RawMouseAvailable && !_rawFallback;
     public string MouseMode => UsesRawMouse ? L.T("相対入力（Windowsの加速なし）") : _settings.RawMouse ? L.T("互換入力（相対入力を使用できないため）") : L.T("互換入力（Windowsのカーソル座標）");
-    public event Action? ActivationRequested;
+    public event Func<bool, Task>? ActivationRequested;
+    public Func<bool>? EdgeActivationAllowed { get; set; }
+    public bool EdgeActivationCurrent => _edgeRequest is { } request && request.Revision == Volatile.Read(ref _edgeRevision) &&
+        !_router.IsRemote && _settings.AutoSwitch && EdgeActivationAllowed?.Invoke() == true && GetCursorPos(out var point) &&
+        EdgeDetector.IsAtPortal(new(point.X, point.Y), request.Source, request.Displays, request.Settings);
     public event Action<string>? Faulted;
 
     public NativeInput(InputRouter router)
@@ -73,7 +80,7 @@ public sealed class NativeInput : IDisposable
         _router.Changed += RouterChanged;
     }
     public void Configure(AppSettings settings, IReadOnlyList<DisplayInfo> displays)
-    { if (_settings.RawMouse != settings.RawMouse) _rawFallback = false; _settings = settings; _displays = displays; }
+    { if (_settings.RawMouse != settings.RawMouse) _rawFallback = false; _settings = settings; _displays = displays; Interlocked.Increment(ref _edgeRevision); }
     public Task<string?> UpdateShortcutsAsync(ShortcutBinding activate, ShortcutBinding back) => InvokeAsync(() => RebindShortcuts(activate, back));
     public async Task<bool> ConfirmModeAsync()
     { await InvokeAsync(() => { SynchronizeMode(); return null; }); return _router.IsRemote && _nativeRemote; }
@@ -213,6 +220,7 @@ public sealed class NativeInput : IDisposable
                 if (message.Message == TimerMessage)
                 {
                     SynchronizeMode(); var now = Environment.TickCount64;
+                    CheckEdge(physicalMotion: false);
                     if (_motionTimer is null && now >= _lastFlush)
                     {
                         _router.FlushMotion();
@@ -275,7 +283,33 @@ public sealed class NativeInput : IDisposable
             if (PeekMessage(out message, 0, 0, 0, 1)) return message.Message == Quit ? 0 : 1;
         }
     }
-    private void RequestActivation() => ThreadPool.QueueUserWorkItem(_ => ActivationRequested?.Invoke());
+    private void RequestActivation(EdgeRequest? request = null)
+    {
+        if (Interlocked.CompareExchange(ref _activationPending, 1, 0) != 0) return;
+        _edgeRequest = request;
+        _ = Task.Run(async () =>
+        {
+            try { if (ActivationRequested is { } activate) await activate(request is not null); }
+            catch (Exception ex) { NotifyFault(ex.Message); }
+            finally { _edgeRequest = null; Volatile.Write(ref _activationPending, 0); }
+        });
+    }
+    private void CheckEdge(bool physicalMotion, PixelPoint? physicalPoint = null)
+    {
+        var revision = Volatile.Read(ref _edgeRevision);
+        if (_observedEdgeRevision != revision) { _edge.Reset(); _observedEdgeRevision = revision; }
+        if (_router.IsRemote || !_settings.AutoSwitch || !_router.PhysicalIdle || EdgeActivationAllowed?.Invoke() != true || SelectedDisplay is not { } display)
+        { _edge.Reset(); return; }
+        PixelPoint point;
+        if (physicalPoint is { } physical) point = physical;
+        else if (GetCursorPos(out var cursor)) point = new(cursor.X, cursor.Y);
+        else { _edge.Reset(); return; }
+        var settings = _settings; var displays = _displays;
+        if (_edgeRequest is { } request && !EdgeDetector.IsAtPortal(point, request.Source, request.Displays, request.Settings)) _edgeRequest = null;
+        var ready = physicalMotion ? _edge.Observe(point, display, displays, settings, Environment.TickCount64)
+            : _edge.Poll(point, display, displays, settings, Environment.TickCount64);
+        if (ready && PhysicalKeyboardIdle() && OnDefaultDesktop()) RequestActivation(new(settings, displays, display, revision));
+    }
     private void NotifyFault(string text)
     { _router.GoLocal(L.T("入力監視の異常によりWindowsへ戻しました")); ThreadPool.QueueUserWorkItem(_ => Faulted?.Invoke(text)); }
     private nint KeyboardHook(int code, nint wParam, nint lParam)
@@ -289,6 +323,7 @@ public sealed class NativeInput : IDisposable
                 if ((key.Flags & 0x10) == 0)
                 {
                     var down = wParam == 0x100 || wParam == 0x104;
+                    if (down && !_router.IsRemote) { _edge.Reset(); _edgeRequest = null; }
                     if (_router.Key((int)key.VirtualKey, key.ScanCode, (key.Flags & 1) != 0, down, Environment.TickCount64,
                         japaneseKeyboard: key.ScanCode == 0x29 && GetKeyboardType(0) == 7)) return 1;
                 }
@@ -315,7 +350,12 @@ public sealed class NativeInput : IDisposable
                     0x207 => (MouseButtons.Middle, true), 0x208 => (MouseButtons.Middle, false),
                     _ => (MouseButtons.None, false)
                 };
-                if (button != 0) return _router.Button(button, down) ? 1 : CallNextHookEx(0, code, wParam, lParam);
+                if (button != 0)
+                {
+                    if (!_router.IsRemote) { _edge.Reset(); _edgeRequest = null; }
+                    return _router.Button(button, down) ? 1 : CallNextHookEx(0, code, wParam, lParam);
+                }
+                if (!_router.IsRemote && message is 0x20A or 0x20E) { _edge.Reset(); _edgeRequest = null; }
                 if (_router.IsRemote)
                 {
                     if (message == 0x200)
@@ -346,8 +386,7 @@ public sealed class NativeInput : IDisposable
                     else if (message == 0x20E) _router.Scroll(0, unchecked((short)(mouse.Data >> 16)));
                     return 1;
                 }
-                if (message == 0x200 && _settings.AutoSwitch && _router.PhysicalIdle && SelectedDisplay is { } display &&
-                    _edge.Observe(new(mouse.Position.X, mouse.Position.Y), display, _displays, _settings, Environment.TickCount64)) RequestActivation();
+                if (message == 0x200) CheckEdge(physicalMotion: true, new(mouse.Position.X, mouse.Position.Y));
             }
             catch (Exception ex) { NotifyFault(ex.Message); }
         }

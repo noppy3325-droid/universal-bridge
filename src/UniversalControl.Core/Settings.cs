@@ -15,6 +15,10 @@ public sealed record AppSettings
     public bool NativeTouchpad { get; init; }
     public ShortcutBinding ActivateShortcut { get; init; } = ShortcutBinding.DefaultActivate;
     public ShortcutBinding ReturnShortcut { get; init; } = ShortcutBinding.DefaultReturn;
+    public ShortcutBinding HomeShortcut { get; init; } = ShortcutBinding.DefaultHome;
+    public ShortcutBinding SearchShortcut { get; init; } = ShortcutBinding.DefaultSearch;
+    public ShortcutBinding NextAppShortcut { get; init; } = ShortcutBinding.DefaultNextApp;
+    public bool IPadShortcutsEnabled { get; init; } = true;
     public GestureAction SwipeLeft { get; init; } = GestureAction.NextApp;
     public GestureAction SwipeRight { get; init; } = GestureAction.PreviousApp;
     public GestureAction SwipeUp { get; init; } = GestureAction.NextApp;
@@ -38,6 +42,10 @@ public sealed record AppSettings
     {
         var start = double.IsFinite(PortalStart) ? Math.Clamp(PortalStart, 0, .8) : 0;
         var validShortcuts = ActivateShortcut?.Valid == true && ReturnShortcut?.Valid == true && ActivateShortcut != ReturnShortcut;
+        var used = new HashSet<ShortcutBinding> { validShortcuts ? ActivateShortcut! : ShortcutBinding.DefaultActivate, validShortcuts ? ReturnShortcut! : ShortcutBinding.DefaultReturn };
+        var home = ShortcutBinding.Resolve(HomeShortcut, ShortcutBinding.DefaultHome, used);
+        var search = ShortcutBinding.Resolve(SearchShortcut, ShortcutBinding.DefaultSearch, used);
+        var nextApp = ShortcutBinding.Resolve(NextAppShortcut, ShortcutBinding.DefaultNextApp, used);
         return this with
         {
         SchemaVersion = 1, Theme = Theme == "Dark" ? "Dark" : "Light",
@@ -45,6 +53,7 @@ public sealed record AppSettings
         CaptureTouchpad = NativeTouchpad || CaptureTouchpad,
         ActivateShortcut = validShortcuts ? ActivateShortcut! : ShortcutBinding.DefaultActivate,
         ReturnShortcut = validShortcuts ? ReturnShortcut! : ShortcutBinding.DefaultReturn,
+        HomeShortcut = home, SearchShortcut = search, NextAppShortcut = nextApp,
         SwipeLeft = Enum.IsDefined(SwipeLeft) ? SwipeLeft : GestureAction.NextApp,
         SwipeRight = Enum.IsDefined(SwipeRight) ? SwipeRight : GestureAction.PreviousApp,
         SwipeUp = Enum.IsDefined(SwipeUp) ? SwipeUp : GestureAction.NextApp,

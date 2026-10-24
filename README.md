@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**Preview v0.4.0.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**Preview v0.5.0.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download the preview](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download the preview](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,10 +32,10 @@ This is an **unsigned preview** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v0.4.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0)**:
+Open **[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)**:
 
-- **[UniversalBridge-0.4.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.4.0/UniversalBridge-0.4.0-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-0.4.0-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-0.5.0-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -53,6 +53,24 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 | Desktop integration | Custom application/tray icon, light/dark theme, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
 
 **The default compatibility mode** generates scroll reports and supported keyboard shortcuts. Actual-contact relay requires the experimental opt-in mode below. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
+
+## 0.5.0: iPad action shortcuts and edge switching
+
+Dedicated actions work only while controlling iPad. Edit all five bindings together in **Input settings → Shortcuts**, then choose **Apply shortcuts**. Duplicate bindings are rejected. The three action chords remain ordinary keys while controlling Windows.
+
+| iPad action | Default | Sent keys |
+|---|---|---|
+| Home | **Ctrl+Alt+H** | ⌘H, on compatible iPadOS/settings |
+| Search | **Ctrl+Alt+S** | ⌘Space |
+| Next app | **Ctrl+Alt+N** | ⌘Tab |
+
+Holding a trigger runs the action once, without typing H/S/N. Release other character keys and mouse buttons first. The action shortcuts can be disabled independently. Home uses the compatibility ⌘H path; it does not emulate Apple's Globe key. **The new actions have not been verified on iPad hardware.** Apple's current iPadOS guidance uses Globe+H, so Home support depends on iPadOS and settings.
+
+**To switch at the edge:** start HID, select the connected iPad, then enable edge switching in **Display layout**. Select a Windows monitor and direction, or drag the iPad diagram above, below, left or right. Blue lines show the available portal. Move the cursor to that edge and wait for the configured delay: 300ms by default, adjustable from 150 to 1500ms. The wait completes even after mouse movement stops.
+
+Shared Windows-monitor boundaries are excluded; partial adjacency leaves the uncovered segment usable. Leaving the edge, pressing a key/button or changing settings cancels a pending activation. Remaining at the same edge cannot repeatedly reactivate it. The UI explains off, HID waiting, missing target and readiness states. Edge switching is off by default. **The iPad's actual pointer coordinates cannot be read, so control resumes at its previous position there.** Return to Windows with Ctrl+Alt+Q or Esc three times.
+
+[Settings screenshots — shortcuts](docs/images/shortcuts-en.png) · [Settings screenshots — layout](docs/images/layout-en.png)
 
 ## 0.4.0: fast movement and experimental native gestures
 
@@ -111,7 +129,7 @@ pwsh -File scripts/Package.ps1
 
 SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
 
-**173 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**192 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
 
 See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable preview releases.
 

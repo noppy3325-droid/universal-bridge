@@ -2,6 +2,12 @@
 
 調査日: 2026-10-17（Asia/Tokyo）。参照コードの実行結果と、本プロジェクトで測定した結果を区別します。
 
+## 2026-10-24：操作キーと画面端
+
+[Appleの外付けキーボード操作](https://support.apple.com/en-us/102393)を確認しました。現行資料は検索⌘Space、アプリ切り替え⌘Tab、ホームGlobe+Hを案内します。本アプリは検索と次のアプリを標準キーボードHIDで送り、ホームは既存の⌘H互換経路を使います。Apple固有のGlobeキーやAppleのVIDを偽装せず、ホームを全iPadOSで実機確認済みとはしません。
+
+画面端の旧実装はマウス移動通知の到着時にしか経過時間を判定せず、到着後に静止すると待ち時間を完了できませんでした。実移動による開始とタイマーでの継続を分け、接続待ち中の取り消し、隣接Windows画面の除外、GUIの有効範囲描画を同じ幾何判定へ揃えました。ローカル判定テストはiPadでの物理的な切り替えの代替ではありません。
+
 ## 2026-10-24：標準トラックパッド接点の試験実装
 
 [Apple Accessory Design Guidelines](https://developer.apple.com/accessories/Accessory-Design-Guidelines.pdf) の2026-09-21版、Trackpads（107～114ページ）を確認しました。iPadOS 14.5以降向けの標準HID Digitizer Touch Pad、2～5接点、Tip Switch／Confidence／Contact ID／XY、Surface Switch feature／Report Rate feature、指を離したフレームで前座標を保持する条件を参照しています。仕様のサンプルをそのままコピーせず、既存複合HIDへ入るcompact descriptorを作成しました。AppleのVIDを名乗らず、Magic Trackpadの私有プロトコルを実装しません。資料PDFは配布に含めません。

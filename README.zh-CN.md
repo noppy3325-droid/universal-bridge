@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**预览版 v0.4.0。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**预览版 v0.5.0。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,10 +32,10 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v0.4.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0)**：
+前往 **[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)**：
 
-- **[UniversalBridge-0.4.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.4.0/UniversalBridge-0.4.0-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-0.4.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-0.5.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -53,6 +53,24 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 | 桌面集成 | 专用应用／托盘图标、浅色／深色主题、可选登录启动、诊断和有限次数重连。 |
 
 **默认兼容模式**将手势转换为标准滚动报告和受支持的按键操作。真实触点转发需开启下述实验性模式，不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+
+## 0.5.0：iPad操作快捷键与边缘切换
+
+专用操作仅在控制iPad时生效。可在“输入设置 → 快捷键”中一起编辑五种组合，再点击“应用快捷键”保存；重复组合会被拒绝。控制Windows时，三种iPad操作组合仍作为普通按键使用。
+
+| iPad操作 | 默认组合 | 发送的按键 |
+|---|---|---|
+| 返回主页 | **Ctrl+Alt+H** | ⌘H，需兼容的iPadOS／设置 |
+| 搜索 | **Ctrl+Alt+S** | ⌘Space |
+| 下一个应用 | **Ctrl+Alt+N** | ⌘Tab |
+
+长按仅执行一次，不会输入H／S／N。请先松开其他字符键及鼠标按钮，也可独立关闭这些操作快捷键。主页使用兼容的⌘H通道，不模拟Apple的Globe键。**新操作尚未通过iPad实机验证。** Apple当前说明使用Globe+H，主页支持取决于iPadOS及设置。
+
+**使用边缘切换：** 启动HID并选择已连接的iPad，在“显示器布局”中启用自动切换。选择Windows显示器和方向，或将iPad图拖到上下左右，蓝线表示有效范围。将指针移到该边缘，等待设定时间即可将控制移到iPad：默认300ms，可调150～1500ms。到达后停止移动也能完成等待。
+
+Windows显示器之间的边界会被排除，部分相邻时仅使用未覆盖的区域。离开边缘、按键／鼠标按钮或更改设置会取消待执行的切换，停留在同一边缘不会反复触发。界面显示关闭、等待HID、未选择设备及就绪状态。此功能默认关闭。**无法读取iPad的实际指针坐标，切换后从iPad原有位置继续操作。** Ctrl+Alt+Q或连按Esc三次返回Windows。
+
+[设置画面 — shortcuts](docs/images/shortcuts-zh-Hans.png) · [设置画面 — layout](docs/images/layout-zh-Hans.png)
 
 ## 0.4.0：快速移动与实验性原生手势
 
@@ -109,7 +127,7 @@ pwsh -File scripts/Package.ps1
 
 SDK／包位于 `.tools/`。Windows SDK projection 固定为 `10.0.26100.87`，实验性 API 已隔离并检查。不会安装驱动、修改注册表绕过限制、使用 VM 或更改系统安全设置。
 
-**173 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
+**192 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
 
 参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成预览发行版。
 

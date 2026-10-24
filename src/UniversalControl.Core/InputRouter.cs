@@ -124,6 +124,18 @@ public sealed class InputRouter
                 // The activation chord is reserved locally; repeating it must not type I into iPad.
                 if (_remote && _settings.ActivateShortcut.Matches(vk, mods))
                 { _quarantine.Add(id); return true; }
+                if (_remote && _settings.IPadShortcutsEnabled)
+                {
+                    var action = _settings.HomeShortcut.Matches(vk, mods) ? GestureAction.Home
+                        : _settings.SearchShortcut.Matches(vk, mods) ? GestureAction.Search
+                        : _settings.NextAppShortcut.Matches(vk, mods) ? GestureAction.NextApp : GestureAction.None;
+                    if (action != GestureAction.None)
+                    {
+                        _quarantine.Add(id); // Consume the trigger, its repeats, and its eventual release.
+                        if (_remoteButtons == 0 && _remoteKeys.Values.All(key => key.Usage == 0)) SendActionShortcut(action);
+                        return true;
+                    }
+                }
             }
             if (_quarantine.Contains(id)) { if (!down) _quarantine.Remove(id); return true; }
             if (!_remote) return false;
@@ -257,6 +269,20 @@ public sealed class InputRouter
             return _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(modifiers, [usage])) &&
                 _dispatcher.Enqueue(_target!, _epoch, HidReports.Keyboard(0, []));
         }
+    }
+
+    private void SendActionShortcut(GestureAction action)
+    {
+        FlushMotion(); if (!_remote) return;
+        var target = _target!; var epoch = _epoch;
+        var (modifiers, usage) = TouchpadGestures.Shortcut(action);
+        var held = _remoteKeys.Values.Aggregate((byte)0, (value, key) => (byte)(value | key.Modifier));
+        // Remove the local Ctrl/Alt chord from the command; restore held modifiers afterwards.
+        // Snapshot the epoch so a synchronous queue failure cannot send keys into the next mode.
+        _ = _dispatcher.Enqueue(target, epoch, HidReports.Keyboard(0, [])) &&
+            _dispatcher.Enqueue(target, epoch, HidReports.Keyboard(modifiers, [usage])) &&
+            _dispatcher.Enqueue(target, epoch, HidReports.Keyboard(0, [])) &&
+            (held == 0 || _dispatcher.Enqueue(target, epoch, HidReports.Keyboard(held, [])));
     }
 
     // Reconcile keys released on another desktop (UAC/lock) where hooks cannot observe them.

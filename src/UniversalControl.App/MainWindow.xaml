@@ -10,7 +10,7 @@
           <Button x:Name="InputNav" Content="{DynamicResource L002}" Tag="InputPage" Click="Navigate" HorizontalContentAlignment="Left" Margin="0,0,0,9"/>
           <Button x:Name="SettingsNav" Content="{DynamicResource L003}" Tag="SettingsPage" Click="Navigate" HorizontalContentAlignment="Left"/>
         </StackPanel>
-        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="0.4.0  ·  Preview" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
+        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="0.5.0  ·  Preview" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
       </Grid>
     </Border>
     <Grid Grid.Column="1" Margin="32,28,32,22"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -36,10 +36,14 @@
           </StackPanel>
           <StackPanel x:Name="LayoutPage" Visibility="Collapsed">
             <TextBlock Text="{DynamicResource L026}" FontSize="28" FontWeight="SemiBold"/><TextBlock Text="{DynamicResource L027}" Foreground="{DynamicResource Muted}" Margin="0,8,0,20"/>
-            <Border Style="{StaticResource Card}"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions><ComboBox x:Name="MonitorCombo" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L028}" Margin="0,0,12,0"/><ComboBox x:Name="EdgeCombo" Grid.Column="1" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L029}"><ComboBoxItem Content="{DynamicResource L030}"/><ComboBoxItem Content="{DynamicResource L031}"/><ComboBoxItem Content="{DynamicResource L032}"/><ComboBoxItem Content="{DynamicResource L033}"/></ComboBox></Grid>
-              <Canvas x:Name="LayoutCanvas" Height="270" Background="{DynamicResource AccentSoft}" Margin="0,20,0,12" ClipToBounds="True" SizeChanged="LayoutSizeChanged"/>
-              <TextBlock Text="{DynamicResource L034}" Foreground="{DynamicResource Muted}" FontSize="12"/>
+            <Border Style="{StaticResource Card}"><StackPanel>
+              <TextBlock x:Name="EdgeStatusLabel" Foreground="{DynamicResource Accent}" FontSize="12" Margin="0,0,0,8"/>
               <CheckBox x:Name="AutoSwitchCheck" Content="{DynamicResource L035}" Click="SaveControls"/>
+              <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions><ComboBox x:Name="MonitorCombo" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L028}" Margin="0,0,12,0"/><ComboBox x:Name="EdgeCombo" Grid.Column="1" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L029}"><ComboBoxItem Content="{DynamicResource L030}"/><ComboBoxItem Content="{DynamicResource L031}"/><ComboBoxItem Content="{DynamicResource L032}"/><ComboBoxItem Content="{DynamicResource L033}"/></ComboBox></Grid>
+              <Canvas x:Name="LayoutCanvas" Height="340" Background="{DynamicResource AccentSoft}" Margin="0,20,0,12" ClipToBounds="True" SizeChanged="LayoutSizeChanged"/>
+              <TextBlock Text="{DynamicResource L034}" Foreground="{DynamicResource Muted}" FontSize="12"/>
+              <TextBlock Text="{DynamicResource EdgeWaitLabel}" Margin="0,6,0,0"/>
+              <Slider x:Name="EdgeDwellSlider" Minimum="150" Maximum="1500" TickFrequency="50" IsSnapToTickEnabled="True" SmallChange="50" LargeChange="150" ValueChanged="LayoutSliderChanged" Margin="0,8" AutomationProperties.Name="{DynamicResource EdgeWaitLabel}"/>
               <TextBlock Text="{DynamicResource L036}" Margin="0,10,0,0"/><Slider x:Name="PortalStartSlider" Minimum="0" Maximum="0.8" TickFrequency="0.05" ValueChanged="LayoutSliderChanged" Margin="0,8"/>
               <TextBlock Text="{DynamicResource L037}"/><Slider x:Name="PortalEndSlider" Minimum="0.2" Maximum="1" TickFrequency="0.05" ValueChanged="LayoutSliderChanged" Margin="0,8"/>
               <TextBlock x:Name="PortalLabel" Foreground="{DynamicResource Muted}" FontSize="12"/>
@@ -78,9 +82,14 @@
               </Grid>
               <TextBlock Text="{DynamicResource L061}" FontSize="17" FontWeight="SemiBold"/>
               <TextBlock Text="{DynamicResource L062}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,8,0,10"/>
-              <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="110"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+              <CheckBox x:Name="IPadShortcutsCheck" Content="{DynamicResource IPadShortcutsLabel}" Click="SaveControls"/>
+              <TextBlock Text="{DynamicResource IPadShortcutsHelp}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,4,0,10"/>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="135"/><ColumnDefinition Width="*"/><ColumnDefinition Width="110"/></Grid.ColumnDefinitions><Grid.RowDefinitions><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
                 <TextBlock Text="{DynamicResource L063}" VerticalAlignment="Center"/><ComboBox x:Name="ActivateModsCombo" Grid.Column="1" AutomationProperties.Name="{DynamicResource L064}" Margin="0,3,8,3"/><ComboBox x:Name="ActivateKeyCombo" Grid.Column="2" AutomationProperties.Name="{DynamicResource L065}" Margin="0,3"/>
                 <TextBlock Text="{DynamicResource L066}" Grid.Row="1" VerticalAlignment="Center"/><ComboBox x:Name="ReturnModsCombo" Grid.Row="1" Grid.Column="1" AutomationProperties.Name="{DynamicResource L067}" Margin="0,3,8,3"/><ComboBox x:Name="ReturnKeyCombo" Grid.Row="1" Grid.Column="2" AutomationProperties.Name="{DynamicResource L068}" Margin="0,3"/>
+                <TextBlock Text="{DynamicResource IPadHomeLabel}" Grid.Row="2" VerticalAlignment="Center"/><ComboBox x:Name="HomeModsCombo" Grid.Row="2" Grid.Column="1" AutomationProperties.Name="{DynamicResource IPadHomeLabel}" Margin="0,3,8,3"/><ComboBox x:Name="HomeKeyCombo" Grid.Row="2" Grid.Column="2" AutomationProperties.Name="{DynamicResource IPadHomeLabel}" Margin="0,3"/>
+                <TextBlock Text="{DynamicResource IPadSearchLabel}" Grid.Row="3" VerticalAlignment="Center"/><ComboBox x:Name="SearchModsCombo" Grid.Row="3" Grid.Column="1" AutomationProperties.Name="{DynamicResource IPadSearchLabel}" Margin="0,3,8,3"/><ComboBox x:Name="SearchKeyCombo" Grid.Row="3" Grid.Column="2" AutomationProperties.Name="{DynamicResource IPadSearchLabel}" Margin="0,3"/>
+                <TextBlock Text="{DynamicResource IPadNextAppLabel}" Grid.Row="4" VerticalAlignment="Center"/><ComboBox x:Name="NextAppModsCombo" Grid.Row="4" Grid.Column="1" AutomationProperties.Name="{DynamicResource IPadNextAppLabel}" Margin="0,3,8,3"/><ComboBox x:Name="NextAppKeyCombo" Grid.Row="4" Grid.Column="2" AutomationProperties.Name="{DynamicResource IPadNextAppLabel}" Margin="0,3"/>
               </Grid>
               <WrapPanel Margin="0,10,0,8"><Button x:Name="ApplyShortcutsButton" Content="{DynamicResource L069}" Click="ApplyShortcuts"/><Button Content="{DynamicResource L070}" Click="DefaultShortcuts" Margin="10,0,0,0"/></WrapPanel>
               <TextBlock x:Name="ShortcutStatusLabel" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,0,0,15"/>

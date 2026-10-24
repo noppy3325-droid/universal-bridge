@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**プレビュー v0.4.0。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**プレビュー v0.5.0。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,10 +32,10 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v0.4.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.4.0)** から取得します。
+**[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)** から取得します。
 
-- **[UniversalBridge-0.4.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.4.0/UniversalBridge-0.4.0-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-0.4.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-0.5.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -53,6 +53,24 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 | 常駐と診断 | 専用アプリ／トレイアイコン、ライト／ダーク、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
 
 **既定の互換モード**は標準HIDのスクロール・対応キーへ変換します。接点転送は下記の試験版を明示的に有効化します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
+
+## 0.5.0：iPad操作キーと画面端切り替え
+
+iPadを操作している間だけ、次の専用ショートカットを使えます。「入力設定 → ショートカット」で5種類の操作をまとめて編集し、「ショートカットを適用」で保存します。重複する組み合わせは拒否します。Windowsを操作している間、3つのiPad操作キーは通常のキーとして使えます。
+
+| iPad操作 | 初期値 | 送信するキー |
+|---|---|---|
+| ホームへ戻る | **Ctrl+Alt+H** | ⌘H（対応するiPadOS／設定） |
+| 検索 | **Ctrl+Alt+S** | ⌘Space |
+| 次のアプリ | **Ctrl+Alt+N** | ⌘Tab |
+
+長押しでも1回だけ実行し、文字としてのH／S／Nは送りません。ほかの文字キー・マウスボタンを離して使ってください。必要ならiPad操作キーだけをオフにできます。ホームは⌘Hの互換経路で、Apple固有のGlobeキーを生成しません。**新しい操作キーのiPad実機確認は未実施です。** 現行iPadOSの公式案内はGlobe+Hを使うため、ホームの対応はiPadOS／設定に依存します。
+
+**画面端で切り替えるには：** HID公開・接続先iPadの選択後、「ディスプレイ配置」で自動切り替えをオンにします。使用するWindowsモニターと方向を選ぶか、iPadの図を上下左右へドラッグします。青い線が有効な範囲です。その端にカーソルを移し、設定した時間（初期値300ms、150～1500ms）待つと操作先がiPadへ移ります。端で手を止めても待機を完了します。
+
+Windowsモニター同士の境界は除外し、一部が隣接する場合は空いている範囲だけを使います。待機中に端から離れる・キーやボタンを押す・設定が変わると取り消します。同じ場所に留まっているだけでは再実行しません。画面にはオフ／HID待ち／端末未選択／準備完了などの理由を表示します。自動切り替えは初期値オフです。**iPadの実カーソル座標は取得しないため、切り替え後はiPad上の前回位置から操作します。** Windows復帰はCtrl+Alt+QまたはEscを3回です。
+
+[設定画面 — shortcuts](docs/images/shortcuts-ja.png) · [設定画面 — layout](docs/images/layout-ja.png)
 
 ## 0.4.0：急な移動とiPad向け接点転送
 
@@ -109,7 +127,7 @@ pwsh -File scripts/Package.ps1
 
 SDKとパッケージは `.tools/` に保存。Windows SDK projectionは `10.0.26100.87` 固定で、実験的APIは分離・対応確認します。ドライバー、制限回避レジストリ、VM、OSのセキュリティ変更は導入しません。
 
-**自動テスト173件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
+**自動テスト192件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
 
 [開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグからプレビューReleaseを生成します。
 

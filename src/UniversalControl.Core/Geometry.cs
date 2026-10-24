@@ -13,9 +13,24 @@ public sealed class EdgeDetector
 {
     private long? _enteredAt;
     private bool _mustLeave;
+    public bool Pending => _enteredAt.HasValue;
     public void Reset(bool mustLeave = true) { _enteredAt = null; _mustLeave = mustLeave; }
     public bool Observe(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings, long now)
+        => Update(point, source, all, settings, now, physicalMotion: true);
+    public bool Poll(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings, long now)
+        => Update(point, source, all, settings, now, physicalMotion: false);
+    private bool Update(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings, long now, bool physicalMotion)
     {
+        if (!IsAtPortal(point, source, all, settings))
+        { _enteredAt = null; _mustLeave = false; return false; }
+        if (_mustLeave || (_enteredAt is null && !physicalMotion)) return false;
+        _enteredAt ??= now;
+        if (now - _enteredAt.Value < settings.EdgeDwellMs) return false;
+        Reset(); return true;
+    }
+    public static bool IsAtPortal(PixelPoint point, DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings)
+    {
+        if (source.Width <= 0 || source.Height <= 0) return false;
         var along = settings.Edge is ScreenEdge.Left or ScreenEdge.Right
             ? (point.Y - source.Top) / (double)source.Height : (point.X - source.Left) / (double)source.Width;
         var atEdge = source.Contains(point.X, point.Y) && along >= settings.PortalStart && along <= settings.PortalEnd && settings.Edge switch
@@ -32,14 +47,47 @@ public sealed class EdgeDetector
             ScreenEdge.Top => new PixelPoint(point.X, source.Top - 1),
             _ => new PixelPoint(point.X, source.Bottom)
         };
-        if (!atEdge || all.Any(m => m.Id != source.Id && m.Contains(beyond.X, beyond.Y)))
+        return atEdge && !all.Any(m => m.Id != source.Id && m.Contains(beyond.X, beyond.Y));
+    }
+    public static IReadOnlyList<(double Start, double End)> AvailableSegments(DisplayInfo source, IReadOnlyList<DisplayInfo> all, AppSettings settings)
+    {
+        if (source.Width <= 0 || source.Height <= 0) return [];
+        var segments = new List<(double Start, double End)> { (settings.PortalStart, settings.PortalEnd) };
+        var vertical = settings.Edge is ScreenEdge.Left or ScreenEdge.Right;
+        var cross = settings.Edge switch { ScreenEdge.Right => source.Right, ScreenEdge.Left => source.Left - 1, ScreenEdge.Top => source.Top - 1, _ => source.Bottom };
+        foreach (var other in all.Where(display => display.Id != source.Id))
         {
-            _enteredAt = null; _mustLeave = false; return false;
+            if (vertical ? cross < other.Left || cross >= other.Right : cross < other.Top || cross >= other.Bottom) continue;
+            var start = Math.Clamp((vertical ? other.Top - (double)source.Top : other.Left - (double)source.Left) / (vertical ? source.Height : source.Width), 0, 1);
+            var end = Math.Clamp((vertical ? other.Bottom - (double)source.Top : other.Right - (double)source.Left) / (vertical ? source.Height : source.Width), 0, 1);
+            if (start >= end) continue;
+            var next = new List<(double Start, double End)>();
+            foreach (var segment in segments)
+            {
+                if (end <= segment.Start || start >= segment.End) next.Add(segment);
+                else
+                {
+                    if (start > segment.Start) next.Add((segment.Start, start));
+                    if (end < segment.End) next.Add((end, segment.End));
+                }
+            }
+            segments = next;
         }
-        if (_mustLeave) return false;
-        _enteredAt ??= now;
-        if (now - _enteredAt.Value < settings.EdgeDwellMs) return false;
-        Reset(); return true;
+        return segments;
+    }
+}
+
+public readonly record struct PortalPlacement(ScreenEdge Edge, double Start, double End)
+{
+    public static PortalPlacement FromDrop(double normalizedX, double normalizedY, double span)
+    {
+        if (!double.IsFinite(normalizedX) || !double.IsFinite(normalizedY) || !double.IsFinite(span)) throw new ArgumentException("Invalid layout position.");
+        var x = normalizedX - .5; var y = normalizedY - .5;
+        var edge = Math.Abs(x) >= Math.Abs(y) ? x >= 0 ? ScreenEdge.Right : ScreenEdge.Left : y >= 0 ? ScreenEdge.Bottom : ScreenEdge.Top;
+        span = Math.Clamp(span, .2, 1);
+        var along = edge is ScreenEdge.Left or ScreenEdge.Right ? normalizedY : normalizedX;
+        var start = Math.Clamp(along - span / 2, 0, 1 - span);
+        return new(edge, start, start + span);
     }
 }
 
