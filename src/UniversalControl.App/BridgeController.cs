@@ -9,7 +9,7 @@ public sealed class BridgeController : IAsyncDisposable
     private readonly NativeInput _input;
     private bool _nativeStarted, _desired, _busy, _disposed;
     private readonly ReconnectPolicy _retry = new();
-    public BleHidTransport Transport { get; } = new();
+    public BleHidTransport Transport { get; }
     public ReportDispatcher Reports { get; }
     public InputRouter Router { get; }
     public DiagnosticLog Log { get; }
@@ -22,6 +22,9 @@ public sealed class BridgeController : IAsyncDisposable
     public string MouseMode => !_nativeStarted && Settings.RawMouse ? L.T("相対入力（HID公開後に開始）") : _input.MouseMode;
     public bool PreciseMotionTiming => _input.PreciseMotionTiming;
     public int MouseReportIntervalMs => _input.ReportIntervalMs;
+    public long NativeContactFrames => _input.NativeContactFrames;
+    public int MaximumNativeContacts => _input.MaximumNativeContacts;
+    public int MaximumValidNativeContacts => _input.MaximumValidNativeContacts;
     public string ActivationShortcut => _nativeStarted && !_input.ActivationHotkeyRegistered ? Settings.ActivateShortcut + L.T(" は他のアプリで使用中です") : L.T("iPadへ切り替え　") + Settings.ActivateShortcut + L.T("（キーを離すと切り替え）");
     public string ReturnShortcutText => L.T("Windowsへ戻る　") + Settings.ReturnShortcut + L.T(" ／ Esc を3回");
     public string TouchpadStatus => _nativeStarted ? _input.TouchpadStatus : L.T("HID公開後にジェスチャー取得の対応状況を確認します");
@@ -33,6 +36,7 @@ public sealed class BridgeController : IAsyncDisposable
         if (!smokeMode) Settings = Settings with { AutoStart = StartupRegistration.Enabled };
         Log = new(dataDirectory); if (_store.Warning is { } warning) Log.Write(warning);
         Displays = DisplayCatalog.Read();
+        Transport = new(Settings.NativeTouchpad);
         Reports = new(Transport); Router = new(Transport, Reports); _input = new(Router);
         Router.Configure(Settings); _input.Configure(Settings, Displays);
         Transport.Log += Log.Write;
@@ -40,7 +44,7 @@ public sealed class BridgeController : IAsyncDisposable
         Router.Changed += RouterChanged;
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.ActivationRequested += async () => { try { await ActivateRemoteAsync(); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.3.4を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 0.4.0を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }
@@ -88,9 +92,14 @@ public sealed class BridgeController : IAsyncDisposable
         if (_disposed || SmokeMode || Router.IsRemote) return;
         if (Settings.CaptureTouchpad && !_input.TouchpadAvailable)
         { SwitchFailed(L.T("ジェスチャー取得未対応"), L.T("このWindowsではジェスチャー取得を開始できません。入力設定で取得をオフにするとマウス・キーボードのみ切り替えられます。")); return; }
+        if (Settings.NativeTouchpad != Transport.NativeTouchpadMode)
+        { SwitchFailed("NativeModeRestart", L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。")); return; }
+        if (Settings.NativeTouchpad && !_input.NativeContactsAvailable)
+        { SwitchFailed("NativeContactsUnavailable", L.T("このWindowsでは実接点を取得できません。純正ジェスチャーモードをオフにしてください。")); return; }
         if (SelectedPeerId is not { } target) { SwitchFailed(L.T("端末未選択"), L.T("入力送信可能なiPadを一覧から選択してください。")); return; }
         await Transport.RefreshPeersAsync(wait: true);
         if (!Transport.IsReady(target)) { SwitchFailed(L.T("接続準備待ち"), Transport.DescribeReadiness(target)); return; }
+        if (Settings.NativeTouchpad && !Transport.IsTouchpadReady(target)) { SwitchFailed("NativeNotReady", Transport.DescribeTouchpadReadiness(target)); return; }
         var generation = Router.Generation;
         // Hotkey modifiers must be released locally before ownership changes.
         var deadline = Environment.TickCount64 + 2000;
@@ -151,8 +160,10 @@ public sealed class BridgeController : IAsyncDisposable
     public void Save(AppSettings settings)
     {
         var normalized = settings.Normalize();
-        if (normalized.RawMouse != Settings.RawMouse || normalized.CaptureTouchpad != Settings.CaptureTouchpad)
+        if (normalized.RawMouse != Settings.RawMouse || normalized.CaptureTouchpad != Settings.CaptureTouchpad || normalized.NativeTouchpad != Settings.NativeTouchpad || normalized.StabilizeFastPointer != Settings.StabilizeFastPointer)
             Router.GoLocal(L.T("入力方式を変更したためWindowsへ戻しました"));
+        if (normalized.NativeTouchpad != Settings.NativeTouchpad) Message = normalized.NativeTouchpad != Transport.NativeTouchpadMode
+            ? L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。") : Router.Reason;
         if (!SmokeMode && normalized.AutoStart != Settings.AutoStart)
             StartupRegistration.Set(normalized.AutoStart, Environment.ProcessPath ?? throw new InvalidOperationException(L.T("実行ファイルのパスを取得できません。")));
         _store.Save(normalized); Settings = normalized;

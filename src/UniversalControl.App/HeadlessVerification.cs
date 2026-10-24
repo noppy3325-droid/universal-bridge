@@ -61,6 +61,7 @@ public static class HeadlessVerification
                         TouchpadInfoApi = System.Runtime.InteropServices.NativeLibrary.TryGetExport(user32, "GetPointerTouchpadInfo", out _),
                         GlobalGesturesController = global::Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.UI.Input.TouchpadGesturesController"),
                         GestureCaptureSupported = NativeInput.IsTouchpadSupported(),
+                        NativeContacts = NativeInput.ProbeNativeContacts(),
                         PointerTouchpadProperties = global::Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.UI.Input.PointerTouchpadProperties"),
                         At = DateTimeOffset.Now });
                 }

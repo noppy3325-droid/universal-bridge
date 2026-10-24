@@ -1,4 +1,17 @@
-# Verification report — 0.3.4
+# Verification report — 0.4.0
+
+検証日: **2026-10-24 / Asia/Tokyo**。実Windowsでの結果とiPad実機の未確認部分を区別します。
+
+## 0.4.0の急な移動・スクロール・接点転送
+
+- **173成功、0失敗、0スキップ**、ビルド警告0／エラー0。速度制限の方向・細かい移動・停止後の尾なし・線形モード、スクロール初動、127カウントまでの合流、contact descriptor／エンコード／固定スロット／指離れ、送信待ちで座標更新を置換し接点遷移・キー順序を保つこと、3種類のneutralと準備状態消失時の復帰を検証しました。`artifacts/native-gesture-publish.log`。
+- 自己完結exeのGUIは**3言語・24画像・Success=True**。急な移動の抑制と接点モードの保存、再起動要求、アイコン・既存感度の保存も成功。接点説明画面を3言語で目視しました。入力抑制なし、HID公開なし。`artifacts/native-0.4.0/smoke-test/gui-smoke.json`。
+- 接点APIプローブはAvailable=True、POINTER_INFO 96バイト／POINTER_TOUCH_INFO 144バイトを確認しました。これはAPIの存在とABIの検証です。物理的な接点取得やiPad認識の実証ではありません。`artifacts/native-0.4.0/probe-touchpad/touchpad-probe.json`。
+- 8msタイマー・64サンプルの中央値**8.1933ms**／P95 **8.7206ms**。停止・再開成功。実入力ループも24通知、Raw Input登録・応答・フック解除成功。入力抑制・Bluetooth公開なし。無線入力遅延を測った値ではありません。
+- 接点Report Mapは503バイト（上限512）、入力28バイト、feature2バイト。既定の互換モードは従来144バイトのままです。接点モードは初期値オフです。
+- **iPad実機の新しいカーソル操作感・スクロール・接点モード認識／ピンチ／スワイプ／慣性は未確認です。** Windowsの接点取得はタップ／長押しを網羅せず、Magic Trackpad完全互換ではありません。実機受け入れは`docs/MANUAL_TESTS.md`へ記載しています。以下は過去版の検証履歴です。
+
+## 0.3.4の検証履歴
 
 検証日: **2026-10-24 / Asia/Tokyo**。このレポートは実行した検証と未検証部分を分けて記載します。
 

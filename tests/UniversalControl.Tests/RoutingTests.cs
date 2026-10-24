@@ -159,6 +159,7 @@ public sealed class RoutingTests
     [Fact] public async Task MotionFloodIsBoundedAndMeasuredSeparatelyFromBluetooth()
     {
         var fake = new FakeTransport(); await using var dispatch = new ReportDispatcher(fake); var router = new InputRouter(fake, dispatch);
+        router.Configure(new() { StabilizeFastPointer = false }); // Linear transport throughput, separate from intentional fast-motion reduction.
         await router.ActivateAsync("iPad", () => true); const int count = 200_000;
         var before = GC.GetAllocatedBytesForCurrentThread(); var clock = Stopwatch.StartNew();
         for (var i = 0; i < count; i++) router.Move(1, -1);

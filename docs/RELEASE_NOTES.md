@@ -1,31 +1,31 @@
-# Universal Bridge 0.3.4 — Preview
+# Universal Bridge 0.4.0 — Preview
 
 ## English
 
-- Improves fine diagonal motion with nearest-count rounding and fractional carry. Accumulated error stays within ±0.5 count per axis when not saturated. Splitting large movement preserves direction with a shared XY scale.
-- Adds a private high-resolution mouse timer, with an 8 ms local minimum when the BLE interval permits it. The input loop waits for both messages and timer signals. The timer stops on local return; system-wide timer resolution is unchanged, with a standard-timer fallback.
-- Coalesces adjacent unsent XY motion under load. Keys, clicks, wheel/pan, reversals, target/epoch changes, and report limits remain barriers. Travel and ordering are preserved; old-epoch motion is discarded.
-- Keeps existing sensitivity settings, three UI languages, shortcuts, scrolling controls, and icon. No smoothing filter, acceleration, or artificial momentum is added.
-- **155 tests passed**. A synthetic diagonal trace reduced minor-axis onset from 28 to 14 samples and RMS count error from about 0.81 to 0.41. This PC's 8 ms timer probe measured median 8.2064 ms and P95 8.5736 ms. Native input-loop and three-language GUI checks passed. These are local/synthetic measurements, not iPad cursor-feel or wireless-latency measurements.
+- Adds **Stabilize fast pointer movement**, on by default. A radial soft limit reduces sudden fast travel without replaying compressed motion later. Disable it in Input settings for linear transfer. Queued XY merging is capped at 127 counts per axis.
+- Improves compatibility-mode two-finger scroll onset with nearest-tick rounding and fractional carry. Physical wheel behavior is unchanged.
+- Adds **Contact relay for native iPad gestures (experimental)**, off by default. Relays real two-to-five-finger contacts through standard HID Touch Pad reports, with stable contact IDs, release frames and separate readiness checks. iPadOS performs gesture recognition; app scroll gain and gesture macros are bypassed.
+- **iPad recognition and behavior are not hardware-verified.** Windows does not expose all tap/hold contacts; full Magic Trackpad parity is not supported. Enable the mode, fully exit/restart, and manually re-pair on iPad if its HID cache prevents recognition. Disabling also requires restart. Default keyboard/mouse mode keeps its existing descriptor.
+- 173 tests passed; three-language GUI, API/ABI, native input-loop and local timer checks passed. These do not measure iPad cursor feel or wireless latency. No coordinates or input payloads are logged.
 
-Exit the old app, extract UniversalBridge-0.3.4-win-x64.zip and run UniversalControl.exe. Settings are retained. Physical diagonal movement and dragging still need iPad verification. Requires Windows 11 x64 and BLE Peripheral support. Unsigned, self-contained preview.
+Exit the old app, extract UniversalBridge-0.4.0-win-x64.zip and run UniversalControl.exe. Settings are retained. Windows 11 x64 / BLE Peripheral required. Unsigned, self-contained preview. See README for experimental-mode requirements.
 
 ## 日本語
 
-- **斜めの微小移動を最適化。** 小数を持ち越す最近傍丸めで非飽和時の各軸の累積誤差を±0.5カウントへ抑え、大移動の分割でも方向を保ちます。
-- マウス送信に専用の高精度タイマーを追加し、BLE間隔が許す場合のローカル最短周期を8msにしました。入力とタイマーを一緒に待ち、Windows復帰時に停止します。OS全体のタイマー分解能は変更せず、失敗時は標準方式へ戻ります。
-- 送信待ちの隣り合うXY移動を合流します。キー・クリック・縦横スクロール・反転・端末／世代・レポート上限を越えてまとめず、移動量と順序を保ちます。古い世代の移動は再送しません。
-- 保存済み感度、3言語、ショートカット、スクロール設定、アイコンを引き継ぎます。平滑化フィルター・加速・人工的な慣性は追加しません。
-- **自動テスト155件成功**。人工入力の小さい軸の反応は28→14サンプル、RMS誤差は約0.81→0.41カウント。このPCの8ms設定は中央値8.2064ms、95パーセンタイル8.5736ms。入力ループと3言語GUIも成功しました。iPad画面や無線遅延を実測した値ではありません。
+- **急な移動の抑制**を追加し初期値オンにしました。高速時の移動を方向を保って短くし、抑えた距離を停止後に流しません。入力設定でオフにすると線形転送へ戻せます。送信待ちのXY合流は各軸127カウントまでに制限します。
+- 互換モードの2本指スクロールは小数持ち越し付き最近傍丸めにし、動き始めの反応を早めました。物理ホイールは従来方式を維持します。
+- **iPad純正ジェスチャー向けの接点転送（試験版）**を追加しました。初期値オフです。実際の2～5接点を標準HID Touch Padとして送り、接点ID・指離れ・独立した準備判定を扱います。認識はiPadOSに任せ、アプリのスクロール感度・ジェスチャーキー変換は使いません。
+- **iPad実機の認識・動作は未確認です。** Windowsではタップ／長押しの接点を網羅できず、Magic Trackpad完全互換ではありません。有効化後は完全終了・再起動し、認識しなければiPadで手動再ペアリングしてください。無効化時も再起動が必要です。既定のキーボード／マウスモードは従来descriptorを維持します。
+- 自動テスト173件、3言語GUI、API／ABI、入力ループ、ローカルタイマー検証が成功。iPadの操作感や無線遅延の実測ではありません。座標・入力内容は記録しません。
 
-旧版を終了し、UniversalBridge-0.3.4-win-x64.zipを展開してexeを起動してください。設定は引き継ぎます。実際の斜め移動とドラッグの体感はiPad実機での確認が必要です。Windows 11 x64／BLE Peripheral対応が必要な、ランタイム同梱・署名なしのプレビュー版です。
+旧版を終了しUniversalBridge-0.4.0-win-x64.zipを展開、exeを起動してください。設定は引き継ぎます。Windows 11 x64／BLE Peripheral対応が必要な、ランタイム同梱・署名なしのプレビューです。試験版の条件はREADMEを参照してください。
 
 ## 简体中文
 
-- 优化细微斜向移动：采用保留小数余量的最近整数舍入，未饱和时各轴累计误差控制在±0.5计数内，大位移拆分保持方向。
-- 新增专用高精度鼠标定时器；BLE间隔允许时，本地最短周期为8ms。输入循环同时等待消息和定时器，返回Windows后停止，不改变系统全局分辨率，并保留标准定时器回退。
-- 负载较高时仅合并相邻未发送的XY移动，不跨越按键、点击、滚动、反转、目标／世代变化或报告范围限制。保留位移与顺序，丢弃旧世代移动。
-- 保留已有灵敏度、三语界面、快捷键、滚动设置及图标，不添加平滑滤波、加速或模拟惯性。
-- **155项测试通过**。人工轨迹的小轴首次响应由28缩至14个采样，RMS误差约由0.81降至0.41计数。本机8ms定时器中位数为8.2064ms、P95为8.5736ms；输入循环与三语GUI验证通过。这些并非iPad实际操作感或无线延迟测量。
+- 新增**抑制快速指针移动**，默认开启。对高速位移施加保持方向的柔和限制，停止后不继续补发压缩的距离。可在输入设置关闭以恢复线性转发，待发送XY合并上限为每轴127计数。
+- 兼容模式的双指滚动改用保留小数余量的最近整数舍入，改善初始响应。物理滚轮维持原有行为。
+- 新增**iPad原生手势触点转发（实验性）**，默认关闭。通过标准HID Touch Pad发送真实双指至五指触点，保持触点ID、抬起帧及独立就绪检查。由iPadOS识别手势，不使用应用的滚动增益或手势按键映射。
+- **尚未在iPad实机确认识别及行为。** Windows无法提供全部轻点／长按触点，不支持Magic Trackpad完全兼容。启用后完全退出并重启，必要时在iPad手动重新配对；关闭也需重启。默认键鼠模式维持现有descriptor。
+- 173项测试、三语GUI、API／ABI、输入循环及本地定时器验证通过，并非iPad操作感或无线延迟测量。不记录坐标或输入内容。
 
-退出旧版，解压UniversalBridge-0.3.4-win-x64.zip并运行exe，原设置会保留。实际斜向移动和拖动仍需iPad实机确认。需要Windows 11 x64和BLE外围设备支持，此为包含运行时的未签名预览版。
+退出旧版，解压UniversalBridge-0.4.0-win-x64.zip并运行exe。保留原设置，需要Windows 11 x64及BLE外围支持。此为包含运行时的未签名预览版，实验模式要求见README。

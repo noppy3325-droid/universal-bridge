@@ -6,6 +6,8 @@ namespace UniversalControl.Core;
 public interface IHidTransport
 {
     bool IsReady(string targetId);
+    bool IsTouchpadReady(string targetId) => false;
+    int NeutralReportCount => 2;
     Task SendAsync(string targetId, HidFrame frame, CancellationToken cancellationToken);
     async Task<int> ReleaseAsync(string targetId, CancellationToken cancellationToken)
     {
@@ -28,6 +30,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
     private readonly Channel<Pending> _queue;
     private readonly object _queueGate = new();
     private Pending? _motionTail;
+    private Pending? _touchpadTail;
     private long _coalescedMotion;
     private readonly CancellationTokenSource _stop = new();
     private readonly SemaphoreSlim _sendGate = new(1);
@@ -56,7 +59,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
     {
         HidReports.Validate(frame);
         bool written;
-        lock (_queueGate) { _motionTail = null; written = Healthy && _queue.Writer.TryWrite(new(target, epoch, frame)); }
+        lock (_queueGate) { _motionTail = _touchpadTail = null; written = Healthy && _queue.Writer.TryWrite(new(target, epoch, frame)); }
         if (!written)
         {
             Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
@@ -73,6 +76,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
         if (frame.Kind != ReportKind.Mouse || frame.Payload[5] != 0 || frame.Payload[6] != 0) return Enqueue(target, epoch, frame);
         lock (_queueGate)
         {
+            _touchpadTail = null;
             if (Healthy)
             {
                 if (_motionTail is { } tail && tail.Epoch == epoch && tail.Target == target && tail.Frame.Payload[0] == frame.Payload[0])
@@ -81,7 +85,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
                     var ax = BinaryPrimitives.ReadInt16LittleEndian(a.AsSpan(1)); var ay = BinaryPrimitives.ReadInt16LittleEndian(a.AsSpan(3));
                     var bx = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(1)); var by = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(3));
                     var x = ax + bx; var y = ay + by;
-                    if (ax * bx >= 0 && ay * by >= 0 && Math.Abs(x) <= 32767 && Math.Abs(y) <= 32767)
+                    if (ax * bx >= 0 && ay * by >= 0 && Math.Abs(x) <= 127 && Math.Abs(y) <= 127)
                     {
                         tail.Frame = HidReports.Mouse((MouseButtons)a[0], x, y);
                         Interlocked.Increment(ref _coalescedMotion); return true;
@@ -89,6 +93,24 @@ public sealed class ReportDispatcher : IAsyncDisposable
                 }
                 var pending = new Pending(target, epoch, frame);
                 if (_queue.Writer.TryWrite(pending)) { _motionTail = pending; return true; }
+            }
+        }
+        Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
+        return false;
+    }
+    public bool EnqueueTouchpadUpdate(string target, long epoch, HidFrame frame)
+    {
+        HidReports.Validate(frame);
+        if (frame.Kind != ReportKind.Touchpad) throw new ArgumentException("Expected touchpad report.");
+        lock (_queueGate)
+        {
+            _motionTail = null;
+            if (Healthy)
+            {
+                if (_touchpadTail is { } tail && tail.Target == target && tail.Epoch == epoch)
+                { tail.Frame = frame; return true; } // Absolute positions: keep the latest update, never add coordinates.
+                var pending = new Pending(target, epoch, frame);
+                if (_queue.Writer.TryWrite(pending)) { _touchpadTail = pending; return true; }
             }
         }
         Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
@@ -127,7 +149,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
             Track(operation);
             var released = await operation.WaitAsync(TimeSpan.FromSeconds(1), _stop.Token);
             Interlocked.Add(ref _sent, released);
-            if (released != 2 || !_transport.IsReady(target) || epoch != Interlocked.Read(ref _epoch) || version != Interlocked.Read(ref _faultVersion)) return false;
+            if (released != _transport.NeutralReportCount || !_transport.IsReady(target) || epoch != Interlocked.Read(ref _epoch) || version != Interlocked.Read(ref _faultVersion)) return false;
             Interlocked.Exchange(ref _faulted, 0);
             return Healthy;
         }
@@ -148,7 +170,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
             await foreach (var next in _queue.Reader.ReadAllAsync(_stop.Token))
             {
                 HidFrame frame;
-                lock (_queueGate) { frame = next.Frame; if (ReferenceEquals(_motionTail, next)) _motionTail = null; }
+                lock (_queueGate) { frame = next.Frame; if (ReferenceEquals(_motionTail, next)) _motionTail = null; if (ReferenceEquals(_touchpadTail, next)) _touchpadTail = null; }
                 if (!Healthy || next.Epoch != Interlocked.Read(ref _epoch)) continue;
                 await _sendGate.WaitAsync(_stop.Token);
                 try
@@ -179,7 +201,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
                 Track(operation);
                 var released = await operation.WaitAsync(TimeSpan.FromSeconds(1), _stop.Token);
                 Interlocked.Add(ref _sent, released);
-                return released == 2;
+                return released == _transport.NeutralReportCount;
             }
             finally { _sendGate.Release(); }
         }

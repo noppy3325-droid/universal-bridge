@@ -2,6 +2,14 @@
 
 調査日: 2026-10-17（Asia/Tokyo）。参照コードの実行結果と、本プロジェクトで測定した結果を区別します。
 
+## 2026-10-24：標準トラックパッド接点の試験実装
+
+[Apple Accessory Design Guidelines](https://developer.apple.com/accessories/Accessory-Design-Guidelines.pdf) の2026-09-21版、Trackpads（107～114ページ）を確認しました。iPadOS 14.5以降向けの標準HID Digitizer Touch Pad、2～5接点、Tip Switch／Confidence／Contact ID／XY、Surface Switch feature／Report Rate feature、指を離したフレームで前座標を保持する条件を参照しています。仕様のサンプルをそのままコピーせず、既存複合HIDへ入るcompact descriptorを作成しました。AppleのVIDを名乗らず、Magic Trackpadの私有プロトコルを実装しません。資料PDFは配布に含めません。
+
+Microsoftの[GetPointerTouchpadInfo／Frame／History](https://learn.microsoft.com/en-us/windows/win32/input-precisiontouchpad/getpointertouchpadinfo)ではHIMETRICが実接点位置で、pixel位置はジェスチャー開始時から変わらないと説明されています。初動に合成downと時間／空間の隙間が生じ、タップ・長押しには接点ストリームが届きません。[TouchpadGesturesController](https://learn.microsoft.com/en-us/windows/win32/input-precisiontouchpad/touchpadgesturescontroller)の各指イベント中はWin32 pointer照会を使用できますが、SkipPointerFrameMessagesは禁止されているため使いません。
+
+これらから、2～5本指の実接点を標準HIDで送る試験的経路を実装しました。仕様上の適合要素とAPIの存在は、iPadでの認識成功を示しません。既定オフにし、iPad実機確認を残します。タップや長押しを架空の接点列として作らず、全純正ジェスチャー対応を標榜しません。
+
 ## Windows標準API
 
 2026-10-24追記: [SetTimer](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer)は最小10msでWM_TIMERを使います。マウス送信は[高精度waitable timer](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerexw)と[MsgWaitForMultipleObjectsEx](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-msgwaitformultipleobjectsex)へ分離します。高精度フラグはWindows 10 1803以降に対応します。周期は[SetWaitableTimerEx](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-setwaitabletimerex)で設定し、相対時刻は100ns単位です。[ConnectionInterval](https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.bluetoothleconnectionparameters.connectioninterval)は1.25ms単位なので、取得値をミリ秒に換算して送信周期へ使用します。タイマー精度のローカル測定はBLE転送の実測ではありません。
@@ -30,7 +38,7 @@ Microsoftのグローバルジェスチャー配送は前面プロセスに限�
 
 これらは公式に実験的とされるAPIです。Windows SDK .NET projection 10.0.26100.87を使用し、最低OSバージョンは22000のまま、26100以降かつAPIの存在・IsSupported・初期化成功を確認して有効にします。本PCの読み取り専用プローブでWindows build26300、ウィンドウAPIあり、コントローラー対応を確認しました（`artifacts/touchpad-capabilities/touchpad-probe.json`）。実Windowsの起動・解除も成功しています。すべての24H2端末への対応を保証するものではありません。
 
-iPad側へは従来の標準キーボード／マウスHIDを使い、横スクロールにConsumer AC Panを追加しました。複数指の接点やMagic Trackpad固有プロトコルは実装していません。アプリ切り替え・検索等のキー変換は [Appleのキーボードショートカット](https://support.apple.com/en-us/102393) を参照しています。ホーム・拡大縮小等の個別キー対応はiPadOSとアプリに依存し、実機の受け入れ項目として残しています。
+iPad側へは従来の標準キーボード／マウスHIDを使い、横スクロールにConsumer AC Panを追加しました。0.2.0時点では複数指の接点は転送しません。0.4.0の接点モードは下記の追加調査に基づく試験実装です。Magic Trackpad固有プロトコルは使いません。アプリ切り替え・検索等のキー変換は [Appleのキーボードショートカット](https://support.apple.com/en-us/102393) を参照しています。ホーム・拡大縮小等の個別キー対応はiPadOSとアプリに依存し、実機の受け入れ項目として残しています。
 
 0.1.2のマウス精度改善では、Microsoftの [Raw Input手順](https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input) と [RAWMOUSE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse) を参照しました。相対Raw InputはWindowsのマウス速度設定の影響を受けないため、Windowsカーソル座標による二段階の加速を避けます。RIDEV_INPUTSINKとmessage-only windowを使い、DefWindowProcによるWM_INPUTの後処理を行います。
 

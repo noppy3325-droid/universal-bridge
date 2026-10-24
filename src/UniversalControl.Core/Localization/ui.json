@@ -87,5 +87,9 @@
   "BluetoothSubtitle": "Bluetooth入力共有",
   "TouchpadScrollLabel": "2本指スクロール感度",
   "RecommendedScroll": "推奨値 3.00",
-  "TouchpadScrollHelp": "0.25～12.00倍。ジェスチャー取得時の2本指スクロール専用です。推奨値3.00は旧版の3倍で、マウスホイール感度とは独立しています。"
+  "TouchpadScrollHelp": "0.25～12.00倍。ジェスチャー取得時の2本指スクロール専用です。推奨値3.00は旧版の3倍で、マウスホイール感度とは独立しています。",
+  "FastPointerHelp": "細かい動きは維持し、急な移動だけ減速します。速く動かしたときの移動距離は短くなります。",
+  "NativeTouchpadLabel": "iPad純正ジェスチャー向けの接点転送（試験版）",
+  "FastPointerLabel": "素早いカーソル移動を抑える（おすすめ）",
+  "NativeTouchpadHelp": "2～5本指のスクロール・ピンチ・スワイプをiPadに渡します。変更後はアプリを再起動し、必要なら再ペアリングしてください。タップにはWindows側の制約があり、このモードでは感度とキー割り当てを使いません。"
 }

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Buffers.Binary;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Radios;
@@ -9,7 +10,7 @@ using UniversalControl.Core;
 namespace UniversalControl.Windows;
 
 public sealed record AdapterProbe(string OS, bool AdapterFound, string Radio, bool LowEnergy, bool Peripheral, string? HidServiceResult, string? Error);
-public sealed record PeerInfo(string Id, string Name, bool Paired, bool Connected, bool Keyboard, bool Mouse, bool Ready, bool Suspended = false)
+public sealed record PeerInfo(string Id, string Name, bool Paired, bool Connected, bool Keyboard, bool Mouse, bool Ready, bool Suspended = false, bool Touchpad = false, bool TouchpadSurface = true, bool TouchpadPacketSize = false)
 {
     public string Readiness => !Connected ? L.T("切断中。iPadのBluetooth接続を確認してください。")
         : !Paired ? L.T("ペアリング確認を完了してください。")
@@ -22,18 +23,25 @@ public sealed record PeerInfo(string Id, string Name, bool Paired, bool Connecte
 /// <summary>Encrypted HOGP server. Notifications always target exactly one subscribed central.</summary>
 public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
 {
+    public bool NativeTouchpadMode { get; }
+    public int NeutralReportCount => NativeTouchpadMode ? 3 : 2;
+    public BleHidTransport(bool nativeTouchpad = false) => NativeTouchpadMode = nativeTouchpad;
     private readonly ConcurrentDictionary<string, BluetoothLEDevice> _devices = new(StringComparer.OrdinalIgnoreCase);
     private readonly HidSuspensionState<GattSession> _suspended = new();
     private readonly ConcurrentDictionary<string, byte> _leds = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<GattSession, byte> _sessions = new();
     private readonly ConcurrentDictionary<string, byte[]> _lastKeyboard = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, byte[]> _lastMouse = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, byte[]> _lastTouchpad = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, ushort> _lastTouchTime = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, bool> _touchpadSurface = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, GattSession> _surfaceSessions = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _refresh = new(1);
     private readonly SemaphoreSlim _lifecycle = new(1);
     private readonly CancellationTokenSource _stop = new();
     private readonly List<GattLocalCharacteristic> _characteristics = [];
     private GattServiceProvider? _provider;
-    private GattLocalCharacteristic? _keyboard, _mouse;
+    private GattLocalCharacteristic? _keyboard, _mouse, _touchpad;
     private Radio? _radio;
     private TaskCompletionSource? _advertising;
     private volatile bool _enabled, _disposed;
@@ -41,6 +49,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     private int _advertisingIssued;
     private readonly object _snapshotGate = new();
     private volatile HashSet<string> _readyTargets = new(StringComparer.OrdinalIgnoreCase);
+    private volatile HashSet<string> _touchpadReadyTargets = new(StringComparer.OrdinalIgnoreCase);
     private volatile PeerInfo[] _peers = [];
     private long _snapshotAt, _stateRevision;
     public string Status { get; private set; } = L.T("停止中");
@@ -121,7 +130,9 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         _provider = result.ServiceProvider;
         _provider.AdvertisementStatusChanged += AdvertisingChanged;
         await ConstantAsync(HidDescriptors.HidInformation, HidDescriptors.HidInformationValue);
-        await ConstantAsync(HidDescriptors.ReportMap, HidDescriptors.ReportMapValue);
+        var map = NativeTouchpadMode ? HidDescriptors.ReportMapValue.Concat(TouchpadReports.Descriptor()).ToArray() : HidDescriptors.ReportMapValue;
+        if (map.Length > 512) throw new InvalidOperationException("HID report map exceeds the GATT attribute limit.");
+        await ConstantAsync(HidDescriptors.ReportMap, map);
         var control = await CharacteristicAsync(HidDescriptors.HidControlPoint, GattCharacteristicProperties.WriteWithoutResponse);
         control.WriteRequested += async (sender, args) => await HandleWriteAsync(args, (id, bytes) =>
         {
@@ -137,6 +148,20 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         { if (bytes.Length != 1) return false; _leds[id] = bytes[0]; return true; });
         await ReferenceAsync(output, HidDescriptors.KeyboardReportId, HidDescriptors.ReportTypeOutput);
         _mouse = await InputAsync(HidDescriptors.MouseReportId, ReportKind.Mouse);
+        if (NativeTouchpadMode)
+        {
+            _touchpad = await InputAsync(TouchpadReports.ReportId, ReportKind.Touchpad);
+            var feature = await CharacteristicAsync(HidDescriptors.Report, GattCharacteristicProperties.Read | GattCharacteristicProperties.Write | GattCharacteristicProperties.WriteWithoutResponse);
+            feature.ReadRequested += async (_, args) => await HandleReadAsync(args, id => TouchpadReports.Feature(_touchpadSurface.GetValueOrDefault(id, true)));
+            feature.WriteRequested += async (sender, args) => await HandleWriteAsync(args, (id, bytes) =>
+            {
+                if (bytes.Length != 2) return false;
+                _surfaceSessions[id] = args.Session;
+                if (_sessions.TryAdd(args.Session, 0)) args.Session.SessionStatusChanged += SessionChanged;
+                _touchpadSurface[id] = (bytes[0] & 1) != 0; InvalidateReadiness(); _ = RefreshPeersAsync(); return true;
+            });
+            await ReferenceAsync(feature, TouchpadReports.ReportId, 3); // Feature report, Surface Switch + Report Rate.
+        }
         // Report protocol only: omit Protocol Mode and Boot characteristics rather than claiming boot support.
         Log?.Invoke(L.T("HID 0x1812、キーボード8バイト、マウス7バイト（横スクロール対応）を作成しました。"));
     }
@@ -184,7 +209,8 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     {
         var characteristic = await CharacteristicAsync(HidDescriptors.Report, GattCharacteristicProperties.Read | GattCharacteristicProperties.Notify);
         characteristic.ReadRequested += async (_, args) => await HandleReadAsync(args, peer => kind == ReportKind.Keyboard
-            ? _lastKeyboard.GetValueOrDefault(peer, new byte[8]) : _lastMouse.GetValueOrDefault(peer, new byte[7]));
+            ? _lastKeyboard.GetValueOrDefault(peer, new byte[8]) : kind == ReportKind.Mouse ? _lastMouse.GetValueOrDefault(peer, new byte[7])
+            : _lastTouchpad.GetValueOrDefault(peer, TouchpadReports.Neutral(_lastTouchTime.GetValueOrDefault(peer)).Payload));
         characteristic.SubscribedClientsChanged += SubscribersChanged;
         await ReferenceAsync(characteristic, id, HidDescriptors.ReportTypeInput);
         return characteristic;
@@ -226,7 +252,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         try
         {
             var revision = Interlocked.Read(ref _stateRevision);
-            var clients = (_keyboard?.SubscribedClients ?? []).Concat(_mouse?.SubscribedClients ?? []).ToArray();
+            var clients = (_keyboard?.SubscribedClients ?? []).Concat(_mouse?.SubscribedClients ?? []).Concat(_touchpad?.SubscribedClients ?? []).ToArray();
             var sessions = clients.Select(client => client.Session).Distinct().ToArray();
             foreach (var session in sessions)
                 if (_sessions.TryAdd(session, 0)) session.SessionStatusChanged += SessionChanged;
@@ -256,13 +282,21 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     {
         if (_disposed) return;
         if (sender.ConnectionStatus == BluetoothConnectionStatus.Disconnected)
-        { _lastKeyboard.TryRemove(sender.DeviceId, out _); _lastMouse.TryRemove(sender.DeviceId, out _); _suspended.Reset(sender.DeviceId); }
+        { _lastKeyboard.TryRemove(sender.DeviceId, out _); _lastMouse.TryRemove(sender.DeviceId, out _); _suspended.Reset(sender.DeviceId); _touchpadSurface.TryRemove(sender.DeviceId, out _); _surfaceSessions.TryRemove(sender.DeviceId, out _); }
         InvalidateReadiness(); _ = RefreshPeersAsync();
     }
     private static bool Subscribed(GattLocalCharacteristic? characteristic, string id) => characteristic?.SubscribedClients.Any(
         client => client.Session.DeviceId.Id.Equals(id, StringComparison.OrdinalIgnoreCase) && client.Session.SessionStatus == GattSessionStatus.Active) == true;
     // This method is called inside low-level hooks: it must never call WinRT or wait for a lock.
     public bool IsReady(string targetId) => !_disposed && _enabled && Environment.TickCount64 - Interlocked.Read(ref _snapshotAt) < 2000 && _readyTargets.Contains(targetId);
+    public bool IsTouchpadReady(string targetId) => IsReady(targetId) && _touchpadReadyTargets.Contains(targetId);
+    public string DescribeTouchpadReadiness(string targetId)
+    {
+        if (!NativeTouchpadMode) return L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。");
+        if (!IsReady(targetId)) return DescribeReadiness(targetId);
+        if (!IsTouchpadReady(targetId)) return L.T("接点レポートの購読・通知サイズ・Surface Switchを待機中です。必要ならiPadで登録解除して再ペアリングしてください。");
+        return L.T("入力送信可能");
+    }
     public IReadOnlyList<PeerInfo> Peers() => _peers;
     public string DescribeReadiness(string targetId)
     {
@@ -275,7 +309,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     }
     private void InvalidateReadiness()
     {
-        lock (_snapshotGate) { _lastKeyboard.Clear(); _lastMouse.Clear(); _stateRevision++; _readyTargets = new(StringComparer.OrdinalIgnoreCase); Interlocked.Exchange(ref _snapshotAt, 0); }
+        lock (_snapshotGate) { _lastKeyboard.Clear(); _lastMouse.Clear(); _lastTouchpad.Clear(); _stateRevision++; _readyTargets = new(StringComparer.OrdinalIgnoreCase); _touchpadReadyTargets = new(StringComparer.OrdinalIgnoreCase); Interlocked.Exchange(ref _snapshotAt, 0); }
         Changed?.Invoke();
     }
     private void UpdateSnapshots(long revision)
@@ -286,9 +320,13 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
             var device = pair.Value; var paired = device.DeviceInformation.Pairing.IsPaired;
             var connected = device.ConnectionStatus == BluetoothConnectionStatus.Connected;
             var keyboard = Subscribed(_keyboard, pair.Key); var mouse = Subscribed(_mouse, pair.Key);
+            if (_surfaceSessions.TryGetValue(pair.Key, out var surfaceSession) && surfaceSession.SessionStatus == GattSessionStatus.Closed)
+            { _surfaceSessions.TryRemove(pair.Key, out _); _touchpadSurface.TryRemove(pair.Key, out _); }
+            var touchpad = Subscribed(_touchpad, pair.Key); var surface = _touchpadSurface.GetValueOrDefault(pair.Key, true);
+            var packetSize = _touchpad?.SubscribedClients.Any(c => c.Session.DeviceId.Id.Equals(pair.Key, StringComparison.OrdinalIgnoreCase) && c.Session.SessionStatus == GattSessionStatus.Active && c.MaxNotificationSize >= TouchpadReports.Length) == true;
             var suspended = _suspended.Observe(pair.Key, session => session.SessionStatus == GattSessionStatus.Active, keyboard || mouse);
             return new PeerInfo(pair.Key, string.IsNullOrWhiteSpace(device.Name) ? L.T("Bluetooth端末") : device.Name,
-                paired, connected, keyboard, mouse, _enabled && radioOn && paired && connected && keyboard && mouse && !suspended, suspended);
+                paired, connected, keyboard, mouse, _enabled && radioOn && paired && connected && keyboard && mouse && !suspended, suspended, touchpad, surface, packetSize);
         }).OrderBy(peer => peer.Name).ToArray();
         PeerInfo[] previous;
         lock (_snapshotGate)
@@ -296,6 +334,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
             if (revision != _stateRevision || _disposed) return;
             previous = _peers;
             _peers = peers; _readyTargets = peers.Where(peer => peer.Ready).Select(peer => peer.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _touchpadReadyTargets = peers.Where(peer => NativeTouchpadMode && peer.Ready && peer.Touchpad && peer.TouchpadSurface && peer.TouchpadPacketSize).Select(peer => peer.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
             Interlocked.Exchange(ref _snapshotAt, Environment.TickCount64);
         }
         foreach (var peer in peers)
@@ -320,21 +359,26 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
     {
         HidReports.Validate(frame);
         if (!IsReady(targetId)) throw new IOException(L.T("選択端末の暗号化済みキーボード・マウス接続が利用できません。"));
+        if (frame.Kind == ReportKind.Touchpad && !IsTouchpadReady(targetId)) throw new IOException(DescribeTouchpadReadiness(targetId));
         if (!await NotifyTargetAsync(targetId, frame, cancellationToken)) throw new IOException(L.T("選択端末へのHID通知が失敗しました。"));
     }
     private async Task<bool> NotifyTargetAsync(string targetId, HidFrame frame, CancellationToken cancellationToken)
     {
-        var characteristic = frame.Kind == ReportKind.Keyboard ? _keyboard! : _mouse!;
+        var characteristic = frame.Kind == ReportKind.Keyboard ? _keyboard : frame.Kind == ReportKind.Mouse ? _mouse : _touchpad;
+        if (characteristic is null) return false;
         var client = characteristic.SubscribedClients.FirstOrDefault(c => c.Session.DeviceId.Id.Equals(targetId, StringComparison.OrdinalIgnoreCase) && c.Session.SessionStatus == GattSessionStatus.Active);
         if (client is null) return false;
+        if (client.MaxNotificationSize < frame.Payload.Length) return false;
         var revision = Interlocked.Read(ref _stateRevision);
         var result = await characteristic.NotifyValueAsync(CryptographicBuffer.CreateFromByteArray(frame.Payload), client).AsTask(cancellationToken);
         if (result.Status != GattCommunicationStatus.Success) return false;
+        if (frame.Kind == ReportKind.Touchpad) _lastTouchTime[targetId] = BinaryPrimitives.ReadUInt16LittleEndian(frame.Payload);
         lock (_snapshotGate)
         {
             if (revision != _stateRevision) return true;
             if (frame.Kind == ReportKind.Keyboard) _lastKeyboard[targetId] = frame.Payload.ToArray();
-            else _lastMouse[targetId] = [(byte)(frame.Payload[0] & 7), 0, 0, 0, 0, 0, 0];
+            else if (frame.Kind == ReportKind.Mouse) _lastMouse[targetId] = [(byte)(frame.Payload[0] & 7), 0, 0, 0, 0, 0, 0];
+            else _lastTouchpad[targetId] = frame.Payload.ToArray();
         }
         return true;
     }
@@ -347,6 +391,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         // even after subscription/radio notifications revoked the fast capture permission.
         if (_keyboard is not null && await NotifyTargetAsync(targetId, HidReports.Keyboard(0, []), cancellationToken)) sent++;
         if (_mouse is not null && await NotifyTargetAsync(targetId, HidReports.Mouse(0), cancellationToken)) sent++;
+        if (_touchpad is not null && await NotifyTargetAsync(targetId, TouchpadReports.Neutral(unchecked((ushort)(_lastTouchTime.GetValueOrDefault(targetId) + 1))), cancellationToken)) sent++;
         return sent;
     }
     public void Stop()
@@ -376,7 +421,7 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
             foreach (var session in _sessions.Keys) session.SessionStatusChanged -= SessionChanged;
             foreach (var device in _devices.Values) { device.ConnectionStatusChanged -= DeviceChanged; device.Dispose(); }
             foreach (var characteristic in _characteristics) characteristic.SubscribedClientsChanged -= SubscribersChanged;
-            _devices.Clear(); _sessions.Clear(); _characteristics.Clear(); _keyboard = _mouse = null; _provider = null;
+            _devices.Clear(); _sessions.Clear(); _characteristics.Clear(); _keyboard = _mouse = _touchpad = null; _provider = null;
         }
         finally { _refresh.Release(); _lifecycle.Release(); }
     }

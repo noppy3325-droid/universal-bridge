@@ -113,6 +113,8 @@ public partial class MainWindow : Window
         TouchpadSensitivityBox.Text = s.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
         MouseSensitivityBox.Text = s.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture); RawMouseCheck.IsChecked = s.RawMouse;
         TouchpadCheck.IsChecked = s.CaptureTouchpad;
+        FastPointerCheck.IsChecked = s.StabilizeFastPointer; NativeTouchpadCheck.IsChecked = s.NativeTouchpad;
+        TouchpadCheck.IsEnabled = !s.NativeTouchpad;
         LoadShortcutControls(s.ActivateShortcut, s.ReturnShortcut);
         var gestureChoices = GestureChoices;
         foreach (var pair in new[] { (SwipeLeftCombo, s.SwipeLeft), (SwipeRightCombo, s.SwipeRight), (SwipeUpCombo, s.SwipeUp), (SwipeDownCombo, s.SwipeDown) })
@@ -134,6 +136,7 @@ public partial class MainWindow : Window
             AdapterStatus.Text = L.T(Controller.Transport.AdapterSummary);
             PeerStatus.Text = selected?.Name ?? L.T("未選択");
             SubscriptionStatus.Text = selected is null ? L.T("一覧から端末を選択") : L.F("キーボード {0} / マウス {1} / {2}", selected.Keyboard ? "✓" : "—", selected.Mouse ? "✓" : "—", selected.Paired ? L.T("ペア済") : L.T("未ペア")) + (selected.Suspended ? L.T(" / iPadで一時停止") : "");
+            if (selected is not null && Controller.Settings.NativeTouchpad) SubscriptionStatus.Text += L.F(" / 接点 {0}", Controller.Transport.IsTouchpadReady(selected.Id) ? "✓" : "—");
             InputTarget.Text = Controller.Router.IsRemote ? L.T("iPad / 選択端末") : "Windows";
             InputReason.Text = Controller.Router.Reason;
             StartButton.IsEnabled = !Controller.Busy && !Controller.Transport.Publishing && !Controller.SmokeMode;
@@ -144,6 +147,8 @@ public partial class MainWindow : Window
             MouseValue.Text = $"{Controller.Settings.MouseSensitivity:0.00} ×"; ScrollValue.Text = $"{Controller.Settings.ScrollSensitivity:0.00} ×";
             MouseModeLabel.Text = Controller.MouseMode; ActivationShortcutLabel.Text = Controller.ActivationShortcut;
             DashboardReturnShortcut.Text = Controller.ReturnShortcutText; TouchpadStatusLabel.Text = Controller.TouchpadStatus;
+            TouchpadScrollSlider.IsEnabled = TouchpadSensitivityBox.IsEnabled = !Controller.Settings.NativeTouchpad;
+            foreach (var combo in new[] { SwipeLeftCombo, SwipeRightCombo, SwipeUpCombo, SwipeDownCombo }) combo.IsEnabled = !Controller.Settings.NativeTouchpad;
             PortalLabel.Text = L.F("画面端の {0:P0} ～ {1:P0} ／ {2} ms の押し続け", Controller.Settings.PortalStart, Controller.Settings.PortalEnd, Controller.Settings.EdgeDwellMs);
             ReportStats.Text = L.F("送信済みレポート: {0:N0}  ·  送信処理: {1}  ·  メモリ: {2:0.0} MB", Controller.Reports.Sent, Controller.Reports.Healthy ? L.T("正常") : L.T("停止（アプリを再起動）"), Process.GetCurrentProcess().WorkingSet64 / 1048576d);
             if (SettingsPage.Visibility == Visibility.Visible) { LogBox.Text = Controller.Log.Recent; LogBox.ScrollToEnd(); }
@@ -222,6 +227,7 @@ public partial class MainWindow : Window
                 TouchpadScrollSensitivity = TouchpadScrollSlider.Value,
                 RawMouse = RawMouseCheck.IsChecked == true,
                 CaptureTouchpad = TouchpadCheck.IsChecked == true,
+                StabilizeFastPointer = FastPointerCheck.IsChecked == true, NativeTouchpad = NativeTouchpadCheck.IsChecked == true,
                 CloseToTray = TrayCheck.IsChecked == true, Reconnect = ReconnectCheck.IsChecked == true, AutoStart = AutostartCheck.IsChecked == true,
                 Edge = (ScreenEdge)Math.Max(0, EdgeCombo.SelectedIndex), MonitorId = (MonitorCombo.SelectedItem as DisplayInfo)?.Id ?? "",
                 PortalStart = PortalStartSlider.Value, PortalEnd = PortalEndSlider.Value
@@ -230,6 +236,7 @@ public partial class MainWindow : Window
             PortalStartSlider.Value = Controller.Settings.PortalStart; PortalEndSlider.Value = Controller.Settings.PortalEnd;
             MouseSensitivityBox.Text = Controller.Settings.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
             TouchpadSensitivityBox.Text = Controller.Settings.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
+            TouchpadCheck.IsChecked = Controller.Settings.CaptureTouchpad; TouchpadCheck.IsEnabled = !Controller.Settings.NativeTouchpad;
             _updating = prior;
             RefreshView(); DrawLayout();
         }
@@ -392,9 +399,10 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.3.4", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "0.4.0", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Reports.CoalescedMotion,
-                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
+                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.NativeContactFrames, Controller.MaximumNativeContacts, Controller.MaximumValidNativeContacts,
+                NativeContactApi = NativeInput.ProbeNativeContacts(), Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }
     }
@@ -415,6 +423,15 @@ public partial class MainWindow : Window
                     Capture(Path.Combine(output, $"{language}-{index + 1}-light.png"));
                 }
                 SelectPage(2);
+                FastPointerCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
+                if (new SettingsStore(_dataDirectory).Load().StabilizeFastPointer) throw new InvalidOperationException("Fast pointer setting was not saved.");
+                FastPointerCheck.IsChecked = true; NativeTouchpadCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
+                var nativeSaved = new SettingsStore(_dataDirectory).Load();
+                if (!nativeSaved.NativeTouchpad || !nativeSaved.CaptureTouchpad || !nativeSaved.StabilizeFastPointer || Controller.Transport.NativeTouchpadMode)
+                    throw new InvalidOperationException("Native mode persistence or restart boundary failed.");
+                PageScroll.ScrollToVerticalOffset(480); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
+                Capture(Path.Combine(output, $"{language}-3-native-light.png"));
+                NativeTouchpadCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
                 TouchpadSensitivityBox.Text = "4.50"; ApplyTouchpadSensitivityText();
                 if (new SettingsStore(_dataDirectory).Load().TouchpadScrollSensitivity != 4.5 || TouchpadScrollSlider.Value != 4.5)
                     throw new InvalidOperationException("Touchpad sensitivity edit failed: " + language);
@@ -436,7 +453,7 @@ public partial class MainWindow : Window
             var restored = new SettingsStore(_dataDirectory).Load();
             var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
             var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 21, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 24, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded, NativeModeRoundTrip = !restored.NativeTouchpad, FastPointerRoundTrip = restored.StabilizeFastPointer, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke-error.txt"), ex.ToString()); }
         RequestExit();

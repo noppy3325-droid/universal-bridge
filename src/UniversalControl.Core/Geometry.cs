@@ -47,13 +47,14 @@ public sealed class MotionAccumulator
 {
     private double _x, _y, _wheel;
     public void Add(double x, double y, double wheel) { _x += x; _y += y; _wheel += wheel; }
-    public (int X, int Y, int Wheel) Take()
+    public (int X, int Y, int Wheel) Take(int pointerLimit = 32767)
     {
+        if (pointerLimit is < 1 or > 32767) throw new ArgumentOutOfRangeException(nameof(pointerLimit));
         // Center the quantization error instead of making each axis wait for a full count.
         // A shared scale also keeps the direction of reports that exceed the HID range.
-        var scale = Math.Min(1, 32767 / Math.Max(Math.Abs(_x), Math.Abs(_y)));
-        var x = (int)Math.Clamp(Math.Round(_x * scale), -32767, 32767);
-        var y = (int)Math.Clamp(Math.Round(_y * scale), -32767, 32767);
+        var scale = Math.Min(1, pointerLimit / Math.Max(Math.Abs(_x), Math.Abs(_y)));
+        var x = (int)Math.Clamp(Math.Round(_x * scale), -pointerLimit, pointerLimit);
+        var y = (int)Math.Clamp(Math.Round(_y * scale), -pointerLimit, pointerLimit);
         var w = TakeAxis(_wheel, 127);
         _x -= x; _y -= y; _wheel -= w;
         if (Math.Abs(_x) < 1e-9) _x = 0;
@@ -69,6 +70,7 @@ public sealed class MotionAccumulator
         return (int)Math.Clamp(Math.Truncate(value), -limit, limit);
     }
     public void Clear() { _x = _y = _wheel = 0; }
+    public void ClearPointer() { _x = _y = 0; }
 }
 
 /// <summary>Relative-report estimate only. It never measures the iPad cursor.</summary>

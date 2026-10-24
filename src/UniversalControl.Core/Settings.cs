@@ -11,6 +11,8 @@ public sealed record AppSettings
     public double MouseSensitivity { get; init; } = 1;
     public bool RawMouse { get; init; } = true;
     public bool CaptureTouchpad { get; init; } = true;
+    public bool StabilizeFastPointer { get; init; } = true;
+    public bool NativeTouchpad { get; init; }
     public ShortcutBinding ActivateShortcut { get; init; } = ShortcutBinding.DefaultActivate;
     public ShortcutBinding ReturnShortcut { get; init; } = ShortcutBinding.DefaultReturn;
     public GestureAction SwipeLeft { get; init; } = GestureAction.NextApp;
@@ -40,6 +42,7 @@ public sealed record AppSettings
         {
         SchemaVersion = 1, Theme = Theme == "Dark" ? "Dark" : "Light",
         Language = Language is "auto" or "ja" or "en" or "zh-Hans" ? Language : "auto",
+        CaptureTouchpad = NativeTouchpad || CaptureTouchpad,
         ActivateShortcut = validShortcuts ? ActivateShortcut! : ShortcutBinding.DefaultActivate,
         ReturnShortcut = validShortcuts ? ReturnShortcut! : ShortcutBinding.DefaultReturn,
         SwipeLeft = Enum.IsDefined(SwipeLeft) ? SwipeLeft : GestureAction.NextApp,

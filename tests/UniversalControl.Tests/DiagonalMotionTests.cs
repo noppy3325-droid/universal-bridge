@@ -68,7 +68,7 @@ public sealed class DiagonalMotionTests
 
     [Fact] public async Task SlowBluetoothCoalescesTravelWithoutDelayingOrMergingClickEdges()
     {
-        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake, 8);
+        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake, 32);
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var resume = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         fake.BeforeSend = async ct => { entered.TrySetResult(); await resume.Task.WaitAsync(ct); };
@@ -78,12 +78,14 @@ public sealed class DiagonalMotionTests
         for (var i = 0; i < 100; i++) Assert.True(sender.EnqueueMotion("iPad", 0, HidReports.Mouse(MouseButtons.Left, 1, 1)));
         Assert.True(sender.Enqueue("iPad", 0, HidReports.Mouse(0)));
         Assert.True(sender.Enqueue("iPad", 0, HidReports.Keyboard(0, [])));
-        resume.SetResult(); await FakeTransport.Until(() => fake.Sent.Count == 6);
-        var sent = fake.Sent.ToArray(); Assert.Equal(ReportKind.Keyboard, sent[0].Frame.Kind);
-        Assert.Equal((1000, 2000), XY(sent[1].Frame)); Assert.Equal(1, sent[2].Frame.Payload[0]);
-        Assert.Equal((100, 100), XY(sent[3].Frame)); Assert.Equal(1, sent[3].Frame.Payload[0]);
-        Assert.Equal(0, sent[4].Frame.Payload[0]); Assert.Equal(ReportKind.Keyboard, sent[5].Frame.Kind);
-        Assert.Equal(1098, sender.CoalescedMotion); Assert.True(sender.Healthy);
+        resume.SetResult(); await FakeTransport.Until(() => { var last = fake.Sent.LastOrDefault().Frame; return last is { Kind: ReportKind.Keyboard } && last.Payload.All(b => b == 0); });
+        var sent = fake.Sent.ToArray(); var click = Array.FindIndex(sent, p => p.Frame.Kind == ReportKind.Mouse && p.Frame.Payload[0] == 1);
+        Assert.True(click > 1); Assert.Equal(1000, sent.Skip(1).Take(click - 1).Sum(p => XY(p.Frame).X));
+        Assert.Equal(2000, sent.Skip(1).Take(click - 1).Sum(p => XY(p.Frame).Y));
+        Assert.Equal((100, 100), XY(sent[click + 1].Frame)); Assert.Equal(1, sent[click + 1].Frame.Payload[0]);
+        Assert.Equal(0, sent[click + 2].Frame.Payload[0]); Assert.Equal(ReportKind.Keyboard, sent[^1].Frame.Kind);
+        Assert.All(sent.Where(p => p.Frame.Kind == ReportKind.Mouse), p => { var xy = XY(p.Frame); Assert.InRange(Math.Abs(xy.X), 0, 127); Assert.InRange(Math.Abs(xy.Y), 0, 127); });
+        Assert.True(sender.CoalescedMotion > 1000); Assert.True(sender.Healthy);
     }
 
     [Fact] public async Task ReversalWheelKeyboardAndRangeAreCoalescingBarriers()

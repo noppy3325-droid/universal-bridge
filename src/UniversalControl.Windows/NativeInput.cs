@@ -7,6 +7,7 @@ using UniversalControl.Core;
 namespace UniversalControl.Windows;
 
 public sealed record PhysicalReadinessProbe(bool PhysicalIdle, bool AllVirtualKeysIdle, int ImeModeStatesActive, bool OnDefaultDesktop, int KeyboardType);
+public sealed record NativeContactApiProbe(bool Available, int PointerInfoBytes, int TouchInfoBytes);
 
 public sealed class NativeInput : IDisposable
 {
@@ -50,10 +51,15 @@ public sealed class NativeInput : IDisposable
     public bool ActivationHotkeyRegistered { get; private set; }
     public bool ReturnHotkeyRegistered { get; private set; }
     public bool TouchpadAvailable => _touchpad?.Available == true;
+    public bool NativeContactsAvailable => _touchpad?.NativeContactsAvailable == true;
+    public long NativeContactFrames => _touchpad?.NativeFrames ?? 0;
+    public int MaximumNativeContacts => _touchpad?.MaximumNativeContacts ?? 0;
+    public int MaximumValidNativeContacts => _touchpad?.MaximumValidNativeContacts ?? 0;
     public bool TouchpadActive => _touchpad?.Active == true;
     public long TouchpadEvents => _touchpad?.Events ?? 0;
     public string TouchpadStatus => TouchpadAvailable ? L.T("対応：iPad操作中に専用の受け取り画面で取得") : L.T("このWindowsではジェスチャー取得APIを使用できません");
     public static bool IsTouchpadSupported() => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100) && TouchpadCapture.Supported;
+    public static NativeContactApiProbe ProbeNativeContacts() => NativeTouchpadReader.Probe();
     public bool RawMouseAvailable => _rawMouse?.Available == true;
     public long RawMousePackets => _rawMouse?.Packets ?? 0;
     private bool UsesRawMouse => _settings.RawMouse && RawMouseAvailable && !_rawFallback;

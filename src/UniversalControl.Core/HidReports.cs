@@ -4,7 +4,7 @@ namespace UniversalControl.Core;
 
 [Flags]
 public enum MouseButtons : byte { None = 0, Left = 1, Right = 2, Middle = 4 }
-public enum ReportKind { Keyboard, Mouse }
+public enum ReportKind { Keyboard, Mouse, Touchpad }
 public sealed record HidFrame(ReportKind Kind, byte[] Payload);
 
 public static class HidReports
@@ -33,8 +33,17 @@ public static class HidReports
     public static void Validate(HidFrame frame)
     {
         if (!Enum.IsDefined(frame.Kind)) throw new ArgumentException("Unknown report kind.");
-        if (frame.Payload.Length != (frame.Kind == ReportKind.Keyboard ? 8 : 7))
+        if (frame.Payload.Length != (frame.Kind == ReportKind.Keyboard ? 8 : frame.Kind == ReportKind.Mouse ? 7 : TouchpadReports.Length))
             throw new ArgumentException("HID report length does not match the Report Map.");
+        if (frame.Kind == ReportKind.Touchpad)
+        {
+            if (frame.Payload[2] > 3) throw new ArgumentException("Invalid touchpad buttons.");
+            for (var slot = 0; slot < 5; slot++)
+            {
+                var flags = frame.Payload[3 + slot * 5];
+                if (flags != 0 && flags >> 2 != slot) throw new ArgumentException("Invalid touchpad contact ID.");
+            }
+        }
         if (frame.Kind == ReportKind.Keyboard && frame.Payload[1] != 0)
             throw new ArgumentException("Keyboard reserved byte must be zero.");
         if (frame.Kind == ReportKind.Mouse && (frame.Payload[0] & ~7) != 0)

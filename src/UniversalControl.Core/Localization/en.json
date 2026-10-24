@@ -60,7 +60,7 @@
   "iPad操作中 · 戻る: ": "iPad control · Return: ",
   "iPad操作中だけ小さな受け取り画面を前面に表示します。Windowsの別画面へフォーカスが移ると自動でWindowsへ戻ります。オフの場合、Windows側のジェスチャーは抑制しません。": "A small capture window stays in front while controlling iPad. Focusing another Windows window returns control to Windows. When this is off, Windows gestures are not suppressed.",
   "iPad操作中はジェスチャーをWindowsへ渡さず取得する": "Capture gestures while controlling iPad",
-  "Universal Bridge 0.3.4を起動しました。入力内容は記録しません。": "Universal Bridge 0.3.4 started. Input content is not logged.",
+  "Universal Bridge 0.4.0を起動しました。入力内容は記録しません。": "Universal Bridge 0.4.0 started. Input content is not logged.",
   "Universal Bridge 起動エラー": "Universal Bridge startup error",
   "Universal Bridgeは起動済みです。タスクトレイから開いてください。": "Universal Bridge is already running. Open it from the system tray.",
   "Windowsサインイン時に起動する（現在のユーザーのみ）": "Start at Windows sign-in (current user only)",
@@ -253,5 +253,13 @@
   "マウスホイール感度": "Mouse wheel sensitivity",
   "2本指スクロール感度": "Two-finger scroll sensitivity",
   "推奨値 3.00": "Recommended: 3.00",
-  "0.25～12.00倍。ジェスチャー取得時の2本指スクロール専用です。推奨値3.00は旧版の3倍で、マウスホイール感度とは独立しています。": "0.25–12.00 × for captured two-finger scrolling. Recommended 3.00 is three times the old default and is independent of mouse wheel sensitivity."
+  "0.25～12.00倍。ジェスチャー取得時の2本指スクロール専用です。推奨値3.00は旧版の3倍で、マウスホイール感度とは独立しています。": "0.25–12.00 × for captured two-finger scrolling. Recommended 3.00 is three times the old default and is independent of mouse wheel sensitivity.",
+  "純正ジェスチャー設定の変更後はアプリを再起動してください。": "Restart the app after changing native gesture mode.",
+  "このWindowsでは実接点を取得できません。純正ジェスチャーモードをオフにしてください。": "This Windows version cannot capture real contacts. Turn off native gesture mode.",
+  "接点レポートの購読・通知サイズ・Surface Switchを待機中です。必要ならiPadで登録解除して再ペアリングしてください。": "Waiting for touchpad subscription, notification size, or Surface Switch. If needed, forget the PC on iPad and pair again.",
+  " / 接点 {0}": " / contacts {0}",
+  "素早いカーソル移動を抑える（おすすめ）": "Reduce sudden pointer movement (recommended)",
+  "細かい動きは維持し、急な移動だけ減速します。速く動かしたときの移動距離は短くなります。": "Keeps fine motion linear and slows abrupt movement. Fast movements cover less distance.",
+  "iPad純正ジェスチャー向けの接点転送（試験版）": "Contact relay for native iPad gestures (experimental)",
+  "2～5本指のスクロール・ピンチ・スワイプをiPadに渡します。変更後はアプリを再起動し、必要なら再ペアリングしてください。タップにはWindows側の制約があり、このモードでは感度とキー割り当てを使いません。": "Relays real two-to-five-finger scrolling, pinching, and swiping. Restart after changing; re-pair if needed. Windows limits tap data. This mode bypasses scroll gain and gesture key mappings."
 }

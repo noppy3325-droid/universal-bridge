@@ -17,6 +17,10 @@ internal interface ITouchpadCapture : IDisposable
     bool Active { get; }
     bool OwnsForeground { get; }
     long Events { get; }
+    bool NativeContactsAvailable { get; }
+    long NativeFrames { get; }
+    int MaximumNativeContacts { get; }
+    int MaximumValidNativeContacts { get; }
     bool Enter(int x, int y, AppSettings settings);
     void Leave();
 }
@@ -29,6 +33,7 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     private readonly Action<string> _fault;
     private readonly WindowProc _procedure;
     private readonly TouchpadGestures _gestures = new();
+    private readonly NativeTouchpadReader _native;
     private readonly string _className = "UniversalBridge.Touchpad." + Guid.NewGuid().ToString("N");
     private readonly nint _instance = GetModuleHandle(null);
     private TouchpadGesturesController? _controller;
@@ -40,12 +45,16 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     public bool Active => _active;
     public bool OwnsForeground => _active && GetForegroundWindow() == _window;
     public long Events { get; private set; }
+    public bool NativeContactsAvailable => Available && NativeTouchpadReader.Supported;
+    public long NativeFrames => _native.Frames;
+    public int MaximumNativeContacts => _native.MaximumContacts;
+    public int MaximumValidNativeContacts => _native.MaximumValidContacts;
 
     public static bool Supported => ApiInformation.IsTypePresent("Windows.UI.Input.TouchpadGesturesController") &&
         ApiInformation.IsTypePresent("Windows.UI.Input.PhysicalGestureRecognizer") && TouchpadGesturesController.IsSupported();
 
     public TouchpadCapture(InputRouter router, Action<string> fault)
-    { _router = router; _fault = fault; _procedure = Dispatch; }
+    { _router = router; _fault = fault; _procedure = Dispatch; _native = new(router); }
     public void Start()
     {
         if (!Supported) return;
@@ -74,7 +83,8 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     public bool Enter(int x, int y, AppSettings settings)
     {
         if (!Available) return false;
-        _settings = settings; _gestures.Reset(); _previousForeground = GetForegroundWindow();
+        _settings = settings; _gestures.Reset(); _native.Reset(); _previousForeground = GetForegroundWindow();
+        if (settings.NativeTouchpad && !NativeContactsAvailable) return false;
         SetWindowText(_window, L.T("iPad操作中 · 戻る: ") + settings.ReturnShortcut + L.T(" / Esc 3回"));
         _active = true; _controller!.Enabled = true;
         SetWindowPos(_window, new nint(-1), x - 190, y - 50, 380, 100, 0x40);
@@ -86,6 +96,7 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     {
         var restore = _active && GetForegroundWindow() == _window;
         _active = false;
+        _native.Reset();
         if (_controller is not null) _controller.Enabled = false;
         _two?.CompleteGesture(); _multi?.CompleteGesture(); _gestures.Reset();
         if (_window != 0) ShowWindow(_window, 0);
@@ -112,12 +123,12 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     });
     private void MultiCompleted(PhysicalGestureRecognizer sender, ManipulationCompletedEventArgs args) => Safe(() =>
         _router.Gesture(TouchpadGestures.Swipe(args.Cumulative.Translation.X, args.Cumulative.Translation.Y, _settings)));
-    private void MultiPressed(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => _multi!.ProcessDownEvent(args.CurrentPoint)); }
-    private void MultiMoved(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => _multi!.ProcessMoveEvents(args.GetIntermediatePoints())); }
-    private void MultiReleased(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => _multi!.ProcessUpEvent(args.CurrentPoint)); }
+    private void MultiPressed(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => { if (_settings.NativeTouchpad) _native.Process(args.CurrentPoint.PointerId); else _multi!.ProcessDownEvent(args.CurrentPoint); }); }
+    private void MultiMoved(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => { if (_settings.NativeTouchpad) _native.Process(args.CurrentPoint.PointerId); else _multi!.ProcessMoveEvents(args.GetIntermediatePoints()); }); }
+    private void MultiReleased(TouchpadGesturesController sender, PointerEventArgs args) { args.Handled = true; Safe(() => { if (_settings.NativeTouchpad) _native.Process(args.CurrentPoint.PointerId); else _multi!.ProcessUpEvent(args.CurrentPoint); }); }
     private void GlobalAction(TouchpadGesturesController sender, TouchpadGlobalActionEventArgs args) => Safe(() =>
     {
-        if (args.Action is TouchpadGlobalAction.ThreeFingerTap or TouchpadGlobalAction.FourFingerTap or TouchpadGlobalAction.FiveFingerTap)
+        if (!_settings.NativeTouchpad && args.Action is TouchpadGlobalAction.ThreeFingerTap or TouchpadGlobalAction.FourFingerTap or TouchpadGlobalAction.FiveFingerTap)
             _router.Gesture(GestureAction.Search);
     });
     private nint Dispatch(nint window, uint message, nuint wp, nint lp)
@@ -125,6 +136,7 @@ internal sealed class TouchpadCapture : ITouchpadCapture
         if (message == 0x10) { _router.GoLocal(L.T("ジェスチャー受け取り画面を閉じてWindowsへ戻しました")); return 0; }
         if (_active && message is 0x20A or 0x20E)
         {
+            if (_settings.NativeTouchpad && _native.Active) return 0;
             var delta = unchecked((short)(wp >> 16));
             Safe(() => _router.Scroll(message == 0x20A ? delta : 0, message == 0x20E ? delta : 0));
             return 0;
@@ -136,7 +148,8 @@ internal sealed class TouchpadCapture : ITouchpadCapture
             {
                 Safe(() =>
                 {
-                    if (message == 0x246) _two!.ProcessDownEvent(PointerPoint.GetCurrentPoint(id));
+                    if (_settings.NativeTouchpad) _native.Process(id);
+                    else if (message == 0x246) _two!.ProcessDownEvent(PointerPoint.GetCurrentPoint(id));
                     else if (message == 0x247) _two!.ProcessUpEvent(PointerPoint.GetCurrentPoint(id));
                     else _two!.ProcessMoveEvents(PointerPoint.GetIntermediatePoints(id));
                 });
