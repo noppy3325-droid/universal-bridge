@@ -1,4 +1,4 @@
-# Known limitations — 0.5.0
+# Known limitations — 0.5.1
 
 ## 0.5.0の確認範囲
 

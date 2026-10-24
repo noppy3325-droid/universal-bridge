@@ -60,7 +60,7 @@
   "iPad操作中 · 戻る: ": "正在操作 iPad · 返回：",
   "iPad操作中だけ小さな受け取り画面を前面に表示します。Windowsの別画面へフォーカスが移ると自動でWindowsへ戻ります。オフの場合、Windows側のジェスチャーは抑制しません。": "操作 iPad 时会显示一个置顶的手势接收窗口。焦点移到其他 Windows 窗口时，将自动返回 Windows。关闭此项后不会拦截 Windows 手势。",
   "iPad操作中はジェスチャーをWindowsへ渡さず取得する": "操作 iPad 时捕获手势，阻止交给 Windows",
-  "Universal Bridge 0.5.0を起動しました。入力内容は記録しません。": "Universal Bridge 0.5.0 已启动。不会记录输入内容。",
+  "Universal Bridge 0.5.1を起動しました。入力内容は記録しません。": "Universal Bridge 0.5.1 已启动。不会记录输入内容。",
   "Universal Bridge 起動エラー": "Universal Bridge 启动错误",
   "Universal Bridgeは起動済みです。タスクトレイから開いてください。": "Universal Bridge 已在运行。请从系统托盘打开。",
   "Windowsサインイン時に起動する（現在のユーザーのみ）": "登录 Windows 时启动（仅当前用户）",

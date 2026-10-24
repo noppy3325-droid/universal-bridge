@@ -61,7 +61,7 @@ public sealed class BridgeController : IAsyncDisposable
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.EdgeActivationAllowed = CanActivateAtEdge;
         _input.ActivationRequested += async fromEdge => { try { await ActivateRemoteAsync(fromEdge); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.5.0を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 0.5.1を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }

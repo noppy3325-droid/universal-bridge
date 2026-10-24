@@ -299,7 +299,7 @@ public sealed class NativeInput : IDisposable
         var revision = Volatile.Read(ref _edgeRevision);
         if (_observedEdgeRevision != revision) { _edge.Reset(); _observedEdgeRevision = revision; }
         if (_router.IsRemote || !_settings.AutoSwitch || !_router.PhysicalIdle || EdgeActivationAllowed?.Invoke() != true || SelectedDisplay is not { } display)
-        { _edge.Reset(); return; }
+        { _edge.Reset(); _edgeRequest = null; return; }
         PixelPoint point;
         if (physicalPoint is { } physical) point = physical;
         else if (GetCursorPos(out var cursor)) point = new(cursor.X, cursor.Y);

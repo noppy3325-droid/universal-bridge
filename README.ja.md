@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**プレビュー v0.5.0。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**プレビュー v0.5.1。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[プレビュー版をダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,10 +32,10 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)** から取得します。
+**[Releases — v0.5.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1)** から取得します。
 
-- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-0.5.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- **[UniversalBridge-0.5.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.1/UniversalBridge-0.5.1-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-0.5.1-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。

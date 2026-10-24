@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**预览版 v0.5.0。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**预览版 v0.5.1。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载预览版](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,10 +32,10 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)**：
+前往 **[Releases — v0.5.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1)**：
 
-- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-0.5.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-0.5.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.1/UniversalBridge-0.5.1-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-0.5.1-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。

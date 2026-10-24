@@ -60,7 +60,7 @@
   "iPad操作中 · 戻る: ": "iPad control · Return: ",
   "iPad操作中だけ小さな受け取り画面を前面に表示します。Windowsの別画面へフォーカスが移ると自動でWindowsへ戻ります。オフの場合、Windows側のジェスチャーは抑制しません。": "A small capture window stays in front while controlling iPad. Focusing another Windows window returns control to Windows. When this is off, Windows gestures are not suppressed.",
   "iPad操作中はジェスチャーをWindowsへ渡さず取得する": "Capture gestures while controlling iPad",
-  "Universal Bridge 0.5.0を起動しました。入力内容は記録しません。": "Universal Bridge 0.5.0 started. Input content is not logged.",
+  "Universal Bridge 0.5.1を起動しました。入力内容は記録しません。": "Universal Bridge 0.5.1 started. Input content is not logged.",
   "Universal Bridge 起動エラー": "Universal Bridge startup error",
   "Universal Bridgeは起動済みです。タスクトレイから開いてください。": "Universal Bridge is already running. Open it from the system tray.",
   "Windowsサインイン時に起動する（現在のユーザーのみ）": "Start at Windows sign-in (current user only)",

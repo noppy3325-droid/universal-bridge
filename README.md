@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**Preview v0.5.0.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**Preview v0.5.1.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download the preview](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download the preview](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,10 +32,10 @@ This is an **unsigned preview** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v0.5.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.0)**:
+Open **[Releases — v0.5.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v0.5.1)**:
 
-- **[UniversalBridge-0.5.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.0/UniversalBridge-0.5.0-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-0.5.0-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-0.5.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v0.5.1/UniversalBridge-0.5.1-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-0.5.1-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.

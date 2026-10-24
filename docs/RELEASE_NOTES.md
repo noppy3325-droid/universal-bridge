@@ -1,4 +1,4 @@
-# Universal Bridge 0.5.0 — Preview
+# Universal Bridge 0.5.1 — Preview
 
 ## English
 
@@ -7,7 +7,7 @@
 - Cancels pending edge activation when the pointer leaves, a key/button is pressed, settings change or readiness is lost. Reconnection or remaining at an edge does not automatically recapture input.
 - 192 automated tests and three-language GUI verification. New actions and physical edge switching still need iPad hardware confirmation. Home uses ⌘H rather than Apple's Globe key; compatibility depends on iPadOS/settings. The iPad cursor resumes at its previous position, with no absolute coordinate warp.
 
-Exit the old app, extract UniversalBridge-0.5.0-win-x64.zip and run UniversalControl.exe. Existing settings and the HID report format are retained. Enable edge switching in Display layout after connecting/selecting iPad. Windows 11 x64 / BLE Peripheral; unsigned, self-contained preview.
+Exit the old app, extract UniversalBridge-0.5.1-win-x64.zip and run UniversalControl.exe. Existing settings and the HID report format are retained. Enable edge switching in Display layout after connecting/selecting iPad. Windows 11 x64 / BLE Peripheral; unsigned, self-contained preview.
 
 ## 日本語
 
@@ -16,7 +16,7 @@ Exit the old app, extract UniversalBridge-0.5.0-win-x64.zip and run UniversalCon
 - 待機中の端からの離脱、キー／ボタン入力、設定変更、準備状態の消失で取り消します。再接続や同じ端での静止だけで再捕捉しません。
 - 自動テスト192件、3言語GUI検証。新しい操作キーと物理的なiPad切り替えは実機確認が残ります。ホームはApple固有Globeではなく⌘Hの互換経路で、iPadOS／設定に依存します。iPadカーソルは前回位置から操作し、実座標へのワープはしません。
 
-旧版を完全終了しUniversalBridge-0.5.0-win-x64.zipを展開してexeを起動してください。既存設定とHID形式は引き継ぎます。接続・iPad選択後、配置画面で自動切り替えを有効にします。Windows 11 x64／BLE Peripheral対応、ランタイム同梱・署名なしのプレビューです。
+旧版を完全終了しUniversalBridge-0.5.1-win-x64.zipを展開してexeを起動してください。既存設定とHID形式は引き継ぎます。接続・iPad選択後、配置画面で自動切り替えを有効にします。Windows 11 x64／BLE Peripheral対応、ランタイム同梱・署名なしのプレビューです。
 
 ## 简体中文
 
@@ -25,4 +25,4 @@ Exit the old app, extract UniversalBridge-0.5.0-win-x64.zip and run UniversalCon
 - 离开边缘、按键／鼠标按钮、更改设置或失去就绪状态会取消待执行切换。重连或静止停留在边缘不会自动重新捕获。
 - 192项自动测试及三语GUI验证。新操作及物理iPad切换仍需实机确认。主页使用⌘H兼容通道，不模拟Apple的Globe键，依赖iPadOS及设置。iPad指针从原有位置继续操作，不执行绝对坐标跳转。
 
-退出旧版，解压UniversalBridge-0.5.0-win-x64.zip并运行exe，保留原设置及HID格式。连接并选择iPad后，在布局页面启用自动切换。需要Windows 11 x64及BLE外围支持，包含运行时的未签名预览版。
+退出旧版，解压UniversalBridge-0.5.1-win-x64.zip并运行exe，保留原设置及HID格式。连接并选择iPad后，在布局页面启用自动切换。需要Windows 11 x64及BLE外围支持，包含运行时的未签名预览版。
