@@ -18,19 +18,35 @@ public sealed class NativeInput : IDisposable
     private Thread? _thread;
     private System.Threading.Timer? _watchdog;
     private RawMouseCapture? _rawMouse;
+    private MouseReportTimer? _motionTimer;
     private ITouchpadCapture? _touchpad;
     private readonly ConcurrentQueue<(Func<string?> Action, TaskCompletionSource<string?> Result)> _commands = new();
     private uint _threadId;
     private nint _keyboardHook, _mouseHook;
     private volatile bool _running, _nativeRemote;
     private long _lastPulse, _lastFlush, _lastReconcile, _rawWaitingSince, _lastRawPackets;
+    private long _motionTimerTicks;
     private volatile bool _rawFallback;
     private nuint _timerId;
     private Point _anchor, _returnPoint;
     private AppSettings _settings = new();
     private IReadOnlyList<DisplayInfo> _displays = [];
     public bool Available => _running && ReturnHotkeyRegistered && _keyboardHook != 0 && _mouseHook != 0 && Environment.TickCount64 - Interlocked.Read(ref _lastPulse) < 1500;
-    public int ReportIntervalMs { get; set; } = 15;
+    private int _reportIntervalMs = 8;
+    public int ReportIntervalMs { get => Volatile.Read(ref _reportIntervalMs); set => Volatile.Write(ref _reportIntervalMs, Math.Clamp(value, 8, 100)); }
+    public bool PreciseMotionTiming => _motionTimer is not null;
+    public async Task<long> ProbeMotionTimingAsync()
+    {
+        var before = Interlocked.Read(ref _motionTimerTicks);
+        await InvokeAsync(() =>
+        {
+            if (_router.IsRemote) throw new InvalidOperationException("Motion timing probe requires local input.");
+            _motionTimer?.Start(8); return null;
+        });
+        try { await Task.Delay(200); }
+        finally { await InvokeAsync(() => { if (!_router.IsRemote) _motionTimer?.Stop(); return null; }); }
+        return Interlocked.Read(ref _motionTimerTicks) - before;
+    }
     public bool ActivationHotkeyRegistered { get; private set; }
     public bool ReturnHotkeyRegistered { get; private set; }
     public bool TouchpadAvailable => _touchpad?.Available == true;
@@ -134,6 +150,7 @@ public sealed class NativeInput : IDisposable
             _anchor = new Point { X = display.Left + display.Width / 2, Y = display.Top + display.Height / 2 };
             _rawMouse?.Reset(); _rawWaitingSince = 0; _lastRawPackets = RawMousePackets;
             _nativeRemote = true;
+            _motionTimer?.Start(ReportIntervalMs);
             if (!SetCursorPos(_anchor.X, _anchor.Y)) _router.GoLocal(L.T("カーソル制御に失敗したためWindowsへ戻しました"));
             if (_router.IsRemote && _settings.CaptureTouchpad && _touchpad?.Enter(_anchor.X, _anchor.Y, _settings) != true)
                 _router.GoLocal(L.T("ジェスチャーの受け取り画面を有効にできません。アプリを前面に出して再試行するか、入力設定でジェスチャー取得をオフにしてください。"));
@@ -142,6 +159,7 @@ public sealed class NativeInput : IDisposable
         else if (!_router.IsRemote && _nativeRemote)
         {
             _nativeRemote = false; _touchpad?.Leave(); _rawMouse?.Reset(); _edge.Reset();
+            _motionTimer?.Stop();
             var display = SelectedDisplay;
             if (display is not null) SetCursorPos(Math.Clamp(_returnPoint.X, display.Left + 32, display.Right - 33), Math.Clamp(_returnPoint.Y, display.Top + 32, display.Bottom - 33));
         }
@@ -179,15 +197,23 @@ public sealed class NativeInput : IDisposable
             }
             _timerId = SetTimer(0, 1, 10, 0);
             if (_timerId == 0) throw new Win32Exception(Marshal.GetLastWin32Error(), L.T("入力監視タイマーを開始できません。"));
+            try { _motionTimer = new MouseReportTimer(); }
+            catch (Exception ex) { ThreadPool.QueueUserWorkItem(_ => Faulted?.Invoke(L.T("高精度マウスタイマーを使用できないため標準タイマーを使います: ") + ex.Message)); }
             Interlocked.Exchange(ref _lastPulse, Environment.TickCount64); _running = true; _started.TrySetResult();
             int result;
-            while ((result = GetMessage(out var message, 0, 0, 0)) > 0)
+            while ((result = NextMessage(out var message)) > 0)
             {
                 Interlocked.Exchange(ref _lastPulse, Environment.TickCount64);
                 if (message.Message == TimerMessage)
                 {
                     SynchronizeMode(); var now = Environment.TickCount64;
-                    if (now - _lastFlush >= ReportIntervalMs) { _router.FlushMotion(); _lastFlush = now; }
+                    if (_motionTimer is null && now >= _lastFlush)
+                    {
+                        _router.FlushMotion();
+                        // Keep a deadline instead of starting a second full interval after a late tick.
+                        _lastFlush = _lastFlush == 0 || now - _lastFlush >= ReportIntervalMs ? now + ReportIntervalMs : _lastFlush + ReportIntervalMs;
+                    }
+                    else if (_router.IsRemote) _motionTimer?.Start(ReportIntervalMs);
                     if (!_router.IsRemote && now - _lastReconcile >= 250)
                     { _router.ReconcilePhysical(vk => (GetAsyncKeyState(vk) & 0x8000) != 0); _lastReconcile = now; }
                 }
@@ -217,10 +243,30 @@ public sealed class NativeInput : IDisposable
             if (_mouseHook != 0) UnhookWindowsHookEx(_mouseHook);
             _keyboardHook = _mouseHook = 0;
             _rawMouse?.Dispose(); _rawMouse = null;
+            _motionTimer?.Dispose(); _motionTimer = null;
             _touchpad?.Dispose(); _touchpad = null;
             UnregisterHotKey(0, 1); UnregisterHotKey(0, 2); ActivationHotkeyRegistered = ReturnHotkeyRegistered = false;
             while (_commands.TryDequeue(out var command)) command.Result.TrySetException(new InvalidOperationException(L.T("入力監視を終了しました。")));
             if (_timerId != 0) KillTimer(0, _timerId); _timerId = 0; _threadId = 0;
+        }
+    }
+    private int NextMessage(out MessageData message)
+    {
+        if (_motionTimer is null) return GetMessage(out message, 0, 0, 0);
+        while (true)
+        {
+            var handle = _motionTimer.Handle;
+            var result = MsgWaitForMultipleObjectsEx(1, in handle, uint.MaxValue, 0x1CFF, 4); // Includes touch and pointer input.
+            if (result == uint.MaxValue) throw new Win32Exception(Marshal.GetLastWin32Error());
+            if (result == 0)
+            {
+                Interlocked.Increment(ref _motionTimerTicks);
+                Interlocked.Exchange(ref _lastPulse, Environment.TickCount64);
+                SynchronizeMode();
+                if (_router.IsRemote) { _motionTimer.Start(ReportIntervalMs); _router.FlushMotion(); }
+                // Service queued input as well: a slow flush must not starve emergency hotkeys.
+            }
+            if (PeekMessage(out message, 0, 0, 0, 1)) return message.Message == Quit ? 0 : 1;
         }
     }
     private void RequestActivation() => ThreadPool.QueueUserWorkItem(_ => ActivationRequested?.Invoke());
@@ -321,6 +367,7 @@ public sealed class NativeInput : IDisposable
     [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
     [DllImport("user32.dll", SetLastError = true)] private static extern int GetMessage(out MessageData message, nint window, uint min, uint max);
     [DllImport("user32.dll")] private static extern bool PeekMessage(out MessageData message, nint window, uint min, uint max, uint remove);
+    [DllImport("user32.dll", SetLastError = true)] private static extern uint MsgWaitForMultipleObjectsEx(uint count, in nint handles, uint milliseconds, uint wakeMask, uint flags);
     [DllImport("user32.dll")] private static extern bool TranslateMessage(ref MessageData message);
     [DllImport("user32.dll")] private static extern nint DispatchMessage(ref MessageData message);
     [DllImport("user32.dll")] private static extern bool PostThreadMessage(uint thread, uint message, nuint wp, nint lp);

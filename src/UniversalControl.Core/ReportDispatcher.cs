@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using System.Buffers.Binary;
 
 namespace UniversalControl.Core;
 
@@ -17,9 +18,17 @@ public interface IHidTransport
 
 public sealed class ReportDispatcher : IAsyncDisposable
 {
-    private sealed record Pending(string Target, long Epoch, HidFrame Frame);
+    private sealed class Pending(string target, long epoch, HidFrame frame)
+    {
+        public string Target { get; } = target;
+        public long Epoch { get; } = epoch;
+        public HidFrame Frame { get; set; } = frame;
+    }
     private readonly IHidTransport _transport;
     private readonly Channel<Pending> _queue;
+    private readonly object _queueGate = new();
+    private Pending? _motionTail;
+    private long _coalescedMotion;
     private readonly CancellationTokenSource _stop = new();
     private readonly SemaphoreSlim _sendGate = new(1);
     private readonly Task _pump;
@@ -31,6 +40,7 @@ public sealed class ReportDispatcher : IAsyncDisposable
     public bool Healthy => Volatile.Read(ref _faulted) == 0 && !_stop.IsCancellationRequested;
     public bool Settling => Volatile.Read(ref _resets) > 0;
     public long Sent => Interlocked.Read(ref _sent);
+    public long CoalescedMotion => Interlocked.Read(ref _coalescedMotion);
     public event Action<string>? Failed;
 
     public ReportDispatcher(IHidTransport transport, int capacity = 256)
@@ -45,12 +55,44 @@ public sealed class ReportDispatcher : IAsyncDisposable
     public bool Enqueue(string target, long epoch, HidFrame frame)
     {
         HidReports.Validate(frame);
-        if (!Healthy || !_queue.Writer.TryWrite(new(target, epoch, frame)))
+        bool written;
+        lock (_queueGate) { _motionTail = null; written = Healthy && _queue.Writer.TryWrite(new(target, epoch, frame)); }
+        if (!written)
         {
             Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
             return false;
         }
         return true;
+    }
+
+    // Only adjacent unsent XY motion may merge. Every key, button, wheel and target/epoch
+    // transition is an ordering barrier. Saturating a sum would lose travel, so split instead.
+    public bool EnqueueMotion(string target, long epoch, HidFrame frame)
+    {
+        HidReports.Validate(frame);
+        if (frame.Kind != ReportKind.Mouse || frame.Payload[5] != 0 || frame.Payload[6] != 0) return Enqueue(target, epoch, frame);
+        lock (_queueGate)
+        {
+            if (Healthy)
+            {
+                if (_motionTail is { } tail && tail.Epoch == epoch && tail.Target == target && tail.Frame.Payload[0] == frame.Payload[0])
+                {
+                    var a = tail.Frame.Payload; var b = frame.Payload;
+                    var ax = BinaryPrimitives.ReadInt16LittleEndian(a.AsSpan(1)); var ay = BinaryPrimitives.ReadInt16LittleEndian(a.AsSpan(3));
+                    var bx = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(1)); var by = BinaryPrimitives.ReadInt16LittleEndian(b.AsSpan(3));
+                    var x = ax + bx; var y = ay + by;
+                    if (ax * bx >= 0 && ay * by >= 0 && Math.Abs(x) <= 32767 && Math.Abs(y) <= 32767)
+                    {
+                        tail.Frame = HidReports.Mouse((MouseButtons)a[0], x, y);
+                        Interlocked.Increment(ref _coalescedMotion); return true;
+                    }
+                }
+                var pending = new Pending(target, epoch, frame);
+                if (_queue.Writer.TryWrite(pending)) { _motionTail = pending; return true; }
+            }
+        }
+        Fail(L.T("入力送信キューが停止または上限に達したためWindowsへ戻しました。iPadの接続を確認して切り替え直してください。"));
+        return false;
     }
 
     private void Fail(string reason)
@@ -105,13 +147,15 @@ public sealed class ReportDispatcher : IAsyncDisposable
         {
             await foreach (var next in _queue.Reader.ReadAllAsync(_stop.Token))
             {
+                HidFrame frame;
+                lock (_queueGate) { frame = next.Frame; if (ReferenceEquals(_motionTail, next)) _motionTail = null; }
                 if (!Healthy || next.Epoch != Interlocked.Read(ref _epoch)) continue;
                 await _sendGate.WaitAsync(_stop.Token);
                 try
                 {
                     if (next.Epoch != Interlocked.Read(ref _epoch)) continue;
                     if (!_transport.IsReady(next.Target)) throw new IOException(L.T("選択した端末とのHID接続が切れました。"));
-                    await SendBoundedAsync(next.Target, next.Frame, _stop.Token);
+                    await SendBoundedAsync(next.Target, frame, _stop.Token);
                 }
                 catch (Exception ex) when (!_stop.IsCancellationRequested) { Fail(L.T("Bluetooth送信失敗: ") + ex.Message); }
                 finally { _sendGate.Release(); }

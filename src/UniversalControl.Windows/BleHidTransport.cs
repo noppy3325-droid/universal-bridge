@@ -311,10 +311,10 @@ public sealed class BleHidTransport : IHidTransport, IAsyncDisposable
         try
         {
             if (_devices.TryGetValue(id, out var device))
-                return Math.Clamp((int)Math.Ceiling(device.GetConnectionParameters().ConnectionInterval * 1.25), 15, 100);
+                return Math.Clamp((int)Math.Ceiling(device.GetConnectionParameters().ConnectionInterval * 1.25), 8, 100);
         }
-        catch (Exception) { /* Fall back to conservative 15 ms local batching. */ }
-        return 15;
+        catch (Exception) { /* Use 8 ms local batching when connection parameters are unavailable. */ }
+        return 8;
     }
     public async Task SendAsync(string targetId, HidFrame frame, CancellationToken cancellationToken)
     {

@@ -4,6 +4,8 @@
 
 ## Windows標準API
 
+2026-10-24追記: [SetTimer](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-settimer)は最小10msでWM_TIMERを使います。マウス送信は[高精度waitable timer](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createwaitabletimerexw)と[MsgWaitForMultipleObjectsEx](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-msgwaitformultipleobjectsex)へ分離します。高精度フラグはWindows 10 1803以降に対応します。周期は[SetWaitableTimerEx](https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-setwaitabletimerex)で設定し、相対時刻は100ns単位です。[ConnectionInterval](https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.bluetoothleconnectionparameters.connectioninterval)は1.25ms単位なので、取得値をミリ秒に換算して送信周期へ使用します。タイマー精度のローカル測定はBLE転送の実測ではありません。
+
 [Microsoft GATT Server](https://learn.microsoft.com/en-us/windows/apps/develop/devices-sensors/gatt-server) では、公開禁止サービスとしてDIS、GATT、GAP、Scan Parametersを列挙しています。HID 0x1812はこのリストにありません。本PCで `GattServiceProvider.CreateAsync(0x1812)` はSuccessとなり、実際の広告公開・停止・再公開にも成功しました。対象PCすべてへの一般化はしません。
 
 標準の [NotifyValueAsync(value, subscribedClient)](https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.genericattributeprofile.gattlocalcharacteristic.notifyvalueasync) を使って対象を1台に限定します。通知結果の [Status](https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.genericattributeprofile.gattclientnotificationresult) を確認します。OSが生成するCCCDは手動で追加しません。予約サービスの上書き、ドライバー入替、レジストリによるBluetooth制限回避は行いません。

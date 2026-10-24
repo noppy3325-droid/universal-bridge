@@ -184,7 +184,7 @@ public sealed class InputRouter
             if (!_remote) return;
             var (x, y, wheel) = _motion.Take();
             var pan = _horizontalScroll.Take().Wheel;
-            if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.Enqueue(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
+            if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.EnqueueMotion(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
         }
     }
     public void Scroll(double verticalDelta, double horizontalDelta = 0)

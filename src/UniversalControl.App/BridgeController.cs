@@ -20,6 +20,8 @@ public sealed class BridgeController : IAsyncDisposable
     public bool Busy => _busy;
     public bool SmokeMode { get; }
     public string MouseMode => !_nativeStarted && Settings.RawMouse ? L.T("相対入力（HID公開後に開始）") : _input.MouseMode;
+    public bool PreciseMotionTiming => _input.PreciseMotionTiming;
+    public int MouseReportIntervalMs => _input.ReportIntervalMs;
     public string ActivationShortcut => _nativeStarted && !_input.ActivationHotkeyRegistered ? Settings.ActivateShortcut + L.T(" は他のアプリで使用中です") : L.T("iPadへ切り替え　") + Settings.ActivateShortcut + L.T("（キーを離すと切り替え）");
     public string ReturnShortcutText => L.T("Windowsへ戻る　") + Settings.ReturnShortcut + L.T(" ／ Esc を3回");
     public string TouchpadStatus => _nativeStarted ? _input.TouchpadStatus : L.T("HID公開後にジェスチャー取得の対応状況を確認します");
@@ -38,7 +40,7 @@ public sealed class BridgeController : IAsyncDisposable
         Router.Changed += RouterChanged;
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.ActivationRequested += async () => { try { await ActivateRemoteAsync(); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 0.3.3を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 0.3.4を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }

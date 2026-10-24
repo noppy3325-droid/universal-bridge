@@ -12,6 +12,45 @@ public static class HeadlessVerification
         Directory.CreateDirectory(directory);
         try
         {
+            if (mode == "--verify-motion-input")
+            {
+                // No advertising and no activation; unusual temporary hotkeys avoid a running app.
+                await using var transport = new BleHidTransport(); await using var dispatcher = new ReportDispatcher(transport);
+                var router = new InputRouter(transport, dispatcher); using var input = new NativeInput(router);
+                input.Configure(new() { CaptureTouchpad = false,
+                    ActivateShortcut = new(ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Shift, 0x86),
+                    ReturnShortcut = new(ShortcutModifiers.Control | ShortcutModifiers.Alt | ShortcutModifiers.Shift, 0x87) }, DisplayCatalog.Read());
+                await input.StartAsync();
+                var precise = input.PreciseMotionTiming; var pulses = await input.ProbeMotionTimingAsync();
+                var responsive = input.Available; var raw = input.RawMouseAvailable;
+                input.Dispose();
+                var success = precise && pulses > 0 && responsive && raw && !input.Available && !router.IsRemote;
+                await WriteAsync(directory, "motion-input.json", new { Success = success, PreciseTiming = precise, TimerPulses = pulses,
+                    InputLoopResponsive = responsive, RawInputRegistered = raw, HooksRemoved = !input.Available,
+                    InputSuppressed = router.IsRemote, BluetoothAdvertised = false, At = DateTimeOffset.Now });
+                return success ? 0 : 2;
+            }
+            if (mode == "--verify-motion-timer")
+            {
+                using var timer = new MouseReportTimer(); timer.Start(8);
+                var samples = new List<double>(); var previous = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (var i = 0; i < 65; i++)
+                {
+                    if (!timer.Wait(1000)) throw new TimeoutException("Mouse report timer did not signal.");
+                    var now = System.Diagnostics.Stopwatch.GetTimestamp();
+                    if (i > 0) samples.Add(System.Diagnostics.Stopwatch.GetElapsedTime(previous, now).TotalMilliseconds);
+                    previous = now;
+                }
+                timer.Stop(); timer.Wait(0); // Consume a possible pending signal before checking cancellation.
+                var stopped = !timer.Wait(30);
+                timer.Start(15); var restarted = timer.Wait(1000); timer.Stop();
+                var sorted = samples.Order().ToArray();
+                await WriteAsync(directory, "motion-timer.json", new { Success = stopped && restarted, RequestedMs = 8,
+                    Samples = samples.Count, MedianMs = sorted[sorted.Length / 2], P95Ms = sorted[(int)(sorted.Length * .95)],
+                    MaxMs = sorted[^1], MeanMs = samples.Average(), Stopped = stopped, Restarted = restarted,
+                    HooksInstalled = false, InputCaptured = false, BluetoothMeasured = false, At = DateTimeOffset.Now });
+                return stopped && restarted ? 0 : 2;
+            }
             if (mode == "--probe-touchpad")
             {
                 var user32 = System.Runtime.InteropServices.NativeLibrary.Load("user32.dll");
@@ -66,6 +105,7 @@ public static class HeadlessVerification
                     }
                     await Task.Delay(1000); var installed = input.Available;
                     var rawRegistered = input.RawMouseAvailable; var hotkeyRegistered = input.ActivationHotkeyRegistered; var rawPackets = input.RawMousePackets;
+                    var preciseTiming = input.PreciseMotionTiming;
                     var gestureRegistered = input.TouchpadAvailable;
                     var rebind = await input.UpdateShortcutsAsync(new(ShortcutModifiers.Control | ShortcutModifiers.Alt, 0x86), new(ShortcutModifiers.Control | ShortcutModifiers.Alt, 0x85)) is null;
                     rebind &= await input.UpdateShortcutsAsync(ShortcutBinding.DefaultActivate, ShortcutBinding.DefaultReturn) is null;
@@ -84,7 +124,7 @@ public static class HeadlessVerification
                         HooksInstalled = installed, HooksRemoved = !input.Available, RawInputRegistered = rawRegistered, RawInputRemoved = !input.RawMouseAvailable,
                         ActivationHotkeyRegistered = hotkeyRegistered, TouchpadControllerStarted = gestureRegistered, TouchpadControllerRemoved = !input.TouchpadAvailable,
                         LiveShortcutRebindPassed = rebind, ShortcutConflictRollbackPassed = rollback,
-                        RawPacketsObserved = rawPackets, InputSuppressed = router.IsRemote, OnDefaultDesktop = NativeInput.OnDefaultDesktop(), At = DateTimeOffset.Now });
+                        PreciseMotionTiming = preciseTiming, RawPacketsObserved = rawPackets, InputSuppressed = router.IsRemote, OnDefaultDesktop = NativeInput.OnDefaultDesktop(), At = DateTimeOffset.Now });
                     return success ? 0 : 2;
                 }
                 finally { input.Dispose(); }

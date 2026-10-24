@@ -1,6 +1,15 @@
-# Verification report — 0.3.3
+# Verification report — 0.3.4
 
-検証日: **2026-10-18 / Asia/Tokyo**。このレポートは実行した検証と未検証部分を分けて記載します。
+検証日: **2026-10-24 / Asia/Tokyo**。このレポートは実行した検証と未検証部分を分けて記載します。
+
+## 0.3.4の斜め移動・送信周期最適化
+
+- **155成功、0失敗、0スキップ**。各象限・浅い角度・低感度で非飽和時の位置誤差が各軸±0.5カウント以内に収まること、停止後の振動がないこと、大移動の方向と総移動量、反転・クリック・キー・スクロールの順序、Windows復帰時の破棄を検証しました。`artifacts/diagonal-build.log`、`artifacts/diagonal-publish.log`。
+- 旧実装と同じ誤差補正付き切り捨てを参照として、1000個の人工的な(0.13, 0.037)カウント移動を比較しました。小さい方の軸の最初の反応は28→14サンプルへ短縮し、RMS位置誤差は約0.81→0.41カウントへ減少しました。これは整数化処理の比較で、iPad画面や実際の無線遅延を測った値ではありません。`artifacts/diagonal-motion-comparison.json`。
+- Windowsの高精度タイマーは8ms設定・64サンプルで中央値**8.2064ms**、95パーセンタイル**8.5736ms**、最大**8.8027ms**。停止・再開も成功しました。入力フック・Bluetooth公開なし。`artifacts/diagonal-verify-motion-timer/motion-timer.json`。
+- 新しいメッセージ待機ループを実Windowsで検証し、200msの試験中にタイマー通知24回、ループ応答・Raw Input登録・フック解放が成功しました。通常アプリと異なる一時ショートカットを使用し、入力抑制・Bluetooth公開は行いません。`artifacts/diagonal-verify-motion-input/motion-input.json`。
+- 警告0／エラー0で自己完結exeを生成し、GUIは**3言語・21画像・Success=True**。アイコンと感度保存も成功しています。`artifacts/diagonal-smoke-test/gui-smoke.json`。
+- 8msはローカルタイマーの最短設定です。実際のBLE接続間隔・iPadのカーソル加速・表示更新は別の制約です。物理マウスを使った斜め移動・ドラッグ・操作感と無線遅延は更新後の実機確認が必要です。以下は過去版の検証履歴です。
 
 ## 0.3.3の接続済みなのに切り替えできない問題
 

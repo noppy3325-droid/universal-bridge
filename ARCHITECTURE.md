@@ -2,6 +2,12 @@
 
 ## 構成
 
+0.3.4では`MotionAccumulator`のXYを小数残差付きの最近傍丸めへ変更します。±0.5の残差は無入力時にゼロへ丸まるため、停止後に往復しません。非飽和時の累積誤差を各軸±0.5カウントへ抑え、大移動の分割ではXYへ共通の縮尺を適用して方向を保ちます。縦横スクロールは従来の整数単位・切り捨てと小数持ち越しを維持します。
+
+`MouseReportTimer`はプロセス内の高精度waitable timerで、iPad操作中だけ実接続間隔に合わせた8～100ms周期で動作します。入力スレッドは`MsgWaitForMultipleObjectsEx`でメッセージとタイマーを待ち、Raw Inputやポインター通知が続いてもWM_TIMERの低優先度に依存せず移動を送信します。各タイマー通知の後にもキューの入力を処理し、緊急復帰操作を飢餓状態にしません。ローカル復帰で停止、終了時に同じ入力スレッドで解放します。作成できない場合は従来のWM_TIMERを期限方式で使い、毎回の遅れに全周期を足し直す処理を避けます。Windows全体のタイマー分解能は変更しません。
+
+`ReportDispatcher.EnqueueMotion`は、まだ送信を開始していない末尾のXY移動だけを合流します。キーボード・ボタン・ホイール／panは合流境界です。端末・世代・ボタン状態が一致し、各軸が同方向で、合計がHID範囲内の場合だけまとめます。範囲外は切り詰めず次のレポートへ分けます。送信開始時のフレーム取得と末尾更新を同じ短いロックで保護し、非同期送信中のフレームを書き換えません。旧世代の合流移動もWindows復帰後に破棄します。
+
 0.3.1では`TouchpadScroll`でPhysicalGestureRecognizerの累積移動を差分化し、最初の更新に含まれる移動と終了直前の移動を保持します。既定3.00倍・範囲0.25～12.00倍の`TouchpadScrollSensitivity`を追加し、マウスホイールの`ScrollSensitivity`とは別経路で適用します。小数は従来のMotionAccumulatorで保持し、Windows復帰・再切り替え時には累積座標と小数を破棄します。HID descriptorは変更せず、標準HIDの整数スクロール単位を使います。
 
 アプリアイコンは`Assets/app-icon.png`から9サイズのICOへ変換し、exeのApplicationIcon・WPFウィンドウ・トレイ・サイドバーへ組み込みます。トレイ用Iconは所有権を持ち、終了時にDisposeします。生成元とプロンプトはAssets/README.md、変換はscripts/Build-Icon.ps1です。

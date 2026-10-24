@@ -49,8 +49,11 @@ public sealed class MotionAccumulator
     public void Add(double x, double y, double wheel) { _x += x; _y += y; _wheel += wheel; }
     public (int X, int Y, int Wheel) Take()
     {
-        var x = TakeAxis(_x, 32767);
-        var y = TakeAxis(_y, 32767);
+        // Center the quantization error instead of making each axis wait for a full count.
+        // A shared scale also keeps the direction of reports that exceed the HID range.
+        var scale = Math.Min(1, 32767 / Math.Max(Math.Abs(_x), Math.Abs(_y)));
+        var x = (int)Math.Clamp(Math.Round(_x * scale), -32767, 32767);
+        var y = (int)Math.Clamp(Math.Round(_y * scale), -32767, 32767);
         var w = TakeAxis(_wheel, 127);
         _x -= x; _y -= y; _wheel -= w;
         if (Math.Abs(_x) < 1e-9) _x = 0;
