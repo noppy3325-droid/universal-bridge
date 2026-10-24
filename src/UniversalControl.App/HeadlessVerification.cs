@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using UniversalControl.Core;
 using UniversalControl.Windows;
+using MouseButtons = UniversalControl.Core.MouseButtons;
 
 namespace UniversalControl.App;
 
@@ -12,6 +13,36 @@ public static class HeadlessVerification
         Directory.CreateDirectory(directory);
         try
         {
+            if (mode == "--verify-edge-return")
+            {
+                // Model verification only. Never install hooks, move the real cursor or advertise BLE.
+                var directions = new List<string>();
+                foreach (var edge in Enum.GetValues<ScreenEdge>())
+                {
+                    var transport = new ModelTransport(); await using var dispatcher = new ReportDispatcher(transport);
+                    var router = new InputRouter(transport, dispatcher);
+                    var settings = JsonSerializer.Deserialize<AppSettings>("""{"AutoSwitch":true,"EstimatedReturn":false,"NativeTouchpad":true}""")! with { Edge = edge, StabilizeFastPointer = false };
+                    router.Configure(settings);
+                    if (!await router.ActivateAsync("model", () => true)) throw new InvalidOperationException("Model activation failed.");
+                    router.SetEntryAlong(.75);
+                    var (x, y) = edge switch { ScreenEdge.Right => (-100, 0), ScreenEdge.Left => (100, 0), ScreenEdge.Top => (0, 100), _ => (0, -100) };
+                    router.Button(MouseButtons.Left, true); router.Move(x, y); router.FlushMotion();
+                    if (!router.IsRemote) throw new InvalidOperationException("Return interrupted a drag.");
+                    router.Button(MouseButtons.Left, false); router.FlushMotion();
+                    if (!router.IsRemote) throw new InvalidOperationException("Release triggered a stale return.");
+                    router.Move(x, y); router.FlushMotion();
+                    if (router.IsRemote || !router.LastReturnAtEdge) throw new InvalidOperationException("Edge return failed.");
+                    var display = new DisplayInfo("model", -1920, -1080, 1920, 1080);
+                    var point = router.Cursor.WindowsReturnPoint(display, settings);
+                    if (!display.Contains(point.X, point.Y) || EdgeDetector.IsAtPortal(point, display, [display], settings, EdgeDetector.RetentionTolerance))
+                        throw new InvalidOperationException("Return point may bounce at the portal.");
+                    directions.Add(edge.ToString());
+                }
+                await WriteAsync(directory, "edge-return.json", new { Success = true, Directions = directions, LegacySettingsMigrated = true,
+                    DragProtected = true, FreshMotionRequired = true, ReturnInsetVerified = true, ReportKinds = Enum.GetNames<ReportKind>(), ReportMapBytes = HidDescriptors.ReportMapValue.Length,
+                    HooksInstalled = false, InputCaptured = false, BluetoothAdvertised = false, HardwareCursorMeasured = false });
+                return 0;
+            }
             if (mode == "--verify-pointer-precision")
             {
                 var motion = new PointerMotion(); var reference = PointerTransfer.Scale(2300, 9, 8);
@@ -80,11 +111,8 @@ public static class HeadlessVerification
                 {
                     await WriteAsync(directory, "touchpad-probe.json", new { OS = Environment.OSVersion.VersionString,
                         TouchpadWindowApi = System.Runtime.InteropServices.NativeLibrary.TryGetExport(user32, "RegisterTouchpadCapableWindow", out _),
-                        TouchpadInfoApi = System.Runtime.InteropServices.NativeLibrary.TryGetExport(user32, "GetPointerTouchpadInfo", out _),
                         GlobalGesturesController = global::Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.UI.Input.TouchpadGesturesController"),
                         GestureCaptureSupported = NativeInput.IsTouchpadSupported(),
-                        NativeContacts = NativeInput.ProbeNativeContacts(),
-                        PointerTouchpadProperties = global::Windows.Foundation.Metadata.ApiInformation.IsTypePresent("Windows.UI.Input.PointerTouchpadProperties"),
                         At = DateTimeOffset.Now });
                 }
                 finally { System.Runtime.InteropServices.NativeLibrary.Free(user32); }
@@ -157,6 +185,11 @@ public static class HeadlessVerification
         catch (Exception ex) { await WriteAsync(directory, "verification-error.json", new { Success = false, Mode = mode, Error = ex.ToString() }); return 2; }
     }
     private static Task WriteAsync<T>(string directory, string file, T value) => File.WriteAllTextAsync(Path.Combine(directory, file), JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true }));
+    private sealed class ModelTransport : IHidTransport
+    {
+        public bool IsReady(string targetId) => targetId == "model";
+        public Task SendAsync(string targetId, HidFrame frame, CancellationToken cancellationToken) => Task.CompletedTask;
+    }
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(nint window, int id, uint modifiers, uint key);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool UnregisterHotKey(nint window, int id);
 }

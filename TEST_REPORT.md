@@ -1,4 +1,14 @@
-# Verification report — v1.00 / 1.0.0
+# Verification report — v1.01 / 1.0.1
+
+検証日: **2026-10-25 / Asia/Tokyo**。
+
+- **225成功、0失敗、0スキップ**、ビルド警告0／エラー0。接点機能の8テストを廃止し、四方向の自動復帰、旧設定移行、復帰オフ、キー／ドラッグ保持、解放／静止／スクロールによる誤復帰防止、部分portalと負座標、復帰位置・再進入防止を17ケース追加しました。
+- 自己完結exeのGUIは**3言語・27画像・Success=True**。自動復帰オン／オフ、推定幅・高さ、ショートカット・感度・アイコン・言語の保存を確認。接点転送の設定と専用画像を削除しました。`artifacts/101-local-gui/gui-smoke.json`。
+- `--verify-edge-return`は入力フック・BLEなしのモデル検証です。旧JSONの推定復帰オフを読み込んだ状態で四方向の復帰、ドラッグ保護、新しい移動の必要性、Windows側32px内側、report kindがkeyboard/mouseだけでmap144バイトであることを確認しました。`artifacts/101-local-verify-edge-return/edge-return.json`。
+- 既存の`--verify-edge-input`（実Win32ループ・仮想カーソル／準備状態）、`--verify-pointer-precision`、`--verify-motion-input`、`--verify-motion-timer`もSuccess=True。入力抑制・実カーソル移動・Bluetooth公開なし。タイマー64サンプルの中央値8.3023ms、P95 8.5235msでした。ローカルの計測値で、無線遅延ではありません。`artifacts/101-local-runtime.json`。
+- **iPad実機での逆方向の境界位置・操作感は未検証です。** 相対量からの推定であり、iPadOSの加速・タッチ操作によるずれは残ります。GUIの推定範囲で調整でき、従来の復帰キー／Esc3回も利用できます。以下は過去版の検証履歴です。
+
+## v1.00 / 1.0.0
 
 検証日: **2026-10-24 / Asia/Tokyo**。通常リリースですが、純正との同等性やiPad実機での最終受け入れを確認したものではありません。
 
@@ -23,7 +33,7 @@
 
 検証日: **2026-10-24 / Asia/Tokyo**。実Windowsでの結果とiPad実機の未確認部分を区別します。
 
-## 0.4.0の急な移動・スクロール・接点転送
+## 0.4.0の検証履歴（接点転送はv1.01で削除）
 
 - **173成功、0失敗、0スキップ**、ビルド警告0／エラー0。速度制限の方向・細かい移動・停止後の尾なし・線形モード、スクロール初動、127カウントまでの合流、contact descriptor／エンコード／固定スロット／指離れ、送信待ちで座標更新を置換し接点遷移・キー順序を保つこと、3種類のneutralと準備状態消失時の復帰を検証しました。`artifacts/native-gesture-publish.log`。
 - 自己完結exeのGUIは**3言語・24画像・Success=True**。急な移動の抑制と接点モードの保存、再起動要求、アイコン・既存感度の保存も成功。接点説明画面を3言語で目視しました。入力抑制なし、HID公開なし。`artifacts/native-0.4.0/smoke-test/gui-smoke.json`。

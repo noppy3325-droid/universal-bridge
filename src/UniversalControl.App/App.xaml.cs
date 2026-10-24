@@ -17,7 +17,7 @@ public partial class App : WpfApplication
         try
         {
             L.SetLanguage(new SettingsStore(dataDirectory).Load().Language);
-            if (e.Args.FirstOrDefault(a => a is "--verify-pointer-precision" or "--verify-edge-input" or "--verify-motion-input" or "--verify-motion-timer" or "--verify-server" or "--verify-local-input" or "--hold-local-input" or "--verify-input-readiness" or "--probe-touchpad") is { } verification)
+            if (e.Args.FirstOrDefault(a => a is "--verify-edge-return" or "--verify-pointer-precision" or "--verify-edge-input" or "--verify-motion-input" or "--verify-motion-timer" or "--verify-server" or "--verify-local-input" or "--hold-local-input" or "--verify-input-readiness" or "--probe-touchpad") is { } verification)
             { Shutdown(await HeadlessVerification.RunAsync(verification, dataDirectory)); return; }
             if (e.Args.Contains("--diagnose") || e.Args.Contains("--probe-gatt"))
             {

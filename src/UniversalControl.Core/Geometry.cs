@@ -128,10 +128,34 @@ public sealed class VirtualCursor
 {
     public double X { get; private set; }
     public double Y { get; private set; }
-    public void Enter(AppSettings s)
+    public void Enter(AppSettings s, double along = .5)
     {
-        X = s.Edge == ScreenEdge.Left ? s.VirtualWidth - 24 : s.Edge == ScreenEdge.Right ? 24 : s.VirtualWidth / 2d;
-        Y = s.Edge == ScreenEdge.Top ? s.VirtualHeight - 24 : s.Edge == ScreenEdge.Bottom ? 24 : s.VirtualHeight / 2d;
+        along = double.IsFinite(along) ? Math.Clamp(along, 0, 1) : .5;
+        X = s.Edge == ScreenEdge.Left ? s.VirtualWidth - 24 : s.Edge == ScreenEdge.Right ? 24 : along * (s.VirtualWidth - 1);
+        Y = s.Edge == ScreenEdge.Top ? s.VirtualHeight - 24 : s.Edge == ScreenEdge.Bottom ? 24 : along * (s.VirtualHeight - 1);
+    }
+    public static bool TowardWindows(double dx, double dy, ScreenEdge edge) => edge switch
+    { ScreenEdge.Right => dx < 0, ScreenEdge.Left => dx > 0, ScreenEdge.Top => dy > 0, _ => dy < 0 };
+    public static double EntryAlong(PixelPoint point, DisplayInfo display, AppSettings s)
+    {
+        var along = s.Edge is ScreenEdge.Left or ScreenEdge.Right
+            ? (point.Y - display.Top) / (double)Math.Max(1, display.Height - 1)
+            : (point.X - display.Left) / (double)Math.Max(1, display.Width - 1);
+        return Math.Clamp((along - s.PortalStart) / Math.Max(.2, s.PortalEnd - s.PortalStart), 0, 1);
+    }
+    public PixelPoint WindowsReturnPoint(DisplayInfo display, AppSettings s)
+    {
+        var vertical = s.Edge is ScreenEdge.Left or ScreenEdge.Right;
+        var along = Math.Clamp(vertical ? Y / (s.VirtualHeight - 1) : X / (s.VirtualWidth - 1), 0, 1);
+        var fraction = s.PortalStart + along * (s.PortalEnd - s.PortalStart);
+        var x = display.Left + (int)Math.Round(fraction * (display.Width - 1));
+        var y = display.Top + (int)Math.Round(fraction * (display.Height - 1));
+        var insetX = Math.Min(32, (display.Width - 1) / 2); var insetY = Math.Min(32, (display.Height - 1) / 2);
+        return s.Edge switch
+        {
+            ScreenEdge.Right => new(display.Right - 1 - insetX, y), ScreenEdge.Left => new(display.Left + insetX, y),
+            ScreenEdge.Top => new(x, display.Top + insetY), _ => new(x, display.Bottom - 1 - insetY)
+        };
     }
     public bool Move(double dx, double dy, AppSettings s)
     {

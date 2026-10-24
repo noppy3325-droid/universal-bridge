@@ -19,14 +19,14 @@ public sealed class InputRouter
     private readonly MotionAccumulator _touchpadWheel = new();
     private readonly TimeProvider _clock;
     private long _lastPointerReport;
-    private bool _nativeContactsActive;
-    private byte[]? _lastNativeFrame;
     private readonly SemaphoreSlim _activation = new(1);
     private MouseButtons _physicalButtons, _remoteButtons, _quarantineButtons;
     private string? _target;
     private long _epoch, _lastEscape;
     private int _escapes;
     private volatile bool _remote;
+    private bool _returnMotionEligible;
+    public bool LastReturnAtEdge { get; private set; }
     private AppSettings _settings = new();
     public bool IsRemote => _remote;
     public long Generation => Interlocked.Read(ref _epoch);
@@ -63,8 +63,8 @@ public sealed class InputRouter
                 status = CheckActivation(target, captureAvailable);
                 if (status != ActivationStatus.Activated) return status;
                 _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
-                _remote = true; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false;
-                _lastNativeFrame = null; _lastPointerReport = _clock.GetTimestamp(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
+                _remote = true; LastReturnAtEdge = false; _returnMotionEligible = false; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear();
+                _lastPointerReport = _clock.GetTimestamp(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
             }
             Changed?.Invoke(); return ActivationStatus.Activated;
         }
@@ -76,23 +76,26 @@ public sealed class InputRouter
         if (checkSender && !_dispatcher.Healthy) return ActivationStatus.SenderStopped;
         if (_dispatcher.Settling) return ActivationStatus.Releasing;
         if (!_transport.IsReady(target)) return ActivationStatus.Disconnected;
-        if (_settings.NativeTouchpad && !_transport.IsTouchpadReady(target)) return ActivationStatus.Disconnected;
         if (!captureAvailable()) return ActivationStatus.CaptureUnavailable;
         if (!PhysicalIdle) return ActivationStatus.InputHeld;
         return ActivationStatus.Activated;
     }
 
-    public void GoLocal(string? reason = null)
+    public void SetEntryAlong(double along) { lock (_gate) { if (_remote) Cursor.Enter(_settings, along); } }
+
+    public void GoLocal(string? reason = null) => GoLocalCore(reason, false);
+    private void GoLocalCore(string? reason, bool edgeReturn)
     {
         reason ??= L.T("Windowsへ戻しました");
         string? previous;
         lock (_gate)
         {
             previous = _remote ? _target : null;
+            LastReturnAtEdge = _remote && edgeReturn; _returnMotionEligible = false;
             _remote = false; _epoch++; _dispatcher.SetEpoch(_epoch);
             _quarantine.UnionWith(_remoteKeys.Keys);
             _quarantineButtons |= _remoteButtons;
-            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); _nativeContactsActive = false; _lastNativeFrame = null; Reason = reason;
+            _remoteKeys.Clear(); _remoteButtons = 0; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear(); Reason = reason;
         }
         if (previous is not null) _ = _dispatcher.NeutralizeAsync(previous);
         Changed?.Invoke();
@@ -100,7 +103,7 @@ public sealed class InputRouter
 
     public void CheckConnection()
     {
-        if (_remote && (_target is null || !_transport.IsReady(_target) || (_settings.NativeTouchpad && !_transport.IsTouchpadReady(_target)) || !_dispatcher.Healthy))
+        if (_remote && (_target is null || !_transport.IsReady(_target) || !_dispatcher.Healthy))
             GoLocal(L.T("接続断を検出しWindowsへ戻しました"));
     }
 
@@ -112,6 +115,7 @@ public sealed class InputRouter
             CheckConnection();
             var id = Identity(vk, scan, extended);
             var wasDown = _physical.ContainsKey(id);
+            _returnMotionEligible = false;
             if (down) _physical[id] = PhysicalInputState.PollingKey(vk, scan, extended); else _physical.Remove(id);
             if (down && !wasDown)
             {
@@ -177,6 +181,7 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection();
+            _returnMotionEligible = false;
             if (down) _physicalButtons |= button; else _physicalButtons &= ~button;
             if ((_quarantineButtons & button) != 0)
             { if (!down) _quarantineButtons &= ~button; return true; }
@@ -193,8 +198,8 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection(); if (!_remote) return;
-            if (_nativeContactsActive) return;
             var x = dx * _settings.MouseSensitivity; var y = dy * _settings.MouseSensitivity;
+            if (dx != 0 || dy != 0) _returnMotionEligible = PhysicalIdle && VirtualCursor.TowardWindows(dx, dy, _settings.Edge);
             _pointer.Add(x, y); _motion.Add(0, 0, wheelDelta / 120d * _settings.ScrollSensitivity);
         }
     }
@@ -212,8 +217,10 @@ public sealed class InputRouter
             wheel -= wheelOverflow; pan -= panOverflow;
             var now = _clock.GetTimestamp(); var elapsed = _clock.GetElapsedTime(_lastPointerReport, now).TotalMilliseconds; _lastPointerReport = now;
             var (x, y) = _pointer.Take(_settings.StabilizeFastPointer, elapsed);
-            if (Cursor.Move(x, y, _settings) && _settings.EstimatedReturn)
-            { GoLocal(L.T("推定カーソルが境界に達したためWindowsへ戻しました")); return; }
+            var canReturn = _returnMotionEligible && PhysicalIdle && VirtualCursor.TowardWindows(x, y, _settings.Edge);
+            _returnMotionEligible = false;
+            if (Cursor.Move(x, y, _settings) && _settings.AutoSwitch && _settings.ReturnAtEdge && canReturn)
+            { GoLocalCore(L.T("推定カーソルが境界に達したためWindowsへ戻しました"), true); return; }
             if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.EnqueueMotion(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
         }
     }
@@ -222,7 +229,6 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection(); if (!_remote) return;
-            if (_settings.NativeTouchpad && _nativeContactsActive) return;
             _motion.Add(0, 0, verticalDelta / 120 * _settings.ScrollSensitivity);
             _horizontalScroll.Add(0, 0, horizontalDelta / 120 * _settings.ScrollSensitivity);
         }
@@ -233,26 +239,8 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection(); if (!_remote) return;
-            if (_settings.NativeTouchpad) return;
             var (vertical, horizontal) = _touchpadScroll.Update(cumulativeX, cumulativeY, _settings.TouchpadScrollSensitivity);
             _touchpadWheel.Add(horizontal / 120, vertical / 120, 0);
-        }
-    }
-    public bool NativeTouchpadFrame(HidFrame frame, bool activeContacts)
-    {
-        HidReports.Validate(frame);
-        if (frame.Kind != ReportKind.Touchpad) throw new ArgumentException("Expected touchpad report.");
-        lock (_gate)
-        {
-            CheckConnection();
-            if (!_remote || !_settings.NativeTouchpad || !_transport.IsTouchpadReady(_target!)) return false;
-            if (!_nativeContactsActive && activeContacts) { _pointer.Clear(); _touchpadWheel.Clear(); }
-            _nativeContactsActive = activeContacts;
-            var transition = _lastNativeFrame is null || frame.Payload[2] != _lastNativeFrame[2] ||
-                Enumerable.Range(0, 5).Any(slot => frame.Payload[3 + slot * 5] != _lastNativeFrame[3 + slot * 5]);
-            var queued = transition ? _dispatcher.Enqueue(_target!, _epoch, frame) : _dispatcher.EnqueueTouchpadUpdate(_target!, _epoch, frame);
-            if (queued && _remote) _lastNativeFrame = frame.Payload;
-            return queued;
         }
     }
     public bool Gesture(GestureAction action)

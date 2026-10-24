@@ -7,7 +7,6 @@ using UniversalControl.Core;
 namespace UniversalControl.Windows;
 
 public sealed record PhysicalReadinessProbe(bool PhysicalIdle, bool AllVirtualKeysIdle, int ImeModeStatesActive, bool OnDefaultDesktop, int KeyboardType);
-public sealed record NativeContactApiProbe(bool Available, int PointerInfoBytes, int TouchInfoBytes);
 public sealed record EdgeHandoffStatus(long Attempts, long Completed, EdgeCancellation LastCancellation);
 public sealed record EdgeInputProbe(bool Success, bool ArrivalBandValidated, bool ReadinessCancellationValidated, long Attempts,
     bool PhysicalCursorMoved, bool InputReadinessScripted = true, bool CursorScripted = true, bool InputCaptured = false, bool BluetoothAdvertised = false);
@@ -63,15 +62,10 @@ public sealed class NativeInput : IDisposable
     public bool ActivationHotkeyRegistered { get; private set; }
     public bool ReturnHotkeyRegistered { get; private set; }
     public bool TouchpadAvailable => _touchpad?.Available == true;
-    public bool NativeContactsAvailable => _touchpad?.NativeContactsAvailable == true;
-    public long NativeContactFrames => _touchpad?.NativeFrames ?? 0;
-    public int MaximumNativeContacts => _touchpad?.MaximumNativeContacts ?? 0;
-    public int MaximumValidNativeContacts => _touchpad?.MaximumValidNativeContacts ?? 0;
     public bool TouchpadActive => _touchpad?.Active == true;
     public long TouchpadEvents => _touchpad?.Events ?? 0;
     public string TouchpadStatus => TouchpadAvailable ? L.T("対応：iPad操作中に専用の受け取り画面で取得") : L.T("このWindowsではジェスチャー取得APIを使用できません");
     public static bool IsTouchpadSupported() => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100) && TouchpadCapture.Supported;
-    public static NativeContactApiProbe ProbeNativeContacts() => NativeTouchpadReader.Probe();
     public bool RawMouseAvailable => _rawMouse?.Available == true;
     public long RawMousePackets => _rawMouse?.Packets ?? 0;
     private bool UsesRawMouse => _settings.RawMouse && RawMouseAvailable && !_rawFallback;
@@ -106,7 +100,7 @@ public sealed class NativeInput : IDisposable
             {
                 // The physical pointer stays untouched. Only the test display rectangle is virtual.
                 var display = new DisplayInfo("edge-probe", origin.X - 1917, origin.Y - 500, 1920, 1080);
-                Configure(oldSettings with { AutoSwitch = true, CaptureTouchpad = false, NativeTouchpad = false, Edge = ScreenEdge.Right,
+                Configure(oldSettings with { AutoSwitch = true, CaptureTouchpad = false, Edge = ScreenEdge.Right,
                     MonitorId = display.Id, PortalStart = 0, PortalEnd = 1, EdgeDwellMs = 150 }, [display]);
                 _observedEdgeRevision = Volatile.Read(ref _edgeRevision); _edge.Reset(false);
                 Interlocked.Exchange(ref _edgeMotionPending, 1); return null;
@@ -231,6 +225,7 @@ public sealed class NativeInput : IDisposable
             GetCursorPos(out _returnPoint);
             var display = SelectedDisplay;
             if (display is null) { _router.GoLocal(L.T("ディスプレイを取得できません")); return; }
+            _router.SetEntryAlong(VirtualCursor.EntryAlong(new(_returnPoint.X, _returnPoint.Y), display, _settings));
             _anchor = new Point { X = display.Left + display.Width / 2, Y = display.Top + display.Height / 2 };
             _rawMouse?.Reset(); _rawWaitingSince = 0; _lastRawPackets = RawMousePackets;
             _nativeRemote = true;
@@ -245,7 +240,12 @@ public sealed class NativeInput : IDisposable
             _nativeRemote = false; _touchpad?.Leave(); _rawMouse?.Reset(); _edge.Reset();
             _motionTimer?.Stop();
             var display = SelectedDisplay;
-            if (display is not null) SetCursorPos(Math.Clamp(_returnPoint.X, display.Left + 32, display.Right - 33), Math.Clamp(_returnPoint.Y, display.Top + 32, display.Bottom - 33));
+            if (display is not null)
+            {
+                var point = _router.LastReturnAtEdge ? _router.Cursor.WindowsReturnPoint(display, _settings) : new PixelPoint(
+                    Math.Clamp(_returnPoint.X, display.Left + 32, display.Right - 33), Math.Clamp(_returnPoint.Y, display.Top + 32, display.Bottom - 33));
+                SetCursorPos(point.X, point.Y);
+            }
         }
     }
     private void Run()

@@ -32,17 +32,13 @@ public sealed class BridgeController : IAsyncDisposable
         EdgeCancellation.Expired => L.T("画面端の切り替えがタイムアウトしました。接続を確認して再試行してください。"),
         _ => L.T("画面端の位置を確認できません。通常のデスクトップで再試行してください。")
     };
-    public long NativeContactFrames => _input.NativeContactFrames;
-    public int MaximumNativeContacts => _input.MaximumNativeContacts;
-    public int MaximumValidNativeContacts => _input.MaximumValidNativeContacts;
     public string ActivationShortcut => _nativeStarted && !_input.ActivationHotkeyRegistered ? Settings.ActivateShortcut + L.T(" は他のアプリで使用中です") : L.T("iPadへ切り替え　") + Settings.ActivateShortcut + L.T("（キーを離すと切り替え）");
     public string ReturnShortcutText => L.T("Windowsへ戻る　") + Settings.ReturnShortcut + L.T(" ／ Esc を3回");
     public string TouchpadStatus => _nativeStarted ? _input.TouchpadStatus : L.T("HID公開後にジェスチャー取得の対応状況を確認します");
     public string EdgeSwitchStatus => !Settings.AutoSwitch ? L.T("画面端切り替え：オフ。下のチェックをオンにすると有効になります。")
         : Displays.Count == 0 ? L.T("ディスプレイを取得できません") : DescribeEdgeSwitch();
     private bool CanActivateAtEdge() => !_disposed && !_busy && SelectedPeerId is { } target && Transport.IsReady(target) &&
-        _input.Available && (!Settings.CaptureTouchpad || _input.TouchpadAvailable) && Settings.NativeTouchpad == Transport.NativeTouchpadMode &&
-        (!Settings.NativeTouchpad || (_input.NativeContactsAvailable && Transport.IsTouchpadReady(target)));
+        _input.Available && (!Settings.CaptureTouchpad || _input.TouchpadAvailable);
     private string DescribeEdgeSwitch()
     {
         var display = Displays.FirstOrDefault(d => d.Id == Settings.MonitorId) ?? Displays.First();
@@ -50,8 +46,6 @@ public sealed class BridgeController : IAsyncDisposable
         if (!Transport.Publishing) return L.T("画面端切り替え：HIDの公開を待っています。");
         if (SelectedPeerId is not { } target) return L.T("画面端切り替え：接続先のiPadを選択してください。");
         if (!Transport.IsReady(target)) return Transport.DescribeReadiness(target);
-        if (Settings.NativeTouchpad != Transport.NativeTouchpadMode) return L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。");
-        if (Settings.NativeTouchpad && !Transport.IsTouchpadReady(target)) return Transport.DescribeTouchpadReadiness(target);
         return CanActivateAtEdge() ? L.T("画面端切り替え：準備完了。青い端へ移動し、そのまま待つとiPadへ切り替わります。") : L.T("画面端切り替え：入力取得の準備を確認してください。");
     }
     public event Action? Changed;
@@ -62,7 +56,7 @@ public sealed class BridgeController : IAsyncDisposable
         if (!smokeMode) Settings = Settings with { AutoStart = StartupRegistration.Enabled };
         Log = new(dataDirectory); if (_store.Warning is { } warning) Log.Write(warning);
         Displays = DisplayCatalog.Read();
-        Transport = new(Settings.NativeTouchpad);
+        Transport = new();
         Reports = new(Transport); Router = new(Transport, Reports); _input = new(Router);
         Router.Configure(Settings); _input.Configure(Settings, Displays);
         Transport.Log += Log.Write;
@@ -71,7 +65,7 @@ public sealed class BridgeController : IAsyncDisposable
         _input.Faulted += text => { Message = text; Log.Write(text); Changed?.Invoke(); };
         _input.EdgeActivationAllowed = CanActivateAtEdge;
         _input.ActivationRequested += async fromEdge => { try { await ActivateRemoteAsync(fromEdge); } catch (Exception ex) { NotifyError(ex); } };
-        Log.Write(L.T("Universal Bridge 1.00を起動しました。入力内容は記録しません。"));
+        Log.Write(L.T("Universal Bridge 1.01を起動しました。入力内容は記録しません。"));
     }
     private void TransportChanged() { Router.CheckConnection(); Changed?.Invoke(); }
     private void RouterChanged() { Message = Router.Reason; Log.Write(Router.Reason); Changed?.Invoke(); }
@@ -121,14 +115,9 @@ public sealed class BridgeController : IAsyncDisposable
         var generation = Router.Generation;
         if (Settings.CaptureTouchpad && !_input.TouchpadAvailable)
         { SwitchFailed(L.T("ジェスチャー取得未対応"), L.T("このWindowsではジェスチャー取得を開始できません。入力設定で取得をオフにするとマウス・キーボードのみ切り替えられます。")); return; }
-        if (Settings.NativeTouchpad != Transport.NativeTouchpadMode)
-        { SwitchFailed("NativeModeRestart", L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。")); return; }
-        if (Settings.NativeTouchpad && !_input.NativeContactsAvailable)
-        { SwitchFailed("NativeContactsUnavailable", L.T("このWindowsでは実接点を取得できません。純正ジェスチャーモードをオフにしてください。")); return; }
         if (SelectedPeerId is not { } target) { SwitchFailed(L.T("端末未選択"), L.T("入力送信可能なiPadを一覧から選択してください。")); return; }
         await Transport.RefreshPeersAsync(wait: true);
         if (!Transport.IsReady(target)) { SwitchFailed(L.T("接続準備待ち"), Transport.DescribeReadiness(target)); return; }
-        if (Settings.NativeTouchpad && !Transport.IsTouchpadReady(target)) { SwitchFailed("NativeNotReady", Transport.DescribeTouchpadReadiness(target)); return; }
         // Hotkey modifiers must be released locally before ownership changes.
         var deadline = Environment.TickCount64 + 2000;
         while (true)
@@ -190,10 +179,10 @@ public sealed class BridgeController : IAsyncDisposable
     public void Save(AppSettings settings)
     {
         var normalized = settings.Normalize();
-        if (normalized.RawMouse != Settings.RawMouse || normalized.CaptureTouchpad != Settings.CaptureTouchpad || normalized.NativeTouchpad != Settings.NativeTouchpad || normalized.StabilizeFastPointer != Settings.StabilizeFastPointer || normalized.IPadShortcutsEnabled != Settings.IPadShortcutsEnabled)
+        if (normalized.RawMouse != Settings.RawMouse || normalized.CaptureTouchpad != Settings.CaptureTouchpad || normalized.StabilizeFastPointer != Settings.StabilizeFastPointer || normalized.IPadShortcutsEnabled != Settings.IPadShortcutsEnabled ||
+            normalized.AutoSwitch != Settings.AutoSwitch || normalized.ReturnAtEdge != Settings.ReturnAtEdge || normalized.Edge != Settings.Edge || normalized.MonitorId != Settings.MonitorId ||
+            normalized.PortalStart != Settings.PortalStart || normalized.PortalEnd != Settings.PortalEnd || normalized.VirtualWidth != Settings.VirtualWidth || normalized.VirtualHeight != Settings.VirtualHeight)
             Router.GoLocal(L.T("入力方式を変更したためWindowsへ戻しました"));
-        if (normalized.NativeTouchpad != Settings.NativeTouchpad) Message = normalized.NativeTouchpad != Transport.NativeTouchpadMode
-            ? L.T("純正ジェスチャー設定の変更後はアプリを再起動してください。") : Router.Reason;
         if (!SmokeMode && normalized.AutoStart != Settings.AutoStart)
             StartupRegistration.Set(normalized.AutoStart, Environment.ProcessPath ?? throw new InvalidOperationException(L.T("実行ファイルのパスを取得できません。")));
         _store.Save(normalized); Settings = normalized;

@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v1.00（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.01（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -22,7 +22,7 @@
 - **希望节省桌面空间的笔记本用户：** 在受支持的电脑上，无需第二套键盘或虚拟机即可尝试共享现有输入设备。
 - **愿意使用或参与开发的用户：** 查看带有日语、英语和简体中文界面的 C# / WPF BLE HID 实现。
 
-Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，不提供屏幕镜像、剪贴板共享或文件传输。触点转发为下述需主动开启的实验性模式。
+Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，不提供屏幕镜像、剪贴板共享或文件传输。触点转发已在v1.01中移除。
 
 ## 下载前请确认
 
@@ -32,10 +32,10 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v1.00](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00)**：
+前往 **[Releases — v1.01](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01)**：
 
-- **[UniversalBridge-1.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.00/UniversalBridge-1.0.0-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-1.0.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-1.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.01/UniversalBridge-1.0.1-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.1-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -52,7 +52,17 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 | 三种界面语言 | 日语、英语、简体中文或跟随系统；切换立即生效并保存。 |
 | 桌面集成 | 专用应用／托盘图标、浅色／深色主题、可选登录启动、诊断和有限次数重连。 |
 
-**默认兼容模式**将手势转换为标准滚动报告和受支持的按键操作。真实触点转发需开启下述实验性模式，不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+手势转换为标准滚动报告和受支持的按键操作。不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+
+## v1.01：移除触点转发与双向边缘切换
+
+从设置、HID报告及诊断中移除了可选的iPad触点转发。保留双指滚动以及捏合／滑动到按键操作的转换。
+
+在「显示器布局」启用「在屏幕边缘自动切换 Windows 和 iPad」后，向Windows所在的边缘移动即可返回。「自动从 iPad 返回 Windows」默认开启，旧版关闭估算返回的配置也会启用。按住按键或鼠标按钮时不会自动返回；松开后需再次向边缘移动。Windows指针回到连接边缘内侧32像素处。
+
+**返回边界根据相对移动估算，无法读取iPad指针的实际位置。** iPadOS加速或触屏操作会造成偏差，可在同一界面调整「iPad 估算范围（宽 × 高）」（默认1366 × 1024，各320～8192）。也可用Ctrl+Alt+Q或连按Esc三次返回。更新后的iPad实际返回位置与操作感仍需实机确认。
+
+更新前完全退出旧版。若以前使用过触点模式且iPad缓存旧HID格式，仅在无法重新连接时手动忽略PC并重新配对。
 
 ## v1.00：边缘切换、精度及更多操作
 
@@ -86,19 +96,9 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 **使用边缘切换：** 启动HID并选择已连接的iPad，在“显示器布局”中启用自动切换。选择Windows显示器和方向，或将iPad图拖到上下左右，蓝线表示有效范围。将指针移到该边缘，等待设定时间即可将控制移到iPad：默认300ms，可调150～1500ms。到达后停止移动也能完成等待。
 
-Windows显示器之间的边界会被排除，部分相邻时仅使用未覆盖的区域。离开边缘、按键／鼠标按钮或更改设置会取消待执行的切换，停留在同一边缘不会反复触发。界面显示关闭、等待HID、未选择设备及就绪状态。此功能默认关闭。**无法读取iPad的实际指针坐标，切换后从iPad原有位置继续操作。** Ctrl+Alt+Q或连按Esc三次返回Windows。
+Windows显示器之间的边界会被排除，部分相邻时仅使用未覆盖的区域。离开边缘、按键／鼠标按钮或更改设置会取消待执行的切换，停留在同一边缘不会反复触发。界面显示关闭、等待HID、未选择设备及就绪状态。此功能默认关闭。**无法读取iPad的实际指针坐标，切换后从iPad原有位置继续操作。** v1.01还支持上述估算边界返回，也可用Ctrl+Alt+Q或连按Esc三次返回Windows。
 
 [设置画面 — shortcuts](docs/images/shortcuts-zh-Hans.png) · [设置画面 — layout](docs/images/layout-zh-Hans.png)
-
-## 0.4.0：快速移动与实验性原生手势
-
-- **抑制快速指针移动（默认开启）：** 仅对快速移动施加保持方向的柔和限制，不会在停止后继续补发被压缩的位移。因此高速移动距离会缩短，可在输入设置中关闭以恢复原有线性输入。待发送的相邻移动仅合并至每轴127计数，减少大幅突跳。
-- **双指滚动初始响应：** 兼容模式改用保留小数余量的最近整数舍入，减少开始滚动时的等待，仍可独立调整灵敏度。它仍使用整数滚轮刻度，并非像素级滚动。
-- **iPad原生手势触点转发（实验性、默认关闭）：** 将受支持Precision Touchpad的真实双指至五指触点作为标准HID Touch Pad报告发送，由iPadOS识别滚动、捏合和滑动。**尚未在iPad实机上确认识别及行为，不保证与Magic Trackpad完全一致。** Windows通常不公开轻点／长按的触点流，因此无法重现所有原生手势。单指指针继续使用鼠标通道。
-
-启用“输入设置 → iPad原生手势触点转发”后，**完全退出并重启应用**。启动HID并检查触点订阅指示。Report Map会改变；若iPad不识别，请手动在iPad上忽略电脑并重新配对。应用不会自动删除配对，关闭此模式后也需重启。此模式以iPadOS 14.5及以上的标准触控板规范为目标，要求兼容的Windows API、全部三类输入订阅、Surface Switch及至少28字节的通知容量。条件不足时会拒绝切换并显示原因。
-
-此模式不使用应用的滚动增益或捏合／滑动按键映射，由iPad进行解释。诊断仅记录API支持情况、帧数及最大触点数，不记录坐标或输入内容。参见[实机检查](docs/MANUAL_TESTS.md)。
 
 ## 快速开始
 
@@ -145,7 +145,7 @@ pwsh -File scripts/Package.ps1
 
 SDK／包位于 `.tools/`。Windows SDK projection 固定为 `10.0.26100.87`，实验性 API 已隔离并检查。不会安装驱动、修改注册表绕过限制、使用 VM 或更改系统安全设置。
 
-**216 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
+**225 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
 
 参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成普通发行版。
 

@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**v1.00 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v1.01 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -22,7 +22,7 @@ No iPad companion app, extra hardware, or internet connection is needed during u
 - **Laptop users with limited desk space:** try sharing the controls you already have, without a second keyboard or a VM on supported PCs.
 - **Early adopters and contributors:** explore a native C# / WPF BLE HID implementation with Japanese, English, and Simplified Chinese UI.
 
-Apple's [Universal Control requires a Mac](https://support.apple.com/en-us/102459). Universal Bridge focuses on Windows-to-iPad input sharing. It does not provide screen mirroring, shared clipboard, or file transfer. Contact forwarding is an experimental opt-in mode described below.
+Apple's [Universal Control requires a Mac](https://support.apple.com/en-us/102459). Universal Bridge focuses on Windows-to-iPad input sharing. It does not provide screen mirroring, shared clipboard, or file transfer. Contact relay was removed in v1.01.
 
 ## Before you download
 
@@ -32,10 +32,10 @@ This is an **unsigned release** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v1.00](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.00)**:
+Open **[Releases — v1.01](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01)**:
 
-- **[UniversalBridge-1.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.00/UniversalBridge-1.0.0-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-1.0.0-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-1.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.01/UniversalBridge-1.0.1-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-1.0.1-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -52,7 +52,17 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 | Three UI languages | Japanese, English, Simplified Chinese, or system language; applies immediately and persists. |
 | Desktop integration | Custom application/tray icon, light/dark theme, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
 
-**The default compatibility mode** generates scroll reports and supported keyboard shortcuts. Actual-contact relay requires the experimental opt-in mode below. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
+**Gestures** generate standard scroll reports and supported keyboard shortcuts. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
+
+## v1.01: contact relay removed and two-way edge switching
+
+Removes the optional iPad contact relay from settings, HID reports and diagnostics. Two-finger scrolling and pinch/swipe-to-key conversion remain available.
+
+Enable **Display layout → Switch automatically between Windows and iPad at the screen edge**. Moving toward the Windows-facing edge now returns control to Windows. **Return from iPad to Windows automatically** defaults to on, including profiles that disabled the old estimated-return option. Held keys/buttons prevent return; release them and make a fresh movement toward the edge. The Windows cursor lands 32 pixels inside the connected edge.
+
+**The return boundary is estimated from relative motion; the actual iPad pointer position is unavailable.** iPadOS acceleration and touch interaction can cause drift. Adjust **Estimated iPad range (width × height)** in Display layout if needed (default 1366 × 1024, each 320–8192). Ctrl+Alt+Q or Esc three times still returns control. Actual iPad return position and feel require hardware confirmation after updating.
+
+Fully exit the old app before updating. If you used contact relay and iPad retains the old HID format, manually forget the PC and pair again only if reconnection fails.
 
 ## v1.00: edge handoff, precision and more actions
 
@@ -86,19 +96,9 @@ Holding a trigger runs the action once, without typing H/S/N. Release other char
 
 **To switch at the edge:** start HID, select the connected iPad, then enable edge switching in **Display layout**. Select a Windows monitor and direction, or drag the iPad diagram above, below, left or right. Blue lines show the available portal. Move the cursor to that edge and wait for the configured delay: 300ms by default, adjustable from 150 to 1500ms. The wait completes even after mouse movement stops.
 
-Shared Windows-monitor boundaries are excluded; partial adjacency leaves the uncovered segment usable. Leaving the edge, pressing a key/button or changing settings cancels a pending activation. Remaining at the same edge cannot repeatedly reactivate it. The UI explains off, HID waiting, missing target and readiness states. Edge switching is off by default. **The iPad's actual pointer coordinates cannot be read, so control resumes at its previous position there.** Return to Windows with Ctrl+Alt+Q or Esc three times.
+Shared Windows-monitor boundaries are excluded; partial adjacency leaves the uncovered segment usable. Leaving the edge, pressing a key/button or changing settings cancels a pending activation. Remaining at the same edge cannot repeatedly reactivate it. The UI explains off, HID waiting, missing target and readiness states. Edge switching is off by default. **The iPad's actual pointer coordinates cannot be read, so control resumes at its previous position there.** v1.01 adds estimated edge return as described above. Ctrl+Alt+Q or Esc three times remains available.
 
 [Settings screenshots — shortcuts](docs/images/shortcuts-en.png) · [Settings screenshots — layout](docs/images/layout-en.png)
-
-## 0.4.0: fast movement and experimental native gestures
-
-- **Stabilize fast pointer movement (on by default):** a directional soft limit reduces sudden fast movement without replaying the compressed distance later. Fast travel is intentionally shorter. Turn this off in Input settings for the previous linear transfer. Adjacent queued motion is now merged only up to 127 counts per axis to avoid oversized bursts.
-- **Two-finger scroll onset:** compatibility mode uses nearest-tick rounding with fractional carry for earlier response. Dedicated scroll sensitivity remains available. It still sends integer wheel ticks rather than pixel scrolling.
-- **Contact relay for native iPad gestures (experimental, off by default):** forwards actual two-to-five-finger contacts from a supported Precision Touchpad as standard HID Touch Pad reports, leaving scroll, pinch and swipe recognition to iPadOS. **iPad recognition and behavior have not been verified on hardware. Full Magic Trackpad parity is not promised.** Windows generally does not expose contact streams for taps/holds, so all native gestures cannot be reproduced. One-finger pointing keeps the mouse path.
-
-To try it, enable **Input settings → Contact relay for native iPad gestures**, then **fully exit and restart the app**. Start HID and check the contact subscription indicator. The Report Map changes: if iPad does not recognize it, manually forget the PC on iPad and pair again. The app never removes pairing itself. Restart when disabling it too. The mode targets the standard iPadOS 14.5+ trackpad specification and requires compatible Windows APIs, all three input subscriptions, Surface Switch and notification capacity of at least 28 bytes. Switching is refused with a reason when these are missing.
-
-Native mode bypasses the app's scroll gain and pinch/swipe key mappings; iPad handles interpretation. Diagnostics record API support, frame counts and maximum contact counts, without coordinates or input payloads. See [hardware checks](docs/MANUAL_TESTS.md).
 
 ## Quick start
 
@@ -147,7 +147,7 @@ pwsh -File scripts/Package.ps1
 
 SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
 
-**216 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**225 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
 
 See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable releases.
 

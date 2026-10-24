@@ -12,7 +12,6 @@ public sealed record AppSettings
     public bool RawMouse { get; init; } = true;
     public bool CaptureTouchpad { get; init; } = true;
     public bool StabilizeFastPointer { get; init; } = true;
-    public bool NativeTouchpad { get; init; }
     public ShortcutBinding ActivateShortcut { get; init; } = ShortcutBinding.DefaultActivate;
     public ShortcutBinding ReturnShortcut { get; init; } = ShortcutBinding.DefaultReturn;
     public ShortcutBinding HomeShortcut { get; init; } = ShortcutBinding.DefaultHome;
@@ -32,7 +31,7 @@ public sealed record AppSettings
     public double PortalStart { get; init; }
     public double PortalEnd { get; init; } = 1;
     public int EdgeDwellMs { get; init; } = 300;
-    public bool EstimatedReturn { get; init; }
+    public bool ReturnAtEdge { get; init; } = true;
     public int VirtualWidth { get; init; } = 1366;
     public int VirtualHeight { get; init; } = 1024;
     public bool CloseToTray { get; init; } = true;
@@ -51,7 +50,6 @@ public sealed record AppSettings
         {
         SchemaVersion = 1, Theme = Theme == "Dark" ? "Dark" : "Light",
         Language = Language is "auto" or "ja" or "en" or "zh-Hans" ? Language : "auto",
-        CaptureTouchpad = NativeTouchpad || CaptureTouchpad,
         ActivateShortcut = validShortcuts ? ActivateShortcut! : ShortcutBinding.DefaultActivate,
         ReturnShortcut = validShortcuts ? ReturnShortcut! : ShortcutBinding.DefaultReturn,
         HomeShortcut = home, SearchShortcut = search, NextAppShortcut = nextApp,

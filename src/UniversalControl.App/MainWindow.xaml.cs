@@ -129,13 +129,13 @@ public partial class MainWindow : Window
         EdgeCombo.SelectedIndex = (int)s.Edge;
         AutoSwitchCheck.IsChecked = s.AutoSwitch; PortalStartSlider.Value = s.PortalStart; PortalEndSlider.Value = s.PortalEnd;
         EdgeDwellSlider.Value = s.EdgeDwellMs; IPadShortcutsCheck.IsChecked = s.IPadShortcutsEnabled;
-        MouseSlider.Value = s.MouseSensitivity; ScrollSlider.Value = s.ScrollSensitivity; EstimatedCheck.IsChecked = s.EstimatedReturn;
+        MouseSlider.Value = s.MouseSensitivity; ScrollSlider.Value = s.ScrollSensitivity; ReturnAtEdgeCheck.IsChecked = s.ReturnAtEdge;
+        VirtualWidthBox.Text = s.VirtualWidth.ToString(CultureInfo.InvariantCulture); VirtualHeightBox.Text = s.VirtualHeight.ToString(CultureInfo.InvariantCulture);
         TouchpadScrollSlider.Value = s.TouchpadScrollSensitivity;
         TouchpadSensitivityBox.Text = s.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
         MouseSensitivityBox.Text = s.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture); RawMouseCheck.IsChecked = s.RawMouse;
         TouchpadCheck.IsChecked = s.CaptureTouchpad;
-        FastPointerCheck.IsChecked = s.StabilizeFastPointer; NativeTouchpadCheck.IsChecked = s.NativeTouchpad;
-        TouchpadCheck.IsEnabled = !s.NativeTouchpad;
+        FastPointerCheck.IsChecked = s.StabilizeFastPointer;
         LoadShortcutControls(s.ActivateShortcut, s.ReturnShortcut, s.HomeShortcut, s.SearchShortcut, s.NextAppShortcut);
         AdditionalShortcutsList.ItemsSource = s.AdditionalShortcuts.Select(entry => new ActionShortcutRow(entry)).ToArray();
         var gestureChoices = GestureChoices;
@@ -158,7 +158,6 @@ public partial class MainWindow : Window
             AdapterStatus.Text = L.T(Controller.Transport.AdapterSummary);
             PeerStatus.Text = selected?.Name ?? L.T("未選択");
             SubscriptionStatus.Text = selected is null ? L.T("一覧から端末を選択") : L.F("キーボード {0} / マウス {1} / {2}", selected.Keyboard ? "✓" : "—", selected.Mouse ? "✓" : "—", selected.Paired ? L.T("ペア済") : L.T("未ペア")) + (selected.Suspended ? L.T(" / iPadで一時停止") : "");
-            if (selected is not null && Controller.Settings.NativeTouchpad) SubscriptionStatus.Text += L.F(" / 接点 {0}", Controller.Transport.IsTouchpadReady(selected.Id) ? "✓" : "—");
             InputTarget.Text = Controller.Router.IsRemote ? L.T("iPad / 選択端末") : "Windows";
             InputReason.Text = Controller.Router.Reason;
             StartButton.IsEnabled = !Controller.Busy && !Controller.Transport.Publishing && !Controller.SmokeMode;
@@ -169,8 +168,6 @@ public partial class MainWindow : Window
             MouseValue.Text = $"{Controller.Settings.MouseSensitivity:0.00} ×"; ScrollValue.Text = $"{Controller.Settings.ScrollSensitivity:0.00} ×";
             MouseModeLabel.Text = Controller.MouseMode; ActivationShortcutLabel.Text = Controller.ActivationShortcut;
             DashboardReturnShortcut.Text = Controller.ReturnShortcutText; TouchpadStatusLabel.Text = Controller.TouchpadStatus;
-            TouchpadScrollSlider.IsEnabled = TouchpadSensitivityBox.IsEnabled = !Controller.Settings.NativeTouchpad;
-            foreach (var combo in new[] { SwipeLeftCombo, SwipeRightCombo, SwipeUpCombo, SwipeDownCombo }) combo.IsEnabled = !Controller.Settings.NativeTouchpad;
             PortalLabel.Text = L.F("画面端の {0:P0} ～ {1:P0} ／ {2} ms の押し続け", Controller.Settings.PortalStart, Controller.Settings.PortalEnd, Controller.Settings.EdgeDwellMs);
             EdgeStatusLabel.Text = Controller.EdgeSwitchStatus;
             ReportStats.Text = L.F("送信済みレポート: {0:N0}  ·  送信処理: {1}  ·  メモリ: {2:0.0} MB", Controller.Reports.Sent, Controller.Reports.Healthy ? L.T("正常") : L.T("停止（アプリを再起動）"), Process.GetCurrentProcess().WorkingSet64 / 1048576d);
@@ -245,13 +242,13 @@ public partial class MainWindow : Window
         {
             Controller.Save(Controller.Settings with
             {
-                AutoSwitch = AutoSwitchCheck.IsChecked == true, EstimatedReturn = EstimatedCheck.IsChecked == true,
+                AutoSwitch = AutoSwitchCheck.IsChecked == true, ReturnAtEdge = ReturnAtEdgeCheck.IsChecked == true,
                 EdgeDwellMs = (int)EdgeDwellSlider.Value, IPadShortcutsEnabled = IPadShortcutsCheck.IsChecked == true,
                 MouseSensitivity = MouseSlider.Value, ScrollSensitivity = ScrollSlider.Value,
                 TouchpadScrollSensitivity = TouchpadScrollSlider.Value,
                 RawMouse = RawMouseCheck.IsChecked == true,
                 CaptureTouchpad = TouchpadCheck.IsChecked == true,
-                StabilizeFastPointer = FastPointerCheck.IsChecked == true, NativeTouchpad = NativeTouchpadCheck.IsChecked == true,
+                StabilizeFastPointer = FastPointerCheck.IsChecked == true,
                 CloseToTray = TrayCheck.IsChecked == true, Reconnect = ReconnectCheck.IsChecked == true, AutoStart = AutostartCheck.IsChecked == true,
                 Edge = (ScreenEdge)Math.Max(0, EdgeCombo.SelectedIndex), MonitorId = (MonitorCombo.SelectedItem as DisplayInfo)?.Id ?? "",
                 PortalStart = PortalStartSlider.Value, PortalEnd = PortalEndSlider.Value
@@ -260,12 +257,25 @@ public partial class MainWindow : Window
             PortalStartSlider.Value = Controller.Settings.PortalStart; PortalEndSlider.Value = Controller.Settings.PortalEnd;
             MouseSensitivityBox.Text = Controller.Settings.MouseSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
             TouchpadSensitivityBox.Text = Controller.Settings.TouchpadScrollSensitivity.ToString("0.00", CultureInfo.InvariantCulture);
-            TouchpadCheck.IsChecked = Controller.Settings.CaptureTouchpad; TouchpadCheck.IsEnabled = !Controller.Settings.NativeTouchpad;
+            TouchpadCheck.IsChecked = Controller.Settings.CaptureTouchpad;
             _updating = prior;
             RefreshView(); DrawLayout();
         }
         catch (Exception ex) { Controller.NotifyError(ex); LoadControls(); }
     }
+    private void CommitReturnSize(object sender, RoutedEventArgs e)
+    {
+        if (_updating) return;
+        if (int.TryParse(VirtualWidthBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var width) &&
+            int.TryParse(VirtualHeightBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var height))
+        {
+            try { Controller.Save(Controller.Settings with { VirtualWidth = width, VirtualHeight = height }); }
+            catch (Exception ex) { Controller.NotifyError(ex); }
+        }
+        LoadControls(); DrawLayout();
+    }
+    private void ReturnSizeKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    { if (e.Key == Key.Enter) { CommitReturnSize(sender, e); e.Handled = true; } }
     private void LayoutChanged(object sender, SelectionChangedEventArgs e) => SaveControls(sender, e);
     private void LayoutSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => SaveControls(sender, e);
     private void InputSliderChanged(object sender, RoutedPropertyChangedEventArgs<double> e) => SaveControls(sender, e);
@@ -444,10 +454,10 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.00", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.01", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Reports.CoalescedMotion,
-                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.EdgeHandoff, Controller.NativeContactFrames, Controller.MaximumNativeContacts, Controller.MaximumValidNativeContacts,
-                NativeContactApi = NativeInput.ProbeNativeContacts(), Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
+                Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.EdgeHandoff,
+                Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { Controller.NotifyError(ex); }
     }
@@ -468,6 +478,13 @@ public partial class MainWindow : Window
                     Capture(Path.Combine(output, $"{language}-{index + 1}-light.png"));
                 }
                 SelectPage(1); EdgeDwellSlider.Value = 450; AutoSwitchCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
+                ReturnAtEdgeCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
+                if (new SettingsStore(_dataDirectory).Load().ReturnAtEdge) throw new InvalidOperationException("Edge return disable was not saved.");
+                ReturnAtEdgeCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
+                VirtualWidthBox.Text = "1920"; VirtualHeightBox.Text = "1080"; CommitReturnSize(this, new RoutedEventArgs());
+                var sizeSaved = new SettingsStore(_dataDirectory).Load();
+                if (sizeSaved.VirtualWidth != 1920 || sizeSaved.VirtualHeight != 1080 || !sizeSaved.ReturnAtEdge) throw new InvalidOperationException("Edge return settings failed.");
+                VirtualWidthBox.Text = "1366"; VirtualHeightBox.Text = "1024"; CommitReturnSize(this, new RoutedEventArgs());
                 var edgeSaved = new SettingsStore(_dataDirectory).Load();
                 if (!edgeSaved.AutoSwitch || edgeSaved.EdgeDwellMs != 450 || EdgeStatusLabel.Text != L.T("画面端切り替え：HIDの公開を待っています。"))
                     throw new InvalidOperationException("Edge switching controls or readiness hint failed.");
@@ -498,13 +515,7 @@ public partial class MainWindow : Window
                 IPadShortcutsCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
                 FastPointerCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
                 if (new SettingsStore(_dataDirectory).Load().StabilizeFastPointer) throw new InvalidOperationException("Fast pointer setting was not saved.");
-                FastPointerCheck.IsChecked = true; NativeTouchpadCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
-                var nativeSaved = new SettingsStore(_dataDirectory).Load();
-                if (!nativeSaved.NativeTouchpad || !nativeSaved.CaptureTouchpad || !nativeSaved.StabilizeFastPointer || Controller.Transport.NativeTouchpadMode)
-                    throw new InvalidOperationException("Native mode persistence or restart boundary failed.");
-                PageScroll.ScrollToVerticalOffset(480); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
-                Capture(Path.Combine(output, $"{language}-3-native-light.png"));
-                NativeTouchpadCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
+                FastPointerCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
                 TouchpadSensitivityBox.Text = "4.50"; ApplyTouchpadSensitivityText();
                 if (new SettingsStore(_dataDirectory).Load().TouchpadScrollSensitivity != 4.5 || TouchpadScrollSlider.Value != 4.5)
                     throw new InvalidOperationException("Touchpad sensitivity edit failed: " + language);
@@ -528,11 +539,11 @@ public partial class MainWindow : Window
             var restored = new SettingsStore(_dataDirectory).Load();
             var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
             var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 30, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 27, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
                 AdditionalShortcutRoundTrip = restored.AdditionalShortcuts.SequenceEqual(ActionShortcuts.Defaults),
                 IPadShortcutRoundTrip = restored.HomeShortcut == ShortcutBinding.DefaultHome && restored.SearchShortcut == ShortcutBinding.DefaultSearch && restored.NextAppShortcut == ShortcutBinding.DefaultNextApp && restored.IPadShortcutsEnabled,
                 DuplicateShortcutsRejected = true, EdgeSwitchRoundTrip = restored.EdgeDwellMs == 300 && !restored.AutoSwitch,
-                NativeModeRoundTrip = !restored.NativeTouchpad, FastPointerRoundTrip = restored.StabilizeFastPointer, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
+                ReturnAtEdgeRoundTrip = restored.ReturnAtEdge && restored.VirtualWidth == 1366 && restored.VirtualHeight == 1024, FastPointerRoundTrip = restored.StabilizeFastPointer, TouchpadSensitivityRoundTrip = restored.TouchpadScrollSensitivity == 3, SettingsRoundTrip = restored.MouseSensitivity == 1.25, At = DateTimeOffset.Now }, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch (Exception ex) { await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke-error.txt"), ex.ToString()); }
         RequestExit();

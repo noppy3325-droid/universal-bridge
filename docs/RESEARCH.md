@@ -14,7 +14,7 @@
 
 画面端の旧実装はマウス移動通知の到着時にしか経過時間を判定せず、到着後に静止すると待ち時間を完了できませんでした。実移動による開始とタイマーでの継続を分け、接続待ち中の取り消し、隣接Windows画面の除外、GUIの有効範囲描画を同じ幾何判定へ揃えました。ローカル判定テストはiPadでの物理的な切り替えの代替ではありません。
 
-## 2026-10-24：標準トラックパッド接点の試験実装
+## 2026-10-24：標準トラックパッド接点の試験実装（v1.01で削除した過去の調査）
 
 [Apple Accessory Design Guidelines](https://developer.apple.com/accessories/Accessory-Design-Guidelines.pdf) の2026-09-21版、Trackpads（107～114ページ）を確認しました。iPadOS 14.5以降向けの標準HID Digitizer Touch Pad、2～5接点、Tip Switch／Confidence／Contact ID／XY、Surface Switch feature／Report Rate feature、指を離したフレームで前座標を保持する条件を参照しています。仕様のサンプルをそのままコピーせず、既存複合HIDへ入るcompact descriptorを作成しました。AppleのVIDを名乗らず、Magic Trackpadの私有プロトコルを実装しません。資料PDFは配布に含めません。
 
@@ -50,7 +50,7 @@ Microsoftのグローバルジェスチャー配送は前面プロセスに限�
 
 これらは公式に実験的とされるAPIです。Windows SDK .NET projection 10.0.26100.87を使用し、最低OSバージョンは22000のまま、26100以降かつAPIの存在・IsSupported・初期化成功を確認して有効にします。本PCの読み取り専用プローブでWindows build26300、ウィンドウAPIあり、コントローラー対応を確認しました（`artifacts/touchpad-capabilities/touchpad-probe.json`）。実Windowsの起動・解除も成功しています。すべての24H2端末への対応を保証するものではありません。
 
-iPad側へは従来の標準キーボード／マウスHIDを使い、横スクロールにConsumer AC Panを追加しました。0.2.0時点では複数指の接点は転送しません。0.4.0の接点モードは下記の追加調査に基づく試験実装です。Magic Trackpad固有プロトコルは使いません。アプリ切り替え・検索等のキー変換は [Appleのキーボードショートカット](https://support.apple.com/en-us/102393) を参照しています。ホーム・拡大縮小等の個別キー対応はiPadOSとアプリに依存し、実機の受け入れ項目として残しています。
+iPad側へは従来の標準キーボード／マウスHIDを使い、横スクロールにConsumer AC Panを追加しました。0.2.0時点では複数指の接点は転送しません。0.4.0の接点モードは過去の試験実装であり、v1.01で削除しました。Magic Trackpad固有プロトコルは使いません。アプリ切り替え・検索等のキー変換は [Appleのキーボードショートカット](https://support.apple.com/en-us/102393) を参照しています。ホーム・拡大縮小等の個別キー対応はiPadOSとアプリに依存し、実機の受け入れ項目として残しています。
 
 0.1.2のマウス精度改善では、Microsoftの [Raw Input手順](https://learn.microsoft.com/en-us/windows/win32/inputdev/using-raw-input) と [RAWMOUSE](https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-rawmouse) を参照しました。相対Raw InputはWindowsのマウス速度設定の影響を受けないため、Windowsカーソル座標による二段階の加速を避けます。RIDEV_INPUTSINKとmessage-only windowを使い、DefWindowProcによるWM_INPUTの後処理を行います。
 

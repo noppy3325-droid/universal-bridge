@@ -42,10 +42,9 @@ public sealed class FastPointerTests
         for (var i = 0; i < 100; i++) router.FlushMotion(); Assert.Equal(3, fake.Sent.Count);
         router.ScrollTouchpad(0, 100); router.FlushMotion(); Assert.Equal(3, fake.Sent.Count); // Total remains one tick.
     }
-    [Fact] public void OldSettingsEnableBurstProtectionButKeepNativeModeOptIn()
+    [Fact] public void OldSettingsEnableBurstProtection()
     {
         var old = JsonSerializer.Deserialize<AppSettings>("{\"SchemaVersion\":1,\"MouseSensitivity\":0.37}")!.Normalize();
-        Assert.True(old.StabilizeFastPointer); Assert.False(old.NativeTouchpad); Assert.Equal(.37, old.MouseSensitivity);
-        Assert.True((old with { NativeTouchpad = true, CaptureTouchpad = false }).Normalize().CaptureTouchpad);
+        Assert.True(old.StabilizeFastPointer); Assert.Equal(.37, old.MouseSensitivity);
     }
 }

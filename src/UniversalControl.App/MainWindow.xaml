@@ -10,7 +10,7 @@
           <Button x:Name="InputNav" Content="{DynamicResource L002}" Tag="InputPage" Click="Navigate" HorizontalContentAlignment="Left" Margin="0,0,0,9"/>
           <Button x:Name="SettingsNav" Content="{DynamicResource L003}" Tag="SettingsPage" Click="Navigate" HorizontalContentAlignment="Left"/>
         </StackPanel>
-        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="1.00" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
+        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="1.01" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
       </Grid>
     </Border>
     <Grid Grid.Column="1" Margin="32,28,32,22"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -39,6 +39,9 @@
             <Border Style="{StaticResource Card}"><StackPanel>
               <TextBlock x:Name="EdgeStatusLabel" Foreground="{DynamicResource Accent}" FontSize="12" Margin="0,0,0,8"/>
               <CheckBox x:Name="AutoSwitchCheck" Content="{DynamicResource L035}" Click="SaveControls"/>
+              <CheckBox x:Name="ReturnAtEdgeCheck" Content="{DynamicResource ReturnAtEdgeLabel}" Click="SaveControls"/>
+              <TextBlock Text="{DynamicResource ReturnAtEdgeHelp}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,4,0,10"/>
+              <WrapPanel><TextBlock Text="{DynamicResource ReturnSizeLabel}" VerticalAlignment="Center" Margin="0,0,10,0"/><TextBox x:Name="VirtualWidthBox" Width="65" AutomationProperties.Name="{DynamicResource ReturnWidthLabel}" LostKeyboardFocus="CommitReturnSize" KeyDown="ReturnSizeKeyDown"/><TextBlock Text=" × " VerticalAlignment="Center"/><TextBox x:Name="VirtualHeightBox" Width="65" AutomationProperties.Name="{DynamicResource ReturnHeightLabel}" LostKeyboardFocus="CommitReturnSize" KeyDown="ReturnSizeKeyDown"/></WrapPanel>
               <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="150"/></Grid.ColumnDefinitions><ComboBox x:Name="MonitorCombo" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L028}" Margin="0,0,12,0"/><ComboBox x:Name="EdgeCombo" Grid.Column="1" SelectionChanged="LayoutChanged" AutomationProperties.Name="{DynamicResource L029}"><ComboBoxItem Content="{DynamicResource L030}"/><ComboBoxItem Content="{DynamicResource L031}"/><ComboBoxItem Content="{DynamicResource L032}"/><ComboBoxItem Content="{DynamicResource L033}"/></ComboBox></Grid>
               <Canvas x:Name="LayoutCanvas" Height="340" Background="{DynamicResource AccentSoft}" Margin="0,20,0,12" ClipToBounds="True" SizeChanged="LayoutSizeChanged"/>
               <TextBlock Text="{DynamicResource L034}" Foreground="{DynamicResource Muted}" FontSize="12"/>
@@ -69,8 +72,6 @@
               <TextBlock Text="{DynamicResource L047}" FontSize="17" FontWeight="SemiBold"/><TextBlock Text="{DynamicResource L048}" Foreground="{DynamicResource Muted}" Margin="0,8,0,18"/>
               <TextBlock Text="{DynamicResource L049}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,8"/>
               <CheckBox x:Name="TouchpadCheck" Content="{DynamicResource L050}" Click="SaveControls"/>
-              <CheckBox x:Name="NativeTouchpadCheck" Content="{DynamicResource NativeTouchpadLabel}" Click="SaveControls"/>
-              <TextBlock Text="{DynamicResource NativeTouchpadHelp}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,4,0,12"/>
               <TextBlock x:Name="TouchpadStatusLabel" Foreground="{DynamicResource Muted}" FontSize="12"/>
               <TextBlock Text="{DynamicResource L051}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,6,0,8"/>
               <TextBlock Text="{DynamicResource L052}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,0,0,10"/>
@@ -102,7 +103,6 @@
               <TextBlock Text="{DynamicResource AdditionalShortcutsHelp}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,8,0,8"/>
               <WrapPanel Margin="0,10,0,8"><Button x:Name="ApplyShortcutsButton" Content="{DynamicResource L069}" Click="ApplyShortcuts"/><Button Content="{DynamicResource L070}" Click="DefaultShortcuts" Margin="10,0,0,0"/></WrapPanel>
               <TextBlock x:Name="ShortcutStatusLabel" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,0,0,15"/>
-              <CheckBox x:Name="EstimatedCheck" Content="{DynamicResource L071}" Click="SaveControls"/><TextBlock Text="{DynamicResource L072}" Foreground="{DynamicResource Muted}" FontSize="12"/>
             </StackPanel></Border>
           </StackPanel>
           <StackPanel x:Name="SettingsPage" Visibility="Collapsed">

@@ -1,0 +1,95 @@
+using System.Text.Json;
+using UniversalControl.Core;
+using Xunit;
+
+namespace UniversalControl.Tests;
+
+public sealed class EdgeReturnTests
+{
+    private static (int X, int Y) Toward(ScreenEdge edge, int amount) => edge switch
+    { ScreenEdge.Left => (amount, 0), ScreenEdge.Right => (-amount, 0), ScreenEdge.Top => (0, amount), _ => (0, -amount) };
+    private static void Move(InputRouter router, ScreenEdge edge, int amount)
+    { var (x, y) = Toward(edge, amount); router.Move(x, y); router.FlushMotion(); }
+
+    [Theory]
+    [InlineData(ScreenEdge.Right)][InlineData(ScreenEdge.Left)][InlineData(ScreenEdge.Top)][InlineData(ScreenEdge.Bottom)]
+    public async Task AutomaticSwitchReturnsInEveryDirectionAndNeutralizes(ScreenEdge edge)
+    {
+        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake); var router = new InputRouter(fake, sender);
+        router.Configure(new() { AutoSwitch = true, Edge = edge, StabilizeFastPointer = false });
+        Assert.True(await router.ActivateAsync("iPad", () => true));
+        Move(router, edge, 30); Assert.True(router.IsRemote); // Entry hysteresis, no immediate bounce.
+        Move(router, edge, 20); Assert.False(router.IsRemote); Assert.True(router.LastReturnAtEdge);
+        await FakeTransport.Until(() => fake.ReleaseCalls == 2 && !sender.Settling);
+        Assert.True(fake.Sent.Count >= 4);
+        Assert.All(fake.Sent.ToArray()[^2..], item => Assert.All(item.Frame.Payload, value => Assert.Equal(0, value)));
+        Assert.True(router.PhysicalIdle);
+        Assert.True(await router.ActivateAsync("iPad", () => true));
+        Assert.False(router.LastReturnAtEdge); router.FlushMotion(); Assert.True(router.IsRemote);
+    }
+
+    [Theory]
+    [InlineData(false, true)][InlineData(true, false)][InlineData(false, false)]
+    public async Task DisabledSwitchOrReturnPreservesManualControl(bool automatic, bool returning)
+    {
+        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake); var router = new InputRouter(fake, sender);
+        router.Configure(new() { AutoSwitch = automatic, ReturnAtEdge = returning, StabilizeFastPointer = false });
+        Assert.True(await router.ActivateAsync("iPad", () => true)); Move(router, ScreenEdge.Right, 100);
+        Assert.True(router.IsRemote); router.GoLocal(); Assert.False(router.IsRemote); Assert.False(router.LastReturnAtEdge);
+    }
+
+    [Theory]
+    [InlineData(ScreenEdge.Right)][InlineData(ScreenEdge.Left)][InlineData(ScreenEdge.Top)][InlineData(ScreenEdge.Bottom)]
+    public async Task DragReleaseIdleScrollAndAwayMotionCannotTriggerReturn(ScreenEdge edge)
+    {
+        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake); var router = new InputRouter(fake, sender);
+        router.Configure(new() { AutoSwitch = true, Edge = edge, StabilizeFastPointer = false });
+        Assert.True(await router.ActivateAsync("iPad", () => true));
+        router.Button(MouseButtons.Left, true); Move(router, edge, 100); Assert.True(router.IsRemote);
+        router.Button(MouseButtons.Left, false); router.FlushMotion(); Assert.True(router.IsRemote);
+        router.Scroll(120); router.FlushMotion(); Assert.True(router.IsRemote);
+        Move(router, edge, -1); Assert.True(router.IsRemote);
+        Move(router, edge, 1); Assert.False(router.IsRemote);
+    }
+
+    [Fact] public async Task KeyReleaseDoesNotReturnUsingMotionAccumulatedWhileHeld()
+    {
+        var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake); var router = new InputRouter(fake, sender);
+        router.Configure(new() { AutoSwitch = true, StabilizeFastPointer = false });
+        Assert.True(await router.ActivateAsync("iPad", () => true));
+        router.Key(0x41, 0x1E, false, true, 0); router.Move(-100, 0);
+        router.Key(0x41, 0x1E, false, false, 1); router.FlushMotion(); Assert.True(router.IsRemote);
+        router.Move(-1, 0); router.FlushMotion(); Assert.False(router.IsRemote);
+    }
+
+    [Theory]
+    [InlineData(ScreenEdge.Right)][InlineData(ScreenEdge.Left)][InlineData(ScreenEdge.Top)][InlineData(ScreenEdge.Bottom)]
+    public void ReturnMapsAlongPortalAndLandsInsideWindowsWithoutRetriggering(ScreenEdge edge)
+    {
+        var display = new DisplayInfo("negative", -1920, -1080, 1920, 1080);
+        var settings = new AppSettings { Edge = edge, PortalStart = .2, PortalEnd = .8 };
+        var cursor = new VirtualCursor(); cursor.Enter(settings, .25);
+        cursor.Move(edge is ScreenEdge.Top or ScreenEdge.Bottom ? (settings.VirtualWidth - 1) * .5 : 0,
+            edge is ScreenEdge.Left or ScreenEdge.Right ? (settings.VirtualHeight - 1) * .5 : 0, settings);
+        var point = cursor.WindowsReturnPoint(display, settings);
+        Assert.True(display.Contains(point.X, point.Y));
+        Assert.InRange(VirtualCursor.EntryAlong(point, display, settings), .748, .752);
+        Assert.False(EdgeDetector.IsAtPortal(point, display, [display], settings, EdgeDetector.RetentionTolerance));
+        var detector = new EdgeDetector(); detector.Reset();
+        Assert.False(detector.Poll(point, display, [display], settings, 1000));
+        Assert.False(detector.Observe(point, display, [display], settings, 2000));
+    }
+
+    [Fact] public void LegacySettingsEnableReturnAndRemoveContactRelayWithoutChangingOtherPreferences()
+    {
+        var previous = JsonSerializer.Deserialize<AppSettings>("""{"AutoSwitch":true,"EstimatedReturn":false,"NativeTouchpad":true,"CaptureTouchpad":false,"MouseSensitivity":0.84,"VirtualWidth":1920,"VirtualHeight":1080}""")!.Normalize();
+        Assert.True(previous.ReturnAtEdge); Assert.True(previous.AutoSwitch); Assert.False(previous.CaptureTouchpad);
+        Assert.Equal(.84, previous.MouseSensitivity); Assert.Equal(1920, previous.VirtualWidth);
+        var saved = JsonSerializer.Serialize(previous);
+        Assert.DoesNotContain("EstimatedReturn", saved); Assert.DoesNotContain("NativeTouchpad", saved);
+        var restored = JsonSerializer.Deserialize<AppSettings>(JsonSerializer.Serialize(previous with { ReturnAtEdge = false }))!;
+        Assert.False(restored.ReturnAtEdge);
+        Assert.Equal(new[] { ReportKind.Keyboard, ReportKind.Mouse }, Enum.GetValues<ReportKind>());
+        Assert.Equal(144, HidDescriptors.ReportMapValue.Length);
+    }
+}
