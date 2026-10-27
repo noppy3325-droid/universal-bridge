@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**v1.01 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v1.02 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,10 +32,10 @@ This is an **unsigned release** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v1.01](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01)**:
+Open **[Releases — v1.02](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02)**:
 
-- **[UniversalBridge-1.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.01/UniversalBridge-1.0.1-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-1.0.1-source.zip` — source without SDKs, caches, settings, or logs.
+- **[UniversalBridge-1.0.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.02/UniversalBridge-1.0.2-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-1.0.2-source.zip` — source without SDKs, caches, settings, or logs.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -54,7 +54,15 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 
 **Gestures** generate standard scroll reports and supported keyboard shortcuts. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
 
-## v1.01: contact relay removed and two-way edge switching
+## v1.02: prevent accidental returns from small movements
+
+v1.01 started the estimate near the connected edge, allowing small reversals to return control. The estimate now starts in the middle, and automatic return is blocked for one second after switching. Crossing the estimated boundary is only a candidate: keep moving toward Windows for at least 300 ms and a minimum travel distance to confirm return. A longer edge wait configured in Display layout also applies.
+
+A single flick, tiny jitter, or a small move after stopping cannot return control. Stopping, reversing, moving parallel to the edge, scrolling or key/button input restarts confirmation. Overshoot is not carried forward. Windows-to-iPad switching, pointer sensitivity and return shortcuts are retained.
+
+Actual iPad coordinates remain unavailable. Adjust the estimated range, or disable only automatic return in Display layout and use Ctrl+Alt+Q / Esc three times. Actual iPad feel still needs hardware confirmation after updating.
+
+## v1.01 history (return confirmation changed in v1.02)
 
 Removes the optional iPad contact relay from settings, HID reports and diagnostics. Two-finger scrolling and pinch/swipe-to-key conversion remain available.
 
@@ -147,7 +155,7 @@ pwsh -File scripts/Package.ps1
 
 SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
 
-**225 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**244 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
 
 See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable releases.
 

@@ -96,8 +96,8 @@
   "IPadNextAppLabel": "次のアプリ",
   "AdditionalShortcutsLabel": "追加のiPad操作",
   "AdditionalShortcutsHelp": "各操作のチェックで有効・無効を選び、「適用」でキーと一緒に保存します。閉じる操作は初期値オフです。拡大・縮小、取り消し等はアプリの対応に従います。",
-  "ReturnAtEdgeLabel": "iPad側からWindowsへ自動で戻る（相対移動から推定）",
-  "ReturnAtEdgeHelp": "画面端切り替えがオンのとき、Windows側の辺へ動かすと戻ります。iPadの実座標は取得できません。復帰位置が合わない場合は推定範囲を調整してください。キー・ボタンを押している間は戻りません。",
+  "ReturnAtEdgeLabel": "iPad側からWindowsへ自動で戻る（端で押し続ける・推定）",
+  "ReturnAtEdgeHelp": "iPadの実座標は取得できません。切り替え後1秒は復帰せず、推定端でWindows方向へ動かし続けた場合だけ戻ります（最短300ms、下の待ち時間で延長）。小さな揺れ・停止・反転では戻りません。位置が合わなければ推定範囲を調整するか、この復帰だけオフにできます。",
   "ReturnSizeLabel": "iPad側の推定範囲（幅 × 高さ）",
   "ReturnWidthLabel": "iPad側の推定範囲の幅",
   "ReturnHeightLabel": "iPad側の推定範囲の高さ"

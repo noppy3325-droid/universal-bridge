@@ -131,8 +131,9 @@ public sealed class VirtualCursor
     public void Enter(AppSettings s, double along = .5)
     {
         along = double.IsFinite(along) ? Math.Clamp(along, 0, 1) : .5;
-        X = s.Edge == ScreenEdge.Left ? s.VirtualWidth - 24 : s.Edge == ScreenEdge.Right ? 24 : along * (s.VirtualWidth - 1);
-        Y = s.Edge == ScreenEdge.Top ? s.VirtualHeight - 24 : s.Edge == ScreenEdge.Bottom ? 24 : along * (s.VirtualHeight - 1);
+        // Relative HID cannot tell where the host pointer resumed. Do not assume it is at the portal.
+        X = (s.Edge is ScreenEdge.Left or ScreenEdge.Right ? .5 : along) * (s.VirtualWidth - 1);
+        Y = (s.Edge is ScreenEdge.Top or ScreenEdge.Bottom ? .5 : along) * (s.VirtualHeight - 1);
     }
     public static bool TowardWindows(double dx, double dy, ScreenEdge edge) => edge switch
     { ScreenEdge.Right => dx < 0, ScreenEdge.Left => dx > 0, ScreenEdge.Top => dy > 0, _ => dy < 0 };
@@ -162,10 +163,11 @@ public sealed class VirtualCursor
         var nextX = X + dx; var nextY = Y + dy;
         var returned = s.Edge switch
         {
-            ScreenEdge.Right => nextX < -16, ScreenEdge.Left => nextX > s.VirtualWidth + 16,
-            ScreenEdge.Top => nextY > s.VirtualHeight + 16, _ => nextY < -16
+            ScreenEdge.Right => nextX <= 0, ScreenEdge.Left => nextX >= s.VirtualWidth - 1,
+            ScreenEdge.Top => nextY >= s.VirtualHeight - 1, _ => nextY <= 0
         };
-        X = Math.Clamp(nextX, -32, s.VirtualWidth + 32); Y = Math.Clamp(nextY, -32, s.VirtualHeight + 32);
+        // No overshoot debt: a drag/flick past the estimate must not make a later one-count move return.
+        X = Math.Clamp(nextX, 0, s.VirtualWidth - 1); Y = Math.Clamp(nextY, 0, s.VirtualHeight - 1);
         return returned;
     }
 }

@@ -1,4 +1,14 @@
-# Verification report — v1.01 / 1.0.1
+# Verification report — v1.02 / 1.0.2
+
+検証日: **2026-10-27 / Asia/Tokyo**。
+
+- **244成功、0失敗、0スキップ**、ビルド警告0／エラー0。v1.01の「30＋20カウントの逆移動ですぐ復帰」を再現し、復帰しないことを確認しました。四方向の小さな往復・切り替え直後の大きな移動・単発フリック・静止後の小移動・到達パケットの距離持ち越しを検証し、19ケースを追加しました。停止／反転／沿辺移動／スクロール／キー／ボタンでのリセット、300／450／1500msの確認時間も検証しました。`artifacts/102-final-build.log`。
+- 実際の送信タイマーと同様に空のflushを移動サンプル間へ挟み、タイマーだけで復帰しないこと、継続する意図的な押し出しでは復帰することを確認しました。これらは仮想時計とFakeTransportによるロジック検証であり、iPadの実位置を測定したものではありません。
+- 自己完結exeの`--verify-edge-return`は四方向でEntryGraceProtected／SingleFlickProtected／SmallMovementProtected／SustainedPushRequired／IdleProtectedがすべてTrue。入力フック・BLE・実カーソル移動なしのモデル検証です。既存の画面端入力ループ・斜め精度・入力タイマー・単体タイマーの4モードもSuccess=True。`artifacts/102-local-runtime.json`。
+- GUIは**3言語・27画像・Success=True**。復帰の説明と通常／オフ設定、推定範囲、言語、既存ショートカット・感度・アイコンの保存を確認。入力捕捉・HID公開なし。3言語の配置画面を目視しました。`artifacts/102-local-gui/gui-smoke.json`。
+- **今回のiPad実機での操作感は未検証です。** 復帰は相対移動の推定であり、実座標の検出ではありません。従来より意図的な押し続けが必要です。Windows→iPadの処理と通常のHID移動量は変更せず、手動復帰・障害時の復帰も維持します。以下は過去版の検証履歴です。
+
+## v1.01 / 1.0.1
 
 検証日: **2026-10-25 / Asia/Tokyo**。
 

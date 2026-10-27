@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器、使用中のインターネットは不要です。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.01（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v1.02（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,10 +32,10 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v1.01](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.01)** から取得します。
+**[Releases — v1.02](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02)** から取得します。
 
-- **[UniversalBridge-1.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.01/UniversalBridge-1.0.1-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-1.0.1-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- **[UniversalBridge-1.0.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.02/UniversalBridge-1.0.2-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.2-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -54,7 +54,15 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 
 ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
-## v1.01：接点転送の削除と双方向の画面端切り替え
+## v1.02：小さな移動でWindowsへ戻る問題を修正
+
+v1.01は推定位置を接続辺の近くから開始したため、小さな逆方向の移動でも復帰していました。推定の開始位置を中央に変更し、切り替え後1秒は自動復帰を抑止します。推定境界の到達だけでは戻らず、Windows方向へ最短300ms以上、一定距離を動かし続けたときだけ戻ります。「端に到着してから切り替わるまでの時間」が300msより長ければ、その値を使用します。
+
+単発のフリック、細かな揺れ、停止後の小さな移動では戻りません。停止・反転・沿辺移動・スクロール・キー／ボタン操作で確認をやり直します。前回の境界超過量を持ち越しません。Windows→iPadの切り替え、通常のマウス感度、復帰ショートカットは維持します。
+
+実際のiPad座標は読めないため、復帰位置は引き続き推定です。合わない場合は「ディスプレイ配置」の推定範囲を調整するか、自動復帰だけをオフにしてCtrl+Alt+Q／Esc3回を使えます。iPad実機での操作感は更新後の確認が必要です。
+
+## v1.01の履歴（復帰条件はv1.02で変更）
 
 iPad向けの接点転送機能を設定・HIDレポート・診断から削除しました。通常の2本指スクロールとピンチ／スワイプのキー変換は引き続き使えます。
 
@@ -145,7 +153,7 @@ pwsh -File scripts/Package.ps1
 
 SDKとパッケージは `.tools/` に保存。Windows SDK projectionは `10.0.26100.87` 固定で、実験的APIは分離・対応確認します。ドライバー、制限回避レジストリ、VM、OSのセキュリティ変更は導入しません。
 
-**自動テスト225件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
+**自動テスト244件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
 
 [開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグから通常Releaseを生成します。
 

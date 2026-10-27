@@ -59,7 +59,7 @@
   "iPad操作中 · 戻る: ": "iPad control · Return: ",
   "iPad操作中だけ小さな受け取り画面を前面に表示します。Windowsの別画面へフォーカスが移ると自動でWindowsへ戻ります。オフの場合、Windows側のジェスチャーは抑制しません。": "A small capture window stays in front while controlling iPad. Focusing another Windows window returns control to Windows. When this is off, Windows gestures are not suppressed.",
   "iPad操作中はジェスチャーをWindowsへ渡さず取得する": "Capture gestures while controlling iPad",
-  "Universal Bridge 1.01を起動しました。入力内容は記録しません。": "Universal Bridge 1.01 started. Input content is not logged.",
+  "Universal Bridge 1.02を起動しました。入力内容は記録しません。": "Universal Bridge 1.02 started. Input content is not logged.",
   "Universal Bridge 起動エラー": "Universal Bridge startup error",
   "Universal Bridgeは起動済みです。タスクトレイから開いてください。": "Universal Bridge is already running. Open it from the system tray.",
   "Windowsサインイン時に起動する（現在のユーザーのみ）": "Start at Windows sign-in (current user only)",
@@ -183,7 +183,6 @@
   "診断ファイル (*.json)|*.json": "Diagnostic file (*.json)|*.json",
   "診断ログ": "Diagnostic log",
   "診断を保存": "Save diagnostics",
-  "推定カーソルが境界に達したためWindowsへ戻しました": "The estimated cursor reached the boundary. Returned to Windows.",
   "正常": "Healthy",
   "切り替えできませんでした。": "Could not switch. ",
   "切り替え元ディスプレイ": "Source display",
@@ -288,9 +287,10 @@
   "画面端の切り替えがタイムアウトしました。接続を確認して再試行してください。": "Edge switching timed out. Check the connection and retry.",
   "画面端の位置を確認できません。通常のデスクトップで再試行してください。": "The edge position could not be checked. Retry on the normal desktop.",
   "画面端でWindowsとiPadを自動で切り替える": "Switch automatically between Windows and iPad at the screen edge",
-  "iPad側からWindowsへ自動で戻る（相対移動から推定）": "Return from iPad to Windows automatically (estimated from relative motion)",
-  "画面端切り替えがオンのとき、Windows側の辺へ動かすと戻ります。iPadの実座標は取得できません。復帰位置が合わない場合は推定範囲を調整してください。キー・ボタンを押している間は戻りません。": "When edge switching is on, move toward the Windows-facing edge to return. The actual iPad pointer position is unavailable. Adjust the estimated range if the return boundary feels wrong. Held keys or buttons prevent return.",
   "iPad側の推定範囲（幅 × 高さ）": "Estimated iPad range (width × height)",
   "iPad側の推定範囲の幅": "Estimated iPad range width",
-  "iPad側の推定範囲の高さ": "Estimated iPad range height"
+  "iPad側の推定範囲の高さ": "Estimated iPad range height",
+  "iPad側からWindowsへ自動で戻る（端で押し続ける・推定）": "Return to Windows by pushing past the estimated edge",
+  "iPadの実座標は取得できません。切り替え後1秒は復帰せず、推定端でWindows方向へ動かし続けた場合だけ戻ります（最短300ms、下の待ち時間で延長）。小さな揺れ・停止・反転では戻りません。位置が合わなければ推定範囲を調整するか、この復帰だけオフにできます。": "The actual iPad pointer position is unavailable. Return is blocked for one second after switching. Keep moving toward Windows past the estimated edge to return (at least 300 ms; a longer wait below also applies). Small jitter, stopping or reversing will not return control. Adjust the estimated range or disable this return option if needed.",
+  "推定境界でWindows方向への移動が続いたためWindowsへ戻しました": "Returned to Windows after sustained outward motion at the estimated boundary"
 }

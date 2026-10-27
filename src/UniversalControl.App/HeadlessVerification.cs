@@ -20,17 +20,31 @@ public static class HeadlessVerification
                 foreach (var edge in Enum.GetValues<ScreenEdge>())
                 {
                     var transport = new ModelTransport(); await using var dispatcher = new ReportDispatcher(transport);
-                    var router = new InputRouter(transport, dispatcher);
+                    var clock = new ModelClock(); var router = new InputRouter(transport, dispatcher, clock);
                     var settings = JsonSerializer.Deserialize<AppSettings>("""{"AutoSwitch":true,"EstimatedReturn":false,"NativeTouchpad":true}""")! with { Edge = edge, StabilizeFastPointer = false };
                     router.Configure(settings);
                     if (!await router.ActivateAsync("model", () => true)) throw new InvalidOperationException("Model activation failed.");
                     router.SetEntryAlong(.75);
-                    var (x, y) = edge switch { ScreenEdge.Right => (-100, 0), ScreenEdge.Left => (100, 0), ScreenEdge.Top => (0, 100), _ => (0, -100) };
+                    var (x, y) = edge switch { ScreenEdge.Right => (-10000, 0), ScreenEdge.Left => (10000, 0), ScreenEdge.Top => (0, 10000), _ => (0, -10000) };
                     router.Button(MouseButtons.Left, true); router.Move(x, y); router.FlushMotion();
                     if (!router.IsRemote) throw new InvalidOperationException("Return interrupted a drag.");
                     router.Button(MouseButtons.Left, false); router.FlushMotion();
                     if (!router.IsRemote) throw new InvalidOperationException("Release triggered a stale return.");
                     router.Move(x, y); router.FlushMotion();
+                    if (!router.IsRemote) throw new InvalidOperationException("Entry flick triggered return.");
+                    clock.Now = 2000; router.Move(x, y); router.FlushMotion();
+                    if (!router.IsRemote) throw new InvalidOperationException("Single flick triggered return.");
+                    clock.Now = 5000; router.FlushMotion();
+                    router.Move(Math.Sign(x), Math.Sign(y)); router.FlushMotion();
+                    if (!router.IsRemote) throw new InvalidOperationException("Idle or a small move triggered a stale return.");
+                    clock.Now = 6000; router.Move(x, y); router.FlushMotion();
+                    for (var sample = 1; sample <= 3; sample++)
+                    {
+                        for (var tick = 0; tick < 4; tick++)
+                        { clock.Now += 20; router.FlushMotion(); if (!router.IsRemote) throw new InvalidOperationException("Idle timer finished a return."); }
+                        clock.Now += 20; router.Move(Math.Sign(x) * 32, Math.Sign(y) * 32); router.FlushMotion();
+                        if (sample < 3 && !router.IsRemote) throw new InvalidOperationException("Return did not wait for sustained pressure.");
+                    }
                     if (router.IsRemote || !router.LastReturnAtEdge) throw new InvalidOperationException("Edge return failed.");
                     var display = new DisplayInfo("model", -1920, -1080, 1920, 1080);
                     var point = router.Cursor.WindowsReturnPoint(display, settings);
@@ -39,7 +53,9 @@ public static class HeadlessVerification
                     directions.Add(edge.ToString());
                 }
                 await WriteAsync(directory, "edge-return.json", new { Success = true, Directions = directions, LegacySettingsMigrated = true,
-                    DragProtected = true, FreshMotionRequired = true, ReturnInsetVerified = true, ReportKinds = Enum.GetNames<ReportKind>(), ReportMapBytes = HidDescriptors.ReportMapValue.Length,
+                    DragProtected = true, FreshMotionRequired = true, ReturnInsetVerified = true, SmallMovementProtected = true, EntryGraceProtected = true,
+                    SingleFlickProtected = true, SustainedPushRequired = true, IdleProtected = true,
+                    ReportKinds = Enum.GetNames<ReportKind>(), ReportMapBytes = HidDescriptors.ReportMapValue.Length,
                     HooksInstalled = false, InputCaptured = false, BluetoothAdvertised = false, HardwareCursorMeasured = false });
                 return 0;
             }
@@ -190,6 +206,8 @@ public static class HeadlessVerification
         public bool IsReady(string targetId) => targetId == "model";
         public Task SendAsync(string targetId, HidFrame frame, CancellationToken cancellationToken) => Task.CompletedTask;
     }
+    private sealed class ModelClock : TimeProvider
+    { public long Now; public override long TimestampFrequency => 1000; public override long GetTimestamp() => Now; }
     [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)] private static extern bool RegisterHotKey(nint window, int id, uint modifiers, uint key);
     [System.Runtime.InteropServices.DllImport("user32.dll")] private static extern bool UnregisterHotKey(nint window, int id);
 }

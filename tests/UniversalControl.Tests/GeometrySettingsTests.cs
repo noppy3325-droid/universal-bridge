@@ -47,10 +47,13 @@ public sealed class GeometrySettingsTests
         var motion = new MotionAccumulator(); motion.Add(65535, -65535, 300);
         var a = motion.Take(); var b = motion.Take(); var c = motion.Take(); Assert.Equal(65535, a.X + b.X + c.X); Assert.Equal(-65535, a.Y + b.Y + c.Y); Assert.Equal(300, a.Wheel + b.Wheel + c.Wheel);
     }
-    [Fact] public void VirtualCursorIsAnEstimateAndHasReturnHysteresis()
+    [Fact] public void VirtualCursorStartsConservativelyAndDoesNotKeepOvershootDebt()
     {
         var cursor = new VirtualCursor(); var s = new AppSettings(); cursor.Enter(s);
-        Assert.False(cursor.Move(-30, 0, s)); Assert.True(cursor.Move(-20, 0, s)); Assert.True(cursor.X >= -32);
+        Assert.Equal((s.VirtualWidth - 1) / 2d, cursor.X);
+        Assert.False(cursor.Move(-30, 0, s)); Assert.False(cursor.Move(-20, 0, s));
+        Assert.True(cursor.Move(-10000, 0, s)); Assert.Equal(0, cursor.X);
+        Assert.False(cursor.Move(1, 0, s)); Assert.Equal(1, cursor.X);
     }
     [Fact] public void SettingsRoundTripAndMalformedFileRecovery()
     {
