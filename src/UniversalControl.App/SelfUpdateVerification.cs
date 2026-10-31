@@ -18,7 +18,7 @@ public static class SelfUpdateVerification
                 var data = Path.Combine(directory, "data"); var stage = SelfUpdateRunner.CreateStage(data);
                 var payload = Path.Combine(stage, "Payload.exe"); File.Copy(Environment.ProcessPath!, payload);
                 var hash = await SelfUpdateRunner.Hash(payload); if (value == "3") hash = new string('0', 64);
-                var manifest = new UpdateManifest(1, SelfUpdateRunner.CurrentVersion.ToString(3), "v1.05", "UniversalBridge.exe", new FileInfo(payload).Length, hash);
+                var manifest = new UpdateManifest(1, SelfUpdateRunner.CurrentVersion.ToString(3), "v1.06", "UniversalBridge.exe", new FileInfo(payload).Length, hash);
                 var job = await SelfUpdateRunner.LaunchHelperAsync(stage, data, manifest, value == "4" ? 1 : value == "5" ? 3 : int.Parse(value));
                 await File.WriteAllTextAsync(Path.Combine(directory, "job-path.txt"), job); return 0;
             }

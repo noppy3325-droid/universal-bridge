@@ -83,6 +83,7 @@ public partial class MainWindow
                 new Progress<double>(value => UpdateStatus.Text = L.F("更新をダウンロードしています… {0:P0}", value)), timeout.Token);
             UpdateStatus.Text = L.T("更新を適用して再起動します…");
             Controller.Router.GoLocal();
+            await StopClipboardAsync();
             await Controller.StopAsync(); // Return locally and release HID before the process exits.
             await SelfUpdateRunner.LaunchHelperAsync(stage, _dataDirectory, update.Manifest);
             RequestExit();

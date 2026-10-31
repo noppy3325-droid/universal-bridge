@@ -1,5 +1,15 @@
 # Architecture
 
+## v1.06の共有と状態表示
+
+ClipboardBridgeServerは指定したprivate IPv4の2ポートだけを使用します。43182のHTTPは公開CA証明書と設定案内のみ。43183のHTTPSだけが共有ページとJSON APIを持ち、TLS 1.2/1.3、IP SAN、SHA-256署名を使用します。CA秘密鍵はAppDataのclipboard-authority.binにCurrentUser DPAPIで保護し、iPadへはDER公開証明書だけを渡します。Schannel用のleaf秘密鍵はOS管理の一時UserKeySetで、PersistKeySetや信頼ストアの変更は行いません。
+
+6桁CSPRNGコードは5分・1回、失敗5回で拒否します。成功時の256bit session CookieはSecure / HttpOnly / SameSite=Strict / Path=/api/。コード更新は既存sessionを無効化します。HostとOriginを固定し、全APIをapplication/jsonのPOSTに限定。CORSは付けず、HTMLはCSP・no-store・no-referrer・nosniffを付けます。ヘッダー8 KiB、本文512 KiB、復号したUTF-8テキスト64 KiB、同時接続12、接続期限10秒。監視・自動同期はせず、明示ボタンの要求時だけSTA DispatcherでWindows Clipboardへアクセスします。停止・終了・セッション変更・スリープでlistenerと要求をキャンセルし、待機中のClipboard書き込みも取り消します。ネットワーク・内容・資格情報はログに出しません。
+
+RemoteStatusWindowはクリック透過のlayered tool windowで、NOACTIVATEとShowActivated=false、HTTRANSPARENTを使います。対象モニターのwork areaとDPIに合わせて右下へ配置し、復帰キーを表示します。入力スレッドのジェスチャー受け取りwindowは従来の移動anchorとサイズを維持し、枠なし・alpha=1へ変更します。alpha=0ではOSが接点を背後へ通すため使用しません。表示側は前面所有権やマウス移動に関与しません。
+
+--verify-clipboardはloopbackと専用データのみを使い、TLSの独自CA検証・DPAPI保持・双方向Unicode・session失効・公開証明書を検証します。ジェスチャーwindowは非表示・無効状態で登録／解除し、入力フック・HID公開・実クリップボードアクセスは行いません。実iPadのSafari・証明書設定・layered receiverでのジェスチャー受信は手動確認が残ります。
+
 ## v1.05の実行ファイル名
 
 AppのAssemblyNameをUniversalBridgeへ変更し、配布exe・更新manifest・checksum・Release workflowをUniversalBridge.exeに統一しました。プロジェクトパスと名前空間、ユーザー設定フォルダ、単一起動mutexは維持します。旧名exeを含む出力先はBuild／Packageが拒否し、PackageはProductNameとProductVersionも照合します。v1.04以前のクライアントは旧名を固定しているため、この移行は手動です。新しい実行ファイルのパスを自動起動に使う場合は、GUIから登録し直します。
@@ -88,7 +98,7 @@ Win32 hooks (専用MTA thread)      ▼
 - `UniversalControl.App`: 4画面のWPF GUI、トレイ、診断、ライフサイクル、GUIスモーク／プラットフォーム検証モード。
 - `UniversalControl.Tests`: プロトコル・状態遷移・異常系・入力洪水の自動テスト。FakeTransportはここだけに存在します。
 
-軽量なネイティブGUIとBluetooth処理を同一ランタイムで保守するため、推奨構成からTauri / Reactを変更しました。WebView、Node、Rust、ローカルHTTPサーバー、ネットワークIPCは実行時に必要ありません。.NET 10を自己完結形式で同梱します。
+軽量なネイティブGUIとBluetooth処理を同一ランタイムで保守するため、推奨構成からTauri / Reactを変更しました。入力共有にはWebView、Node、Rust、ローカルHTTPサーバー、ネットワークIPCは必要ありません。任意のクリップボード共有を開始した間だけローカルHTTP／HTTPS listenerを使用します。.NET 10を自己完結形式で同梱します。
 
 ## HOGP
 

@@ -1,4 +1,14 @@
-# Verification report — v1.05 / 1.0.5
+# Verification report — v1.06 / 1.0.6
+
+検証日: **2026-10-31 / Asia/Tokyo**。
+
+- **305成功、0失敗、0スキップ**、警告0／エラー0。29件の共有テストで、実TLSの独自CA検証、POST／Origin／Host、Cookie保護、一度限りの接続、5回制限・有効期限・失効、未認証拒否、UTF-8の両方向上限、空文字／日本語／中国語／絵文字、HTTPでclipboardが読めないこと、不正ヘッダー・本文・転送形式、public/wildcard bind拒否、停止を確認しました。
+- 自己完結exeのGUIは**3言語・42画像・Success=True**。共有はGUI検証中オフ。状態カードは実際に表示して、work area内の配置、taskbar回避、foreground不変、NOACTIVATE／LAYERED／TRANSPARENT／TOOLWINDOWを確認し、ライト／ダークを目視しました。`artifacts/106-final-gui/gui-smoke.json`。
+- `--verify-clipboard`は専用データとloopbackだけを使用。DPAPIで保護したCAの再読込、独自CAを正しく検証したTLS、Unicode双方向、未認証拒否、session失効、公開証明書を確認。対応する実WinRT APIで、枠なしalpha=1の受け取りwindowを非表示・無効状態で登録／解除し、foreground不変を確認しました。`artifacts/106-final-clipboard/clipboard-verification.json`。実クリップボード・入力フック・HID公開は使用していません。
+- Safari向けと同じHTML／CSS／JSをheadless Edgeで検証。3言語・12画像、接続、取得、コピー操作、送信、失効時の接続画面復帰、HTMLを文字として扱うこと、390pxでの横はみ出しなしを確認。通信APIとnavigator.clipboardはテスト用の模型で、実システムのclipboardと外部ネットワークへはアクセスしません。`artifacts/106-browser/browser-verification.json`。
+- iPad実機のSafariでの証明書導入と受け渡し、実際のジェスチャー受信、複数DPI・全taskbar位置での最終受け入れは未実施です。手順はdocs/MANUAL_TESTS.mdへ記載しています。以下は過去版の検証履歴です。
+
+## v1.05 / 1.0.5
 
 検証日: **2026-10-31 / Asia/Tokyo**。
 

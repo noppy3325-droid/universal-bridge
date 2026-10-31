@@ -1,28 +1,28 @@
-# Universal Bridge v1.05
+# Universal Bridge v1.06
 
 ## 日本語
 
-- 実行ファイル名を **UniversalBridge.exe** に修正しました。単体ダウンロード、ZIP内のexe、ビルド出力、更新用ファイル、3言語の案内を統一しています。
-- 旧名のexeが配布物に混入した場合は、ビルド・パッケージ作成を停止します。
-- 更新後の起動確認ファイルを完全に書き終えてから公開し、一時的な読み取り競合で誤って旧版へ戻らないようにしました。
-- **v1.04以前からは今回だけ手動ダウンロードが必要です。** 旧版の更新機能は旧ファイル名を固定しているため、この移行に利用できません。旧版を完全終了してから新版を起動してください。保存済みの設定は引き継ぎます。
-- Windows起動時の自動起動を利用している場合は、新版の設定で一度オフ→オンにして起動先を登録し直してください。
-- 日本語を標準とするREADME、英語・中国語表示、タイトルバーテーマ、アプリ内更新を継続します。Windows 11 x64向け、ランタイム同梱の通常リリースです。
+- **Safariでテキストのクリップボードを双方向共有。** 同じWi-Fi上で動作し、追加のiPadアプリ・インターネットは不要です。アプリの「クリップボード共有」で開始し、初回の証明書設定と6桁コードで接続します。取得→iPadへコピー、または貼り付け→Windowsへ送信を選びます。
+- HTTPS暗号化、5分・1回限りの接続コード、既存接続の失効、64 KiBの上限、共有内容・コードを記録しない設計。共有は毎回オフで起動し、停止・終了・セッション変更・スリープで切断します。初回設定用HTTPは公開証明書と案内のみです。
+- **iPad操作中の表示を右下の小さな状態カードへ。** 角丸と控えめな影、ライト／ダーク、戻るショートカットとEsc3回を表示。タスクバーを避け、表示カードはフォーカスを奪わずクリックを透過します。ジェスチャー受け取りの中央の枠を取り除き、マウス移動の基準位置は維持しました。
+- サイドバー・起動ログ・診断の版番号を同じビルド情報へ統一しました。実行ファイル名はUniversalBridge.exeです。
+- 305件の自動テスト、3言語42画像のGUI、PC内の実TLS・DPAPI・文字往復、ブラウザー操作の検証に成功。**iPad実機でのSafari・証明書設定・ジェスチャーの最終受け入れは未実施です。**
+- v1.05からはアプリ内更新が使えます。v1.04以前は手動でダウンロードしてください。テキストのみの明示操作で、自動同期・画像・ファイル共有は対象外です。[設定手順](https://github.com/noppy3325-droid/universal-bridge/blob/main/docs/CLIPBOARD.md)。
 
 ## English
 
-- Corrected the executable name to **UniversalBridge.exe** across the standalone download, ZIP, build output, update files and all three language guides.
-- Builds and packaging reject output directories containing the old executable name.
-- Startup confirmation markers are published only after writing completes; temporary read locks no longer trigger an unnecessary rollback.
-- **From v1.04 or earlier, download this release manually once.** Older updaters hardcode the previous filename and cannot migrate it. Fully exit the old app before launching the new one; saved settings carry over.
-- If you use launch at Windows startup, turn it off and on in the new app to register its new path.
-- Retains Japanese as the default README, English/Chinese UI, themed title bars and in-app updates. Self-contained regular release for Windows 11 x64.
+- **Bidirectional text clipboard sharing through Safari**, on the same Wi-Fi, with no iPad companion app or internet service. Start Clipboard sharing, set up this PC’s certificate once, then connect with the six-digit code. Fetch and copy to iPad, or paste into the page and send to Windows.
+- HTTPS, one-use/five-minute codes, session revocation and a 64 KiB text limit. Content and codes are not logged. Sharing starts off and stops on exit, session changes and sleep. The HTTP setup listener serves only public setup information and the public certificate.
+- **A small bottom-right status card during iPad control.** Rounded corners, subtle shadow, light/dark themes, the return shortcut and triple-Esc. It avoids the taskbar, does not activate and passes clicks through. The central gesture receiver’s frame is removed while retaining the motion anchor.
+- Sidebar, startup log and diagnostics use the same build version. The executable remains UniversalBridge.exe.
+- Passed 305 automated tests, three-language/42-image GUI checks, real local TLS/protected-key/Unicode transfer checks, and browser UI checks. **Final physical-iPad Safari/certificate/gesture acceptance is still pending.**
+- In-app update is available from v1.05; versions through v1.04 need a manual download. Explicit plain-text transfers only; no automatic sync, images or files. [Setup guide](https://github.com/noppy3325-droid/universal-bridge/blob/main/docs/CLIPBOARD.en.md).
 
 ## 简体中文
 
-- 可执行文件名修正为 **UniversalBridge.exe**，独立下载、ZIP、构建输出、更新文件和三语说明全部统一。
-- 构建和打包会拒绝含旧文件名的输出目录。
-- 启动确认文件写入完成后才发布，暂时的读取冲突不再导致不必要的回滚。
-- **从v1.04及更早版本升级时，此次请手动下载。** 旧更新程序固定使用旧文件名，无法完成此次迁移。完全退出旧版后启动新版，已有设置会保留。
-- 如果启用了随Windows启动，请在新版中关闭后重新开启，以注册新路径。
-- 保留日语默认README、英语和中文界面、标题栏主题与应用内更新。Windows 11 x64，包含运行时的正式版。
+- **通过Safari双向共享纯文本剪贴板**，使用同一Wi-Fi，无需iPad专用应用或互联网服务。在“剪贴板共享”中开始，首次设置此电脑的证书，输入六位连接码后获取并复制到iPad，或粘贴到页面后发送到Windows。
+- HTTPS加密、一次性且五分钟有效的连接码、撤销已有连接及64 KiB文本上限。不记录内容与连接码。每次启动默认关闭，退出、会话变化或睡眠时停止。HTTP首次设置服务仅提供公用证书与设置说明。
+- **操作iPad时改用右下角小型状态卡片**，带圆角、轻微阴影、深浅主题和返回快捷键／Esc三次提示。避开任务栏，不获取焦点，点击可穿透。移除中央手势接收窗口的边框，保留鼠标移动基准位置。
+- 侧栏、启动日志和诊断使用同一构建版本，文件名仍为UniversalBridge.exe。
+- 已通过305项自动测试、三语42张GUI截图、电脑内实际TLS／密钥保护／Unicode传输及浏览器界面验证。**尚未完成实体iPad上的Safari、证书设置和手势最终验收。**
+- v1.05支持应用内升级，v1.04及更早版本需手动下载。仅限明确操作的纯文本传输，不支持自动同步、图片或文件。[设置说明](https://github.com/noppy3325-droid/universal-bridge/blob/main/docs/CLIPBOARD.zh-CN.md)。

@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.05（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v1.06（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -22,7 +22,7 @@ iPad用アプリ、追加機器は不要です。入力共有はオフライン�
 - **ノートPCを使い、机を広く使いたい方：** 対応PCなら、2組目のキーボードやVMを用意せずに、手元の入力機器を共有できます。
 - **利用・開発に参加する方：** 日本語・英語・簡体字GUIを備えた、C# / WPFによるBLE HIDの実装を公開しています。
 
-Appleの[ユニバーサルコントロールにはMacが必要](https://support.apple.com/en-us/102459)です。Universal BridgeはWindowsからiPadへの入力共有を扱い、画面ミラーリング・クリップボード共有・ファイル転送は提供しません。接点転送機能はv1.01で削除しました。
+Appleの[ユニバーサルコントロールにはMacが必要](https://support.apple.com/en-us/102459)です。Universal BridgeはWindowsからiPadへの入力共有に加え、Safariを使ったテキストのクリップボード共有に対応します。画面ミラーリング・ファイル転送は提供しません。接点転送機能はv1.01で削除しました。
 
 ## ダウンロード前に
 
@@ -32,11 +32,11 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v1.05](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05)** から取得します。
+**[Releases — v1.06](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06)** から取得します。
 
-- **[UniversalBridge-1.0.5-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge-1.0.5-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-1.0.5-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- **[UniversalBridge-1.0.6-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge-1.0.6-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.6-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -55,11 +55,17 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 
 ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
-## v1.05：実行ファイル名をUniversal Bridgeへ統一
+## v1.06：Safariでクリップボード共有・右下の操作カード
 
-単体ダウンロード、ZIP内の実行ファイル、ビルド出力、更新用ファイルを `UniversalBridge.exe` に統一しました。配布スクリプトで旧名の混入を検出するようにしました。
+同じWi-Fi上のiPadのSafariから、テキストを双方向に受け渡せます。アプリの「クリップボード共有」で開始し、初回にこのPCの証明書を設定してから、6桁のコードで接続します。Windowsから取得→iPadへコピー、またはiPadで貼り付け→Windowsへ送信を選びます。**テキストのみ、UTF-8で64 KiBまで。** 自動同期・画像・ファイルは対象外です。インターネットやiPad専用アプリは不要です。
 
-v1.04以前の更新機能は旧ファイル名を固定しているため、今回だけ手動でダウンロードしてください。旧版を完全終了してから新版を起動すると設定を引き継ぎます。自動起動を利用している場合は、新版でオフ→オンにして起動先を登録し直してください。
+暗号化されたHTTPSで共有し、内容・コード・接続用Cookieをログに保存しません。共有は毎回オフで起動し、停止・終了・Windowsのセッション変更・スリープ時に接続を失効させます。初回設定用HTTPは公開証明書と設定案内だけを返し、クリップボードにはアクセスできません。[初回設定と使い方](docs/CLIPBOARD.md)。iPad実機での最終確認は未実施です。
+
+iPad操作中の中央のウィンドウを整理し、右下に小さな状態カードを表示します。ライト／ダークに対応し、戻るキーとEsc3回を案内。タスクバーを避け、表示カードはフォーカスを取得せず、クリックを背後へ通します。
+
+<img src="docs/images/status-card-ja.png" width="310" alt="iPad操作中の右下の状態カード">
+
+v1.05からは「詳細・診断 → アプリの更新」で更新できます。v1.04以前は今回も手動で最新版をダウンロードしてください。
 
 ## v1.03：日本語README・タイトルバー・アプリ内更新
 
@@ -69,7 +75,7 @@ GitHubで標準表示するREADMEを日本語にしました。英語は[README.
 
 更新前にWindows操作へ戻し、入力送信を停止してからexeを差し替えます。サイズ・SHA-256・バージョンを検証し、設定は保持します。新しいアプリの起動確認に失敗した場合は元のexeへ戻して再起動します。書き込み可能なフォルダーで使用してください。自動更新の対象はexeで、同梱の説明書などはZIPで更新できます。更新後の入力先はWindowsです。
 
-**v1.04以前からは、今回だけv1.05を手動でダウンロードしてください。** exe名を `UniversalBridge.exe` に統一しました。旧版の更新機能は旧ファイル名を固定しているため、この移行には利用できません。旧版を完全終了してから新版を起動すると、保存済みの設定を引き継ぎます。Windows起動時の自動起動を利用している場合は、新版で一度オフ→オンにして新しい起動先を登録してください。以後の対応版はアプリ内で更新できます。
+**v1.04以前からは、今回だけv1.06を手動でダウンロードしてください。** exe名を `UniversalBridge.exe` に統一しました。旧版の更新機能は旧ファイル名を固定しているため、この移行には利用できません。旧版を完全終了してから新版を起動すると、保存済みの設定を引き継ぎます。Windows起動時の自動起動を利用している場合は、新版で一度オフ→オンにして新しい起動先を登録してください。以後の対応版はアプリ内で更新できます。
 
 ![ダークモードのタイトルバー](docs/images/titlebar-dark-ja.png)
 

@@ -66,6 +66,13 @@ public sealed class NativeInput : IDisposable
     public long TouchpadEvents => _touchpad?.Events ?? 0;
     public string TouchpadStatus => TouchpadAvailable ? L.T("対応：iPad操作中に専用の受け取り画面で取得") : L.T("このWindowsではジェスチャー取得APIを使用できません");
     public static bool IsTouchpadSupported() => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100) && TouchpadCapture.Supported;
+    public static Task<bool?> ProbeTouchpadReceiverAsync(InputRouter router) => Task.Run<bool?>(() =>
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 26100) || !TouchpadCapture.Supported) return null;
+        var foreground = GetForegroundWindow();
+        using var receiver = new TouchpadCapture(router, _ => { }); receiver.Start();
+        return receiver.Available && receiver.HiddenReceiverVerified && !receiver.Active && GetForegroundWindow() == foreground;
+    });
     public bool RawMouseAvailable => _rawMouse?.Available == true;
     public long RawMousePackets => _rawMouse?.Packets ?? 0;
     private bool UsesRawMouse => _settings.RawMouse && RawMouseAvailable && !_rawFallback;
@@ -505,6 +512,7 @@ public sealed class NativeInput : IDisposable
     [DllImport("user32.dll")] private static extern bool KillTimer(nint window, nuint id);
     [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out Point point);
+    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern bool GetPhysicalCursorPos(out Point point);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] private static extern int GetKeyboardType(int typeFlag);

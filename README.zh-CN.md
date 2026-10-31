@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用或额外硬件。输入共享可离线使用，仅检查和下载更新时连接 GitHub。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v1.05（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.06（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -22,7 +22,7 @@
 - **希望节省桌面空间的笔记本用户：** 在受支持的电脑上，无需第二套键盘或虚拟机即可尝试共享现有输入设备。
 - **愿意使用或参与开发的用户：** 查看带有日语、英语和简体中文界面的 C# / WPF BLE HID 实现。
 
-Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，不提供屏幕镜像、剪贴板共享或文件传输。触点转发已在v1.01中移除。
+Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)。Universal Bridge 专注于 Windows 到 iPad 的输入共享，同时支持通过Safari共享文本剪贴板，不提供屏幕镜像或文件传输。触点转发已在v1.01中移除。
 
 ## 下载前请确认
 
@@ -32,11 +32,11 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v1.05](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05)**：
+前往 **[Releases — v1.06](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06)**：
 
-- **[UniversalBridge-1.0.5-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge-1.0.5-win-x64.zip)**：解压并运行 `UniversalBridge.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-1.0.5-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
+- **[UniversalBridge-1.0.6-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge-1.0.6-win-x64.zip)**：解压并运行 `UniversalBridge.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.6-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -55,6 +55,16 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 手势转换为标准滚动报告和受支持的按键操作。不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
 
+## v1.06：Safari剪贴板共享与右下角状态卡片
+
+通过同一Wi-Fi上的iPad Safari双向传送纯文本。在Windows应用的“剪贴板共享”中开始，首次设置此电脑的证书，然后输入六位连接码。获取Windows文本并复制到iPad，或将iPad文本粘贴到页面后发送到Windows。**仅限UTF-8大小不超过64 KiB的纯文本。** 不支持自动同步、图片或文件，无需互联网服务或iPad专用应用。
+
+文本通过HTTPS加密传输，不记录内容、连接码或会话Cookie。每次启动默认关闭共享，停止、退出、Windows会话变化或睡眠时会撤销连接。HTTP首次设置服务仅提供公用证书和设置说明，无法访问剪贴板。[设置与使用](docs/CLIPBOARD.zh-CN.md)。尚未完成iPad实机的最终验收。
+
+操作iPad时，右下角会显示小型状态卡片，支持深色和浅色主题，显示返回快捷键与Esc三次。卡片避开任务栏，不获取焦点，点击可穿透到后方内容。
+
+v1.05可通过“设置与诊断→应用更新”升级。v1.04及更早版本需手动下载一次。
+
 ## v1.05：统一Universal Bridge可执行文件名称
 
 独立下载、ZIP内可执行文件、构建输出和更新元数据统一使用 `UniversalBridge.exe`。打包时会检查旧文件名是否混入。
@@ -69,7 +79,7 @@ GitHub默认README改为日语，保留[英语](README.en.md)和本中文版本�
 
 更新前返回Windows并停止输入，验证大小、SHA-256及exe版本后替换程序，保留设置。新版启动失败时恢复并重启原exe。请放在可写入的文件夹中。自动更新仅替换exe，同捆文档可通过ZIP更新。重启后输入目标为Windows。
 
-**从v1.04及更早版本升级时，请手动下载v1.05一次。** 可执行文件统一为 `UniversalBridge.exe`，旧更新程序固定使用旧文件名，无法完成此次迁移。完全退出旧版后启动新版，已有设置会保留。如果启用了随Windows启动，请在新版中关闭后重新开启，以注册新路径。之后可在应用内更新兼容版本。
+**从v1.04及更早版本升级时，请手动下载v1.06一次。** 可执行文件统一为 `UniversalBridge.exe`，旧更新程序固定使用旧文件名，无法完成此次迁移。完全退出旧版后启动新版，已有设置会保留。如果启用了随Windows启动，请在新版中关闭后重新开启，以注册新路径。之后可在应用内更新兼容版本。
 
 ![深色标题栏](docs/images/titlebar-dark-zh-Hans.png)
 

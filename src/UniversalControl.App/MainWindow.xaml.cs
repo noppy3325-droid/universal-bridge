@@ -59,13 +59,15 @@ public partial class MainWindow : Window
     private Rect _sourcePreview;
     private FrameworkElement[] _pages = [];
     private Button[] _nav = [];
+    private readonly RemoteStatusWindow _remoteStatus = new();
 
     public MainWindow(string dataDirectory, bool smokeMode, bool smokeAuto)
     {
         L.SetLanguage(new SettingsStore(dataDirectory).Load().Language);
         InitializeComponent(); _dataDirectory = dataDirectory;
         Controller = new(dataDirectory, smokeMode);
-        _pages = [DashboardPage, LayoutPage, InputPage, SettingsPage]; _nav = [DashboardNav, LayoutNav, InputNav, SettingsNav];
+        _pages = [DashboardPage, LayoutPage, InputPage, SettingsPage, ClipboardPage]; _nav = [DashboardNav, LayoutNav, InputNav, SettingsNav, ClipboardNav];
+        AppVersionLabel.Text = BridgeVersion.Display;
         using (var iconStream = WpfApplication.GetResourceStream(new Uri("pack://application:,,,/Assets/app.ico")).Stream)
         using (var icon = new System.Drawing.Icon(iconStream, 32, 32)) _trayIcon = (System.Drawing.Icon)icon.Clone();
         _tray = new System.Windows.Forms.NotifyIcon { Icon = _trayIcon, Text = "Universal Bridge · Windows", Visible = !smokeMode };
@@ -75,7 +77,7 @@ public partial class MainWindow : Window
         menu.Items.Add(L.T("終了"), null, (_, _) => Dispatcher.Invoke(RequestExit));
         _tray.ContextMenuStrip = menu; _tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWindow);
         Controller.Changed += ControllerChanged;
-        ApplyLocalization(); LoadControls(); SelectPage(0); ApplyTheme(); RefreshView(); _updating = false;
+        ApplyLocalization(); LoadControls(); LoadClipboardAddresses(); SelectPage(0); ApplyTheme(); RefreshView(); _updating = false;
         SourceInitialized += (_, _) => ApplyTitleBarTheme();
         _timer.Tick += async (_, _) =>
         {
@@ -98,8 +100,10 @@ public partial class MainWindow : Window
     }
     private void ControllerChanged()
     { if (!_closing && !Dispatcher.HasShutdownStarted) Dispatcher.BeginInvoke(RefreshView); }
-    private void SessionChanged(object sender, SessionSwitchEventArgs e) => Controller.Router.GoLocal(L.T("セッション変更によりWindowsへ戻しました"));
-    private void PowerChanged(object sender, PowerModeChangedEventArgs e) { if (e.Mode == PowerModes.Suspend) Controller.Router.GoLocal(L.T("スリープに入るためWindowsへ戻しました")); }
+    private void SessionChanged(object sender, SessionSwitchEventArgs e)
+    { Controller.Router.GoLocal(L.T("セッション変更によりWindowsへ戻しました")); Dispatcher.BeginInvoke(async () => await StopClipboardAsync()); }
+    private void PowerChanged(object sender, PowerModeChangedEventArgs e)
+    { if (e.Mode == PowerModes.Suspend) { Controller.Router.GoLocal(L.T("スリープに入るためWindowsへ戻しました")); Dispatcher.BeginInvoke(async () => await StopClipboardAsync()); } }
     private void DisplaysChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() =>
     { try { Controller.RefreshDisplays(); LoadControls(); DrawLayout(); } catch (Exception ex) { Controller.NotifyError(ex); } });
     private void ShowWindow() { Show(); WindowState = WindowState.Normal; Activate(); }
@@ -117,7 +121,7 @@ public partial class MainWindow : Window
         _closing = true; _timer.Stop(); _updateTimer.Stop(); _updateStop.Cancel();
         SystemEvents.SessionSwitch -= SessionChanged; SystemEvents.PowerModeChanged -= PowerChanged; SystemEvents.DisplaySettingsChanged -= DisplaysChanged;
         Controller.Changed -= ControllerChanged;
-        try { await Controller.DisposeAsync(); }
+        try { _remoteStatus.Close(); await StopClipboardAsync(); await Controller.DisposeAsync(); }
         finally { _tray.Visible = false; _tray.Dispose(); _trayIcon.Dispose(); WpfApplication.Current.Shutdown(); }
     }
     private void LoadControls()
@@ -164,6 +168,12 @@ public partial class MainWindow : Window
             PeerStatus.Text = selected?.Name ?? L.T("未選択");
             SubscriptionStatus.Text = selected is null ? L.T("一覧から端末を選択") : L.F("キーボード {0} / マウス {1} / {2}", selected.Keyboard ? "✓" : "—", selected.Mouse ? "✓" : "—", selected.Paired ? L.T("ペア済") : L.T("未ペア")) + (selected.Suspended ? L.T(" / iPadで一時停止") : "");
             InputTarget.Text = Controller.Router.IsRemote ? L.T("iPad / 選択端末") : "Windows";
+            if (Controller.Router.IsRemote && !Controller.SmokeMode && Controller.Displays.FirstOrDefault(d => d.Id == Controller.Settings.MonitorId) is { } statusDisplay)
+                _remoteStatus.ShowFor(statusDisplay, Controller.Settings.ReturnShortcut);
+            else if (Controller.Router.IsRemote && !Controller.SmokeMode && Controller.Displays.FirstOrDefault() is { } primaryDisplay)
+                _remoteStatus.ShowFor(primaryDisplay, Controller.Settings.ReturnShortcut);
+            else _remoteStatus.Hide();
+            RefreshClipboardControls();
             InputReason.Text = Controller.Router.Reason;
             StartButton.IsEnabled = !Controller.Busy && !Controller.Transport.Publishing && !Controller.SmokeMode;
             StopButton.IsEnabled = !Controller.Busy && Controller.Transport.Publishing;
@@ -463,7 +473,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.04", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = BridgeVersion.Display, Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Reports.CoalescedMotion,
                 Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.EdgeHandoff,
                 Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
@@ -487,6 +497,11 @@ public partial class MainWindow : Window
                     Capture(Path.Combine(output, $"{language}-{index + 1}-light.png"));
                 }
                 if (_titleBarTheme?.Success != true || _titleBarTheme.Dark) throw new InvalidOperationException("Light title bar theme was not applied: " + JsonSerializer.Serialize(_titleBarTheme));
+                _remoteStatus.CapturePreview(Path.Combine(output, $"{language}-status-card-light.png"), Controller.Settings.ReturnShortcut);
+                if (!Controller.Displays.All(display => _remoteStatus.VerifyPlacement(display, Controller.Settings.ReturnShortcut)))
+                    throw new InvalidOperationException("Status card placement or non-activation failed.");
+                if (!_remoteStatus.PassiveStylesVerified || _clipboardBridge is not null || ClipboardStartButton.IsEnabled)
+                    throw new InvalidOperationException("Status card or clipboard smoke isolation failed.");
                 CaptureWindowFrame(Path.Combine(output, $"{language}-titlebar-light.png"));
                 AutoUpdateCheck.IsChecked = false; SaveUpdatePreference(this, new RoutedEventArgs());
                 if (new SettingsStore(_dataDirectory).Load().AutoCheckUpdates) throw new InvalidOperationException("Update opt-out was not saved.");
@@ -548,6 +563,7 @@ public partial class MainWindow : Window
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); Capture(Path.Combine(output, $"{language}-1-dark.png"));
                 if (_titleBarTheme?.Success != true || !SystemParameters.HighContrast && !_titleBarTheme.Dark) throw new InvalidOperationException("Dark title bar theme was not applied: " + JsonSerializer.Serialize(_titleBarTheme));
                 CaptureWindowFrame(Path.Combine(output, $"{language}-titlebar-dark.png"));
+                _remoteStatus.CapturePreview(Path.Combine(output, $"{language}-status-card-dark.png"), Controller.Settings.ReturnShortcut);
                 var saved = new SettingsStore(_dataDirectory).Load();
                 if (saved.Language != language || L.Language != language || (string)DashboardNav.Content != L.T("接続ダッシュボード") || (string)ApplyShortcutsButton.Content != L.T("ショートカットを適用") || SwipeLeftCombo.Items.Cast<GestureChoice>().First().Label != L.T("操作しない（Windowsへも渡さない）") || _tray.ContextMenuStrip!.Items[0].Text != L.T("開く"))
                     throw new InvalidOperationException("Language switch or persistence failed: " + language);
@@ -557,7 +573,9 @@ public partial class MainWindow : Window
             var restored = new SettingsStore(_dataDirectory).Load();
             var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
             var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 33, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = Directory.GetFiles(output, "*.png").Length, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+                PassiveStatusCardVerified = _remoteStatus.PassiveStylesVerified, ClipboardNetworkDisabled = _clipboardBridge is null && !ClipboardStartButton.IsEnabled,
+                StatusCardPlacementVerified = true, StatusCardForegroundUnchanged = true,
                 TitleBarThemeVerified = _titleBarTheme?.Success == true, UpdatePreferenceRoundTrip = restored.AutoCheckUpdates, UpdateNetworkDisabled = !CheckUpdateButton.IsEnabled,
                 AdditionalShortcutRoundTrip = restored.AdditionalShortcuts.SequenceEqual(ActionShortcuts.Defaults),
                 IPadShortcutRoundTrip = restored.HomeShortcut == ShortcutBinding.DefaultHome && restored.SearchShortcut == ShortcutBinding.DefaultSearch && restored.NextAppShortcut == ShortcutBinding.DefaultNextApp && restored.IPadShortcutsEnabled,

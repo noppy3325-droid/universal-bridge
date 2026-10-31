@@ -106,5 +106,20 @@
   "UpdateHelp": "更新の確認・ダウンロード時にGitHubへ接続します。新版は「更新して再起動」で適用します。設定を保持し、起動に失敗した場合は元のexeへ戻します。",
   "UpdateCheck": "更新を確認",
   "UpdateInstall": "更新して再起動",
-  "UpdateReleases": "配布ページ"
+  "UpdateReleases": "配布ページ",
+  "ClipboardHeading": "クリップボード共有",
+  "ClipboardIntro": "iPadのSafariでテキストを双方向共有。追加アプリは不要です。",
+  "ClipboardNetwork": "同じWi-Fiのネットワーク",
+  "ClipboardRefresh": "一覧を更新",
+  "ClipboardStart": "共有を開始",
+  "ClipboardStop": "共有を停止",
+  "ClipboardFirewall": "Windowsの確認画面が出た場合は、信頼できるプライベートネットワークだけで接続を許可してください。",
+  "ClipboardSetup": "1 · 初回だけ：証明書を設定",
+  "ClipboardSetupHelp": "iPadのSafariで下の初回設定URLを開きます。PCと証明書名・SHA-256を照合してから、案内に従ってこのPCの証明書をインストール・信頼してください。",
+  "ClipboardCopyUrl": "URLをコピー",
+  "ClipboardConnect": "2 · Safariで共有画面を開く",
+  "ClipboardConnectHelp": "証明書の設定後は、下のHTTPSのURLを開き、6桁の接続コードを入力します。",
+  "ClipboardNewCode": "新しい接続コード",
+  "ClipboardCodeHelp": "コードは5分間・1回だけ有効です。更新すると、接続済みの共有画面も切断します。",
+  "ClipboardUseHelp": "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。"
 }

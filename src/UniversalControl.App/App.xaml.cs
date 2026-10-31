@@ -20,6 +20,7 @@ public partial class App : WpfApplication
             if (e.Args.Length == 2 && e.Args[0].StartsWith("--update-fixture-", StringComparison.Ordinal))
             { Shutdown(await SelfUpdateVerification.FixtureAsync(e.Args[0], e.Args[1])); return; }
             if (e.Args.Contains("--verify-self-update")) { Shutdown(await SelfUpdateVerification.VerifyAsync(dataDirectory)); return; }
+            if (e.Args.Contains("--verify-clipboard")) { Shutdown(await ClipboardVerification.RunAsync(dataDirectory)); return; }
             L.SetLanguage(new SettingsStore(dataDirectory).Load().Language);
             if (e.Args.FirstOrDefault(a => a is "--verify-update-feed" or "--verify-edge-return" or "--verify-pointer-precision" or "--verify-edge-input" or "--verify-motion-input" or "--verify-motion-timer" or "--verify-server" or "--verify-local-input" or "--hold-local-input" or "--verify-input-readiness" or "--probe-touchpad") is { } verification)
             { Shutdown(await HeadlessVerification.RunAsync(verification, dataDirectory)); return; }

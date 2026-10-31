@@ -40,6 +40,9 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     public bool Active => _active;
     public bool OwnsForeground => _active && GetForegroundWindow() == _window;
     public long Events { get; private set; }
+    public bool HiddenReceiverVerified => _window != 0 && !IsWindowVisible(_window) &&
+        (GetWindowLongPtr(_window, -16).ToInt64() & 0x00C80000L) == 0 &&
+        GetLayeredWindowAttributes(_window, out _, out var alpha, out var flags) && alpha == 1 && (flags & 2) != 0;
 
     public static bool Supported => ApiInformation.IsTypePresent("Windows.UI.Input.TouchpadGesturesController") &&
         ApiInformation.IsTypePresent("Windows.UI.Input.PhysicalGestureRecognizer") && TouchpadGesturesController.IsSupported();
@@ -52,9 +55,11 @@ internal sealed class TouchpadCapture : ITouchpadCapture
         var windowClass = new WindowClass { Size = (uint)Marshal.SizeOf<WindowClass>(), Procedure = _procedure, Instance = _instance, ClassName = _className, Background = new nint(6) };
         if (RegisterClassEx(ref windowClass) == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         _classRegistered = true;
-        // A small visible ownership window, never a desktop-wide input lock.
-        _window = CreateWindowEx(0x88, _className, L.T("iPad操作中"), 0x80C80000, 0, 0, 380, 100, 0, 0, _instance, 0);
+        // Keep the gesture receiver at the motion anchor. The visible status is a separate passive corner card.
+        _window = CreateWindowEx(0x80088, _className, L.T("iPad操作中"), 0x80000000, 0, 0, 380, 100, 0, 0, _instance, 0);
         if (_window == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
+        // Alpha 1 preserves input hit testing; alpha 0 would pass touchpad contacts through to other apps.
+        if (!SetLayeredWindowAttributes(_window, 0, 1, 2)) throw new Win32Exception(Marshal.GetLastWin32Error());
         if (!RegisterTouchpadCapableWindow(_window, true)) throw new Win32Exception(Marshal.GetLastWin32Error());
         _two = new PhysicalGestureRecognizer { GestureSettings = GestureSettings.ManipulationTranslateX | GestureSettings.ManipulationTranslateY | GestureSettings.ManipulationScale,
             TranslationMinContactCount = 2, TranslationMaxContactCount = 2 };
@@ -179,5 +184,9 @@ internal sealed class TouchpadCapture : ITouchpadCapture
     [DllImport("user32.dll")] private static extern bool IsWindow(nint window);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(nint window, nint after, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern bool SetWindowText(nint window, string value);
+    [DllImport("user32.dll", SetLastError = true)] private static extern bool SetLayeredWindowAttributes(nint window, uint colorKey, byte alpha, uint flags);
+    [DllImport("user32.dll")] private static extern bool GetLayeredWindowAttributes(nint window, out uint colorKey, out byte alpha, out uint flags);
+    [DllImport("user32.dll")] private static extern bool IsWindowVisible(nint window);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern nint GetWindowLongPtr(nint window, int index);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern nint GetModuleHandle(string? name);
 }

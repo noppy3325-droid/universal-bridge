@@ -8,13 +8,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>UniversalBridge</AssemblyName>
-    <Version>1.0.5</Version>
-    <DisplayVersion>1.05</DisplayVersion>
-    <ReleaseTag>v1.05</ReleaseTag>
+    <Version>1.0.6</Version>
+    <DisplayVersion>1.06</DisplayVersion>
+    <ReleaseTag>v1.06</ReleaseTag>
     <Product>Universal Bridge</Product>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <Description>Local Bluetooth keyboard and mouse sharing for Windows and iPad</Description>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../UniversalControl.Windows/UniversalControl.Windows.csproj" /></ItemGroup>
   <ItemGroup><Resource Include="Assets/app.ico" /><Resource Include="Assets/app-icon.png" /></ItemGroup>
+  <ItemGroup><AssemblyMetadata Include="DisplayVersion" Value="$(DisplayVersion)" /></ItemGroup>
 </Project>
