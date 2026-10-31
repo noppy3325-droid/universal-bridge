@@ -8,9 +8,9 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>UniversalBridge</AssemblyName>
-    <Version>1.0.6</Version>
-    <DisplayVersion>1.06</DisplayVersion>
-    <ReleaseTag>v1.06</ReleaseTag>
+    <Version>2.0.0</Version>
+    <DisplayVersion>2.0.0</DisplayVersion>
+    <ReleaseTag>v2.0.0</ReleaseTag>
     <Product>Universal Bridge</Product>
     <ApplicationIcon>Assets/app.ico</ApplicationIcon>
     <Description>Local Bluetooth keyboard and mouse sharing for Windows and iPad</Description>

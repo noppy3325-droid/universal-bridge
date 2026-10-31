@@ -2,7 +2,7 @@
 
 [English](CLIPBOARD.en.md) · [日本語](CLIPBOARD.md) · 简体中文
 
-v1.06支持同一Wi-Fi内Windows与iPad之间的双向纯文本共享，无需iPad专用应用或互联网服务。通过明确的按钮操作传输，不支持自动同步、图片或文件。文本的UTF-8大小上限为64 KiB。
+v2.0.0支持同一Wi-Fi内Windows与iPad之间的双向纯文本共享，无需iPad专用应用或互联网服务。通过明确的按钮操作传输，不支持自动同步、图片或文件。文本的UTF-8大小上限为64 KiB。
 
 ## 首次连接
 

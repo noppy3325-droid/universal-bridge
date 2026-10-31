@@ -2,7 +2,7 @@
 
 English · [日本語](CLIPBOARD.md) · [简体中文](CLIPBOARD.zh-CN.md)
 
-Version 1.06 adds bidirectional plain-text sharing between Windows and iPad on the same Wi-Fi. No iPad companion app or internet service is required. Transfers use explicit buttons; automatic sync, images and files are not supported. The limit is 64 KiB of UTF-8 text.
+Version 2.0.0 adds bidirectional plain-text sharing between Windows and iPad on the same Wi-Fi. No iPad companion app or internet service is required. Transfers use explicit buttons; automatic sync, images and files are not supported. The limit is 64 KiB of UTF-8 text.
 
 ## First connection
 

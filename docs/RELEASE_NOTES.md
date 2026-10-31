@@ -1,4 +1,4 @@
-# Universal Bridge v1.06
+# Universal Bridge v2.0.0
 
 ## 日本語
 

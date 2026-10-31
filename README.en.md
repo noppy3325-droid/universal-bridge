@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app or extra hardware is needed. Input sharing works offline; optional update checks/downloads contact GitHub. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**v1.06 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v2.0.0 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,11 +32,11 @@ This is an **unsigned release** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v1.06](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06)**:
+Open **[Releases — v2.0.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0)**:
 
-- **[UniversalBridge-1.0.6-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge-1.0.6-win-x64.zip)** — extract and run `UniversalBridge.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-1.0.6-source.zip` — source without SDKs, caches, settings, or logs.
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge.exe) — Standalone executable for updates; the ZIP also includes documentation.
+- **[UniversalBridge-2.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge-2.0.0-win-x64.zip)** — extract and run `UniversalBridge.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-2.0.0-source.zip` — source without SDKs, caches, settings, or logs.
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge.exe) — Standalone executable for updates; the ZIP also includes documentation.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -55,7 +55,7 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 
 **Gestures** generate standard scroll reports and supported keyboard shortcuts. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
 
-## v1.06: Safari clipboard sharing and a corner status card
+## v2.0.0: Safari clipboard sharing and a corner status card
 
 Share plain text in both directions with Safari on an iPad on the same Wi-Fi. Start Clipboard sharing in the Windows app, set up this PC’s certificate once, then enter the six-digit connection code. Fetch Windows text and copy it to iPad, or paste iPad text into the page and send it to Windows. **Plain text only, up to 64 KiB in UTF-8.** Automatic sync, images and files are not supported. No internet service or iPad companion app is needed.
 
@@ -79,7 +79,7 @@ Use **Settings & diagnostics → App updates** to enable/disable automatic check
 
 The app returns control to Windows and stops input before replacing its executable. Size, SHA-256 and executable version are verified; settings stay in place. A startup failure restores and restarts the previous executable. Keep the app in a writable folder. The updater replaces the exe; use the ZIP to refresh bundled documents. Control remains on Windows after restarting.
 
-**From v1.04 or earlier, download v1.06 manually once.** The executable is now `UniversalBridge.exe`; older updaters require the previous filename and cannot perform this migration. Fully exit the old app before starting the new one; saved settings carry over. If you use launch at Windows startup, turn it off and on in the new app to register its new path. Subsequent compatible releases can update inside the app.
+**From v1.04 or earlier, download v2.0.0 manually once.** The executable is now `UniversalBridge.exe`; older updaters require the previous filename and cannot perform this migration. Fully exit the old app before starting the new one; saved settings carry over. If you use launch at Windows startup, turn it off and on in the new app to register its new path. Subsequent compatible releases can update inside the app.
 
 ![Dark title bar](docs/images/titlebar-dark-en.png)
 

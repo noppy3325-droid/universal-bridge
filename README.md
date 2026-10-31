@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.06（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v2.0.0（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,11 +32,11 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v1.06](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.06)** から取得します。
+**[Releases — v2.0.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0)** から取得します。
 
-- **[UniversalBridge-1.0.6-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge-1.0.6-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-1.0.6-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.06/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- **[UniversalBridge-2.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge-2.0.0-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-2.0.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -55,7 +55,7 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 
 ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
-## v1.06：Safariでクリップボード共有・右下の操作カード
+## v2.0.0：Safariでクリップボード共有・右下の操作カード
 
 同じWi-Fi上のiPadのSafariから、テキストを双方向に受け渡せます。アプリの「クリップボード共有」で開始し、初回にこのPCの証明書を設定してから、6桁のコードで接続します。Windowsから取得→iPadへコピー、またはiPadで貼り付け→Windowsへ送信を選びます。**テキストのみ、UTF-8で64 KiBまで。** 自動同期・画像・ファイルは対象外です。インターネットやiPad専用アプリは不要です。
 
@@ -75,7 +75,7 @@ GitHubで標準表示するREADMEを日本語にしました。英語は[README.
 
 更新前にWindows操作へ戻し、入力送信を停止してからexeを差し替えます。サイズ・SHA-256・バージョンを検証し、設定は保持します。新しいアプリの起動確認に失敗した場合は元のexeへ戻して再起動します。書き込み可能なフォルダーで使用してください。自動更新の対象はexeで、同梱の説明書などはZIPで更新できます。更新後の入力先はWindowsです。
 
-**v1.04以前からは、今回だけv1.06を手動でダウンロードしてください。** exe名を `UniversalBridge.exe` に統一しました。旧版の更新機能は旧ファイル名を固定しているため、この移行には利用できません。旧版を完全終了してから新版を起動すると、保存済みの設定を引き継ぎます。Windows起動時の自動起動を利用している場合は、新版で一度オフ→オンにして新しい起動先を登録してください。以後の対応版はアプリ内で更新できます。
+**v1.04以前からは、今回だけv2.0.0を手動でダウンロードしてください。** exe名を `UniversalBridge.exe` に統一しました。旧版の更新機能は旧ファイル名を固定しているため、この移行には利用できません。旧版を完全終了してから新版を起動すると、保存済みの設定を引き継ぎます。Windows起動時の自動起動を利用している場合は、新版で一度オフ→オンにして新しい起動先を登録してください。以後の対応版はアプリ内で更新できます。
 
 ![ダークモードのタイトルバー](docs/images/titlebar-dark-ja.png)
 

@@ -1,4 +1,4 @@
-# Verification report — v1.06 / 1.0.6
+# Verification report — v2.0.0 / 2.0.0
 
 検証日: **2026-10-31 / Asia/Tokyo**。
 

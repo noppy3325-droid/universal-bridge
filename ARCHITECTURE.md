@@ -1,6 +1,6 @@
 # Architecture
 
-## v1.06の共有と状態表示
+## v2.0.0の共有と状態表示
 
 ClipboardBridgeServerは指定したprivate IPv4の2ポートだけを使用します。43182のHTTPは公開CA証明書と設定案内のみ。43183のHTTPSだけが共有ページとJSON APIを持ち、TLS 1.2/1.3、IP SAN、SHA-256署名を使用します。CA秘密鍵はAppDataのclipboard-authority.binにCurrentUser DPAPIで保護し、iPadへはDER公開証明書だけを渡します。Schannel用のleaf秘密鍵はOS管理の一時UserKeySetで、PersistKeySetや信頼ストアの変更は行いません。
 
