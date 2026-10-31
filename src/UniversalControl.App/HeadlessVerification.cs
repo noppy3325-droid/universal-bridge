@@ -13,6 +13,20 @@ public static class HeadlessVerification
         Directory.CreateDirectory(directory);
         try
         {
+            if (mode == "--verify-update-feed")
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromMinutes(5) };
+                using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                var client = new ReleaseUpdateClient(http); var update = await client.CheckAsync(new(0, 0, 0), timeout.Token)
+                    ?? throw new InvalidOperationException("No published update manifest.");
+                if (ReleaseUpdateClient.ParseVersion(update.Manifest.Version) != SelfUpdateRunner.CurrentVersion) throw new InvalidOperationException("Published manifest does not match the downloaded executable.");
+                var payload = Path.Combine(directory, "UpdatePayload-" + Guid.NewGuid().ToString("N") + ".exe");
+                await client.DownloadAsync(update, payload, null, timeout.Token);
+                if (SelfUpdateRunner.VersionOf(payload) != SelfUpdateRunner.CurrentVersion || await SelfUpdateRunner.Hash(payload) != await SelfUpdateRunner.Hash(Environment.ProcessPath!))
+                    throw new InvalidOperationException("Updater downloaded different executable bytes.");
+                await WriteAsync(directory, "update-feed.json", new { Success = true, update.Manifest.Tag, update.Manifest.Version, PublicFeedValidated = true,
+                    PublicDownloadVerified = true, IdenticalToReleaseExecutable = true, InstalledByProbe = false, InputCaptured = false, BluetoothAdvertised = false }); return 0;
+            }
             if (mode == "--verify-edge-return")
             {
                 // Model verification only. Never install hooks, move the real cursor or advertise BLE.

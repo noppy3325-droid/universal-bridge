@@ -2,17 +2,17 @@
 
 <img src="docs/images/app-icon.png" width="96" height="96" alt="Universal Bridge 图标">
 
-**[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
+**[English](README.en.md) · [日本語](README.md) · [简体中文](README.zh-CN.md)**
 
 **Windows 旁边的 iPad，也用同一套键盘和鼠标。**
 
 通过蓝牙，将 Windows 电脑的键盘、鼠标和受支持的触控板操作共享给 iPad。这是一款使用 C# / .NET 10 / WPF 开发的 Windows 11 原生应用，以 [MIT 许可证](LICENSE) 开源。
 
-无需 iPad 配套应用、额外硬件或运行时互联网连接。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
+无需 iPad 配套应用或额外硬件。输入共享可离线使用，仅检查和下载更新时连接 GitHub。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v1.02（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.03（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,10 +32,11 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v1.02](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02)**：
+前往 **[Releases — v1.03](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03)**：
 
-- **[UniversalBridge-1.0.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.02/UniversalBridge-1.0.2-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-1.0.2-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- **[UniversalBridge-1.0.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalBridge-1.0.3-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.3-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalControl.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -53,6 +54,18 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 | 桌面集成 | 专用应用／托盘图标、浅色／深色主题、可选登录启动、诊断和有限次数重连。 |
 
 手势转换为标准滚动报告和受支持的按键操作。不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+
+## v1.03：日语默认README、标题栏主题与应用内更新
+
+GitHub默认README改为日语，保留[英语](README.en.md)和本中文版本。切换深色／浅色模式时，Windows原生标题栏、文字和边框也会采用应用配色。
+
+在「设置与诊断 → 应用更新」可开关自动检查、手动检查或「更新并重启」。仅提供正式版本；启动时及运行期间自动检查，24小时内不重复自动检查，仅点击应用更新后下载。检查和下载时连接GitHub，输入共享仍可离线使用。
+
+更新前返回Windows并停止输入，验证大小、SHA-256及exe版本后替换程序，保留设置。新版启动失败时恢复并重启原exe。请放在可写入的文件夹中。自动更新仅替换exe，同捆文档可通过ZIP更新。重启后输入目标为Windows。
+
+**v1.02及更早版本需手动下载v1.03一次。** 此后可在应用内更新兼容版本。
+
+![深色标题栏](docs/images/titlebar-dark-zh-Hans.png)
 
 ## v1.02：修复轻微移动就返回 Windows 的问题
 
@@ -134,7 +147,7 @@ iPad 唤醒后，请解锁并等待键盘、鼠标均恢复订阅，再按切换
 
 Windows 识别为日语键盘时，**半角/全角**（支持 Alt 组合）会发送一次 **Control+Space** 来切换 iPad 输入语言，不再输入标点。长按不会反复切换；美式键盘的反引号保持原有映射。请在 iPad“设置 → 通用 → 键盘 → 键盘”中添加日语和英语。使用 [iPad 外接键盘的语言切换快捷键](https://support.apple.com/en-euro/guide/ipad/ipaddd28d7ed/ipados)，最终布局及输入法行为取决于 iPadOS 设置。
 
-不记录输入文字或 HID 数据内容。设置和连接诊断保存在 `%LOCALAPPDATA%\UniversalBridge`，日志达到 1 MiB 时轮换。不使用遥测或运行时云服务。
+不记录输入文字或 HID 数据内容。设置和连接诊断保存在 `%LOCALAPPDATA%\UniversalBridge`，日志达到 1 MiB 时轮换。不使用遥测，仅在可选的更新检查和下载时连接 GitHub。
 
 确认连接、双报告订阅、输入钩子和所有按键释放后才切换。断开连接、捕获窗口失焦、队列异常、睡眠或会话变化时返回 Windows。重连不会自动捕获输入。突然终止进程时无法向 iPad 发送释放报告，iPad 恢复取决于蓝牙断开处理。
 
@@ -153,7 +166,7 @@ pwsh -File scripts/Package.ps1
 
 SDK／包位于 `.tools/`。Windows SDK projection 固定为 `10.0.26100.87`，实验性 API 已隔离并检查。不会安装驱动、修改注册表绕过限制、使用 VM 或更改系统安全设置。
 
-**244 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
+**276 项自动测试**覆盖 HID、斜向精度和位移拆分、待发送移动合并与顺序、睡眠／重连、日语按键、快捷键、翻译和语言保存。GUI 测试在不捕获输入时验证三种语言，不能替代 iPad 实机测试。
 
 参见[开发和翻译指南](CONTRIBUTING.md)、[架构](ARCHITECTURE.md)、[限制](KNOWN_LIMITATIONS.md)、[测试报告](TEST_REPORT.md)、[实机检查](docs/MANUAL_TESTS.md)。详细工程文档目前为日语。GitHub Actions 构建并测试 push／PR，并根据版本标签生成普通发行版。
 

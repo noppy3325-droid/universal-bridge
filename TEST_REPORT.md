@@ -1,4 +1,14 @@
-# Verification report — v1.02 / 1.0.2
+# Verification report — v1.03 / 1.0.3
+
+検証日: **2026-10-31 / Asia/Tokyo**。
+
+- **276成功、0失敗、0スキップ**、ビルド警告0／エラー0。更新メタデータ、通常版／preview判定、版番号、固定URL・HTTPS、サイズ上限、asset digestとchecksumの整合、破損・短縮・過大なpayload拒否、既存ファイル保護、設定移行の32ケースを追加しました。`artifacts/103-final-build.log`。
+- 自己完結exeのGUIは**3言語・33画像・Success=True**。ライト／ダークのDWM設定が成功し、タイトルバーを含むnative windowをPrintWindowで取得して目視しました。更新設定のオン／オフ保存、既存の感度・ショートカット・言語・アイコンも成功。GUI検証中は更新ネットワーク・HID公開・入力捕捉を行いません。`artifacts/103-final-gui/gui-smoke.json`。
+- `--verify-self-update`では、専用コピーを実プロセスとして起動し、helperによる親終了待ち→File.Replace→再起動→起動確認、起動失敗→旧exe復元→旧版再起動、破損SHA拒否を成功確認しました。空白・日本語パス、名前を変えたexe、設定sentinel保持も確認しました。**同一バージョンのコピーを使うトランザクション検証**であり、通常の作業用アプリを更新したものではありません。`artifacts/103-local-verify-self-update/self-update.json`。
+- 四方向復帰モデル・Win32入力ループ・斜め精度・高精度タイマーもSuccess=True。実カーソル移動・Bluetooth公開・入力抑制なし。`artifacts/103-local-runtime.json`。
+- README.md／README.ja.mdの日本語内容が一致すること、README.en.mdへの英語分離を確認しました。将来の異なるバージョン間の実iPad接続中更新と、高コントラスト・各Windows環境での最終受け入れは`docs/MANUAL_TESTS.md`へ記載しています。以下は過去版の履歴です。
+
+## v1.02 / 1.0.2
 
 検証日: **2026-10-27 / Asia/Tokyo**。
 

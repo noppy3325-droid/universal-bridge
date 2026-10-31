@@ -1,5 +1,7 @@
 # Contributing / 開発への参加 / 参与贡献
 
+The default README.md is Japanese; keep README.ja.md identical. English lives in README.en.md and Simplified Chinese in README.zh-CN.md.
+
 Issues and pull requests are welcome in English, Japanese, or Simplified Chinese. Include Windows/iPadOS versions, adapter/driver, reproduction steps, expected results, and HID subscription state. **Do not post passwords, typed content, device addresses, or unredacted diagnostics.**
 
 日本語・英語・中国語（簡体字）でIssue／PRを受け付けます。環境・再現手順・期待する動作・購読状態を記載し、入力内容や識別情報を含むログは公開しないでください。

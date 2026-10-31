@@ -37,6 +37,8 @@ public sealed record AppSettings
     public bool CloseToTray { get; init; } = true;
     public bool Reconnect { get; init; } = true;
     public bool AutoStart { get; init; }
+    public bool AutoCheckUpdates { get; init; } = true;
+    public DateTimeOffset LastUpdateCheckUtc { get; init; } = DateTimeOffset.MinValue;
 
     public AppSettings Normalize()
     {

@@ -6,6 +6,11 @@ $version = ([xml](Get-Content -LiteralPath 'src/UniversalControl.App/UniversalCo
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'A semantic source version is required.' }
 $published = (Resolve-Path -LiteralPath $PublishDirectory).Path
 if (!(Test-Path -LiteralPath (Join-Path $published 'UniversalControl.exe'))) { throw 'Publish the app before packaging.' }
+$properties = ([xml](Get-Content -LiteralPath 'src/UniversalControl.App/UniversalControl.App.csproj' -Raw)).Project.PropertyGroup
+$exe = Join-Path $published 'UniversalControl.exe'
+$manifest = [ordered]@{Schema=1;Version=$version;Tag=$properties.ReleaseTag;File='UniversalControl.exe';Size=(Get-Item -LiteralPath $exe).Length;Sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()}
+$manifest | ConvertTo-Json | Set-Content -LiteralPath 'dist/update.json' -Encoding utf8
+Copy-Item -LiteralPath $exe -Destination 'dist/UniversalControl.exe' -Force
 Copy-Item README*.md,CONTRIBUTING.md,SETUP.md,ARCHITECTURE.md,KNOWN_LIMITATIONS.md,TEST_REPORT.md,LICENSE,THIRD_PARTY_NOTICES.md -Destination $published -Force
 Copy-Item docs,licenses -Destination $published -Recurse -Force
 $binaryZip = Join-Path $projectRoot "dist/UniversalBridge-$version-win-x64.zip"
@@ -23,7 +28,7 @@ foreach ($folder in 'src','tests','scripts','docs','licenses','.github') {
   }
 }
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $sourceZip -Force
-$hashes = foreach ($asset in @((Join-Path $published 'UniversalControl.exe'), $binaryZip, $sourceZip)) {
+$hashes = foreach ($asset in @((Join-Path $published 'UniversalControl.exe'), $binaryZip, $sourceZip, (Join-Path $projectRoot 'dist/update.json'))) {
   $hash = Get-FileHash -LiteralPath $asset -Algorithm SHA256
   $hash.Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($asset)
 }

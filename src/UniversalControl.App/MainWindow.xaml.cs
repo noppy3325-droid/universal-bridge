@@ -76,6 +76,7 @@ public partial class MainWindow : Window
         _tray.ContextMenuStrip = menu; _tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWindow);
         Controller.Changed += ControllerChanged;
         ApplyLocalization(); LoadControls(); SelectPage(0); ApplyTheme(); RefreshView(); _updating = false;
+        SourceInitialized += (_, _) => ApplyTitleBarTheme();
         _timer.Tick += async (_, _) =>
         {
             if (_ticking || _closing) return; _ticking = true;
@@ -92,6 +93,7 @@ public partial class MainWindow : Window
             Top = Math.Max(SystemParameters.WorkArea.Top, Top);
             DrawLayout();
             if (smokeAuto) await RunSmokeAsync();
+            else await StartUpdatesAsync();
         };
     }
     private void ControllerChanged()
@@ -112,7 +114,7 @@ public partial class MainWindow : Window
             if (!_trayNotice) { _tray.ShowBalloonTip(2500, "Universal Bridge", L.T("タスクトレイで動作を続けます。終了はトレイメニューから行えます。"), System.Windows.Forms.ToolTipIcon.Info); _trayNotice = true; }
             return;
         }
-        _closing = true; _timer.Stop();
+        _closing = true; _timer.Stop(); _updateTimer.Stop(); _updateStop.Cancel();
         SystemEvents.SessionSwitch -= SessionChanged; SystemEvents.PowerModeChanged -= PowerChanged; SystemEvents.DisplaySettingsChanged -= DisplaysChanged;
         Controller.Changed -= ControllerChanged;
         try { await Controller.DisposeAsync(); }
@@ -142,6 +144,9 @@ public partial class MainWindow : Window
         foreach (var pair in new[] { (SwipeLeftCombo, s.SwipeLeft), (SwipeRightCombo, s.SwipeRight), (SwipeUpCombo, s.SwipeUp), (SwipeDownCombo, s.SwipeDown) })
         { pair.Item1.ItemsSource = gestureChoices; pair.Item1.SelectedItem = gestureChoices.First(g => g.Value == pair.Item2); }
         TrayCheck.IsChecked = s.CloseToTray; ReconnectCheck.IsChecked = s.Reconnect; AutostartCheck.IsChecked = s.AutoStart;
+        AutoUpdateCheck.IsChecked = s.AutoCheckUpdates;
+        if (UpdateStatus.Text.Length == 0) UpdateStatus.Text = L.T("起動時に更新を確認します。更新確認はいつでもオフにできます。");
+        if (Controller.SmokeMode) CheckUpdateButton.IsEnabled = false;
         AutostartCheck.IsEnabled = !Controller.SmokeMode;
         DataPathLabel.Text = _dataDirectory;
         _updating = prior;
@@ -197,6 +202,7 @@ public partial class MainWindow : Window
         var keys = new[] { "PageBg", "SidebarBg", "Surface", "Line", "Ink", "Muted", "Accent", "AccentSoft" };
         for (var i = 0; i < keys.Length; i++) WpfApplication.Current.Resources[keys[i]] = new SolidColorBrush((Color)ColorConverter.ConvertFromString(palette[i]));
         ThemeButton.Content = dark ? L.T("ライトモード") : L.T("ダークモード");
+        ApplyTitleBarTheme();
         DrawLayout();
     }
     private void ApplyLocalization()
@@ -206,6 +212,9 @@ public partial class MainWindow : Window
         if (_tray?.ContextMenuStrip is { } menu)
         { menu.Items[0].Text = L.T("開く"); menu.Items[1].Text = L.T("Windowsへ戻す"); menu.Items[2].Text = L.T("終了"); }
         ShortcutStatusLabel.Text = "";
+        UpdateStatus.Text = _availableUpdate is { } update ? L.F("{0}へ更新できます。", update.Manifest.Tag)
+            : Controller.Settings.AutoCheckUpdates ? L.T("起動時に更新を確認します。更新確認はいつでもオフにできます。")
+            : L.T("自動確認はオフです。「更新を確認」から手動で確認できます。");
     }
     private void ChangeLanguage(object sender, SelectionChangedEventArgs e)
     {
@@ -454,7 +463,7 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
         try
         {
-            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.02", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
+            File.WriteAllText(dialog.FileName, JsonSerializer.Serialize(new { Version = "1.03", Time = DateTimeOffset.Now, Controller.MouseMode, Controller.ActivationShortcut, Controller.ReturnShortcutText, Controller.TouchpadStatus, Controller.Transport.AdapterSummary,
                 Controller.Transport.Status, Peers = Controller.Transport.Peers(), Controller.Reports.Sent, Controller.Reports.Healthy, Controller.Reports.CoalescedMotion,
                 Controller.PreciseMotionTiming, Controller.MouseReportIntervalMs, Controller.EdgeHandoff,
                 Controller.Router.HeldState, Log = Controller.Log.Recent }, new JsonSerializerOptions { WriteIndented = true }));
@@ -477,6 +486,13 @@ public partial class MainWindow : Window
                     SelectPage(index); RefreshView(); await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle);
                     Capture(Path.Combine(output, $"{language}-{index + 1}-light.png"));
                 }
+                if (_titleBarTheme?.Success != true || _titleBarTheme.Dark) throw new InvalidOperationException("Light title bar theme was not applied: " + JsonSerializer.Serialize(_titleBarTheme));
+                CaptureWindowFrame(Path.Combine(output, $"{language}-titlebar-light.png"));
+                AutoUpdateCheck.IsChecked = false; SaveUpdatePreference(this, new RoutedEventArgs());
+                if (new SettingsStore(_dataDirectory).Load().AutoCheckUpdates) throw new InvalidOperationException("Update opt-out was not saved.");
+                AutoUpdateCheck.IsChecked = true; SaveUpdatePreference(this, new RoutedEventArgs());
+                if (!new SettingsStore(_dataDirectory).Load().AutoCheckUpdates || CheckUpdateButton.IsEnabled || InstallUpdateButton.IsEnabled)
+                    throw new InvalidOperationException("Update settings or smoke-mode network isolation failed.");
                 SelectPage(1); EdgeDwellSlider.Value = 450; AutoSwitchCheck.IsChecked = true; SaveControls(this, new RoutedEventArgs());
                 ReturnAtEdgeCheck.IsChecked = false; SaveControls(this, new RoutedEventArgs());
                 if (new SettingsStore(_dataDirectory).Load().ReturnAtEdge) throw new InvalidOperationException("Edge return disable was not saved.");
@@ -530,6 +546,8 @@ public partial class MainWindow : Window
                 Capture(Path.Combine(output, $"{language}-3-additional-light.png"));
                 Controller.Save(Controller.Settings with { Theme = "Dark" }); ApplyTheme(); SelectPage(0); RefreshView();
                 await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.ApplicationIdle); Capture(Path.Combine(output, $"{language}-1-dark.png"));
+                if (_titleBarTheme?.Success != true || !SystemParameters.HighContrast && !_titleBarTheme.Dark) throw new InvalidOperationException("Dark title bar theme was not applied: " + JsonSerializer.Serialize(_titleBarTheme));
+                CaptureWindowFrame(Path.Combine(output, $"{language}-titlebar-dark.png"));
                 var saved = new SettingsStore(_dataDirectory).Load();
                 if (saved.Language != language || L.Language != language || (string)DashboardNav.Content != L.T("接続ダッシュボード") || (string)ApplyShortcutsButton.Content != L.T("ショートカットを適用") || SwipeLeftCombo.Items.Cast<GestureChoice>().First().Label != L.T("操作しない（Windowsへも渡さない）") || _tray.ContextMenuStrip!.Items[0].Text != L.T("開く"))
                     throw new InvalidOperationException("Language switch or persistence failed: " + language);
@@ -539,7 +557,8 @@ public partial class MainWindow : Window
             var restored = new SettingsStore(_dataDirectory).Load();
             var iconsLoaded = Icon is not null && Icon.Width > 0 && _trayIcon.Width > 0;
             var ok = !Controller.Router.IsRemote && Controller.Reports.Healthy && restored.MouseSensitivity == 1.25 && restored.Theme == "Dark" && restored.TouchpadScrollSensitivity == 3 && !SwitchButton.IsEnabled && iconsLoaded;
-            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 27, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+            await File.WriteAllTextAsync(Path.Combine(_dataDirectory, "gui-smoke.json"), JsonSerializer.Serialize(new { Success = ok && verified.Count == 3, Languages = verified, Pages = _pages.Select(p => p.Name), Screenshots = 33, InputSuppressed = Controller.Router.IsRemote, IconsLoaded = iconsLoaded,
+                TitleBarThemeVerified = _titleBarTheme?.Success == true, UpdatePreferenceRoundTrip = restored.AutoCheckUpdates, UpdateNetworkDisabled = !CheckUpdateButton.IsEnabled,
                 AdditionalShortcutRoundTrip = restored.AdditionalShortcuts.SequenceEqual(ActionShortcuts.Defaults),
                 IPadShortcutRoundTrip = restored.HomeShortcut == ShortcutBinding.DefaultHome && restored.SearchShortcut == ShortcutBinding.DefaultSearch && restored.NextAppShortcut == ShortcutBinding.DefaultNextApp && restored.IPadShortcutsEnabled,
                 DuplicateShortcutsRejected = true, EdgeSwitchRoundTrip = restored.EdgeDwellMs == 300 && !restored.AutoSwitch,
@@ -555,6 +574,19 @@ public partial class MainWindow : Window
         bitmap.Render(surface); var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using var stream = File.Create(path); encoder.Save(stream);
     }
+    private void CaptureWindowFrame(string path)
+    {
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        if (!GetWindowRect(handle, out var rectangle)) throw new InvalidOperationException("Window bounds unavailable.");
+        using var bitmap = new System.Drawing.Bitmap(rectangle.Right - rectangle.Left, rectangle.Bottom - rectangle.Top);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap); var dc = graphics.GetHdc();
+        try { if (!PrintWindow(handle, dc, 2)) throw new InvalidOperationException("Native window capture failed."); }
+        finally { graphics.ReleaseHdc(dc); }
+        bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+    }
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)] private struct WindowRectangle { public int Left, Top, Right, Bottom; }
+    [System.Runtime.InteropServices.DllImport("user32.dll")] [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] private static extern bool GetWindowRect(nint window, out WindowRectangle rectangle);
+    [System.Runtime.InteropServices.DllImport("user32.dll")] [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)] private static extern bool PrintWindow(nint window, nint dc, uint flags);
     private void ScrollToControl(FrameworkElement control)
     {
         UpdateLayout();

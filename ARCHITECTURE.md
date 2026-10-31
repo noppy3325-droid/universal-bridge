@@ -1,5 +1,15 @@
 # Architecture
 
+## v1.03のタイトルバーと自動更新
+
+`NativeWindowTheme`はDwmSetWindowAttributeの20／34／35／36を使用し、immersive dark modeとcaption／text／borderのCOLORREFをアプリ配色に合わせます。高コントラストでは色を既定へ戻します。設定用属性のHRESULTで成功を確認し、native window全体をPrintWindowで取得して目視します。存在が保証されないDwmGetの読み戻しには依存しません。[Microsoftの属性一覧](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute)。
+
+`ReleaseUpdateClient`は固定のGitHub repositoryの最新通常Releaseだけを対象とします。公開update.jsonのSchema／3桁版番号／タグ／サイズ／SHAを、asset URL・サイズ・digestおよびSHA256SUMSと照合します。メタデータ・exeのサイズに上限を設け、HTTPSのGitHub/CDNへ限定します。ダウンロードはCreateNewで行い、不完全な新規ファイルだけを削除します。
+
+起動時確認は任意で、24時間キャッシュします。専用の6時間タイマーで再確認し、BLEの1秒heartbeatをネットワークで止めません。GUIの適用操作でダウンロード・検証し、Windowsへ戻ってHIDを停止します。helperは現在のexeのコピーから起動し、親PID・開始時刻・exeパス・旧SHAを確認して終了を待機します。同じフォルダーの一時ファイルをFile.Replaceで置換し、旧exeをバックアップします。新版のLoadedで起動確認を返さなければ、helper自身が開始した子プロセスだけを停止して旧exeへ戻し再起動します。更新対象はexeのみ、設定はAppData内に保持します。成功後のキャッシュを整理し直前バックアップを保持します。
+
+Releaseはexe・update.json・checksum・従来ZIPをdraftへ揃えてから公開します。同じタグの並行実行を直列化し、同一exeの公開済みReleaseは再アップロードしません。APIトークンはアプリに含めません。Job schemaと起動確認引数は将来版でも互換を維持してください。
+
 ## v1.02
 
 `VirtualCursor`の法線方向の開始位置は中央です。相対HIDでiPadの前回位置は読めないため、辺の24カウント内側という仮定を廃止しました。推定値は画面範囲へclampし、境界を越えた距離の負債を保持しません。

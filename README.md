@@ -1,164 +1,175 @@
 # Universal Bridge
 
-<img src="docs/images/app-icon.png" width="96" height="96" alt="Universal Bridge icon">
+<img src="docs/images/app-icon.png" width="96" height="96" alt="Universal Bridge アイコン">
 
-**[English](README.md) · [日本語](README.ja.md) · [简体中文](README.zh-CN.md)**
+**[English](README.en.md) · [日本語](README.md) · [简体中文](README.zh-CN.md)**
 
-**Windows on your desk. iPad beside it. One keyboard and mouse.**
+**Windowsの隣のiPadも、いつものキーボードとマウスで。**
 
-Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iPad over Bluetooth. A native Windows 11 app built with C# / .NET 10 / WPF, released under the [MIT license](LICENSE).
+Windows PCのキーボード・マウスと対応するトラックパッド操作を、Bluetooth経由でiPadと共有するWindows 11アプリです。C# / .NET 10 / WPFで実装し、[MITライセンス](LICENSE)のOSSとして公開しています。
 
-No iPad companion app, extra hardware, or internet connection is needed during use. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
+iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.02 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v1.03（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
-![Universal Bridge dashboard](docs/images/dashboard-en.png)
+![接続ダッシュボード](docs/images/dashboard-ja.png)
 
-## Who is it for?
+## こんな使い方に
 
-- **Windows + iPad desks:** keep working on your PC, then switch the same keyboard and mouse to an iPad for a search or a note.
-- **Laptop users with limited desk space:** try sharing the controls you already have, without a second keyboard or a VM on supported PCs.
-- **Early adopters and contributors:** explore a native C# / WPF BLE HID implementation with Japanese, English, and Simplified Chinese UI.
+- **WindowsとiPadを机に並べている方：** PCで作業しながら、同じキーボードとマウスをiPadへ切り替えて検索やメモに。
+- **ノートPCを使い、机を広く使いたい方：** 対応PCなら、2組目のキーボードやVMを用意せずに、手元の入力機器を共有できます。
+- **利用・開発に参加する方：** 日本語・英語・簡体字GUIを備えた、C# / WPFによるBLE HIDの実装を公開しています。
 
-Apple's [Universal Control requires a Mac](https://support.apple.com/en-us/102459). Universal Bridge focuses on Windows-to-iPad input sharing. It does not provide screen mirroring, shared clipboard, or file transfer. Contact relay was removed in v1.01.
+Appleの[ユニバーサルコントロールにはMacが必要](https://support.apple.com/en-us/102459)です。Universal BridgeはWindowsからiPadへの入力共有を扱い、画面ミラーリング・クリップボード共有・ファイル転送は提供しません。接点転送機能はv1.01で削除しました。
 
-## Before you download
+## ダウンロード前に
 
-You need **Windows 11 x64**, an iPad, and a PC Bluetooth adapter **and driver supporting BLE Peripheral**. Bluetooth support alone does not establish compatibility; the app checks the adapter and reports unsupported configurations. Gesture capture additionally requires supported experimental APIs on Windows 11 24H2 or later. Keyboard/mouse sharing can be used with gesture capture off.
+必要なのは **Windows 11 x64・iPad・BLE Peripheral対応のBluetoothアダプターとドライバー** です。Bluetooth搭載だけでは対応を判断できません。アプリで対応状況を確認し、非対応なら理由を表示します。ジェスチャー取得には、Windows 11 24H2以降の対応する実験的APIも必要です。取得をオフにしてキーボードとマウスのみ共有することもできます。
 
-This is an **unsigned release** with limited real-device coverage. If your hardware is unsupported, no purchase is needed to report the result. Optional [compatibility reports](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml) help identify which setups work.
+実機の確認範囲が限られた **署名なしの通常リリース** です。非対応の場合も、追加購入は不要です。任意の[動作環境レポート](https://github.com/noppy3325-droid/universal-bridge/issues/new?template=compatibility.yml)で、動く構成・動かない構成を共有できます。
 
-## Download
+## ダウンロード
 
-Open **[Releases — v1.02](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.02)**:
+**[Releases — v1.03](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03)** から取得します。
 
-- **[UniversalBridge-1.0.2-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.02/UniversalBridge-1.0.2-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-1.0.2-source.zip` — source without SDKs, caches, settings, or logs.
-- `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
+- **[UniversalBridge-1.0.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalBridge-1.0.3-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.3-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalControl.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
-Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
+Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
 
-## Features
+## 主な機能
 
-| Feature | What it does |
+| 機能 | 内容 |
 |---|---|
-| Bluetooth keyboard/mouse | Sends standard HID reports to one selected, paired iPad, with encrypted GATT access. |
-| Screen-edge switching | Configure the display, edge, switching area, and hold time; respects adjacent Windows monitors. |
-| Editable shortcuts | **Ctrl+Alt+I** to iPad; **Ctrl+Alt+Q** to Windows by default. Edit both in Input settings. **Esc three times** always provides emergency return. |
-| Precise relative mouse input | Raw Input avoids Windows acceleration; sensitivity **0.02–4.00** in 0.01 steps, preserving fractional movements. |
-| Trackpad mappings | Two-finger vertical/horizontal scrolling with dedicated **0.25–12.00 ×** sensitivity (default **3.00 ×**), pinch-to-zoom shortcuts, and configurable three-to-five-finger swipes. |
-| Three UI languages | Japanese, English, Simplified Chinese, or system language; applies immediately and persists. |
-| Desktop integration | Custom application/tray icon, light/dark theme, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
+| Bluetoothキーボード・マウス | ペア済みの選択端末1台へ標準HIDを送信。GATTは暗号化必須です。 |
+| 画面端切り替え | ディスプレイ・方向・範囲・押し続け時間を設定。隣接Windowsモニターとの境界を考慮します。 |
+| ショートカット編集 | 初期値はiPadへ **Ctrl+Alt+I**、Windowsへ **Ctrl+Alt+Q**。入力設定から変更可能。**Escを3回**の緊急復帰は常に有効です。 |
+| 細かいマウス操作 | Raw InputでWindowsの加速を回避。感度 **0.02～4.00**、0.01刻み、小数移動量の保持に対応します。 |
+| トラックパッド変換 | 2本指の縦横スクロール感度を専用の **0.25～12.00倍**（初期値 **3.00倍**）で調整。ピンチのキー変換、3～5本指スワイプも対応します。 |
+| 3言語のGUI | 日本語・英語・中国語（簡体字）・システム言語。即時反映し次回起動時も保持します。 |
+| 常駐と診断 | 専用アプリ／トレイアイコン、ライト／ダーク、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
 
-**Gestures** generate standard scroll reports and supported keyboard shortcuts. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
+ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
-## v1.02: prevent accidental returns from small movements
+## v1.03：日本語README・タイトルバー・アプリ内更新
 
-v1.01 started the estimate near the connected edge, allowing small reversals to return control. The estimate now starts in the middle, and automatic return is blocked for one second after switching. Crossing the estimated boundary is only a candidate: keep moving toward Windows for at least 300 ms and a minimum travel distance to confirm return. A longer edge wait configured in Display layout also applies.
+GitHubで標準表示するREADMEを日本語にしました。英語は[README.en.md](README.en.md)、中国語は[README.zh-CN.md](README.zh-CN.md)です。ダーク／ライトを切り替えると、Windowsのタイトルバー・文字・枠もアプリの配色に合わせて変わります。
 
-A single flick, tiny jitter, or a small move after stopping cannot return control. Stopping, reversing, moving parallel to the edge, scrolling or key/button input restarts confirmation. Overshoot is not carried forward. Windows-to-iPad switching, pointer sensitivity and return shortcuts are retained.
+「詳細・診断 → アプリの更新」で自動確認をオン／オフにでき、「更新を確認」「更新して再起動」を使えます。起動時・起動中に最新の通常リリースを確認し、24時間以内の自動再確認は省略します。ダウンロードは適用ボタンを押したときだけ行います。GitHubへの接続は確認・ダウンロード時に限り、入力共有はオフラインで利用できます。
 
-Actual iPad coordinates remain unavailable. Adjust the estimated range, or disable only automatic return in Display layout and use Ctrl+Alt+Q / Esc three times. Actual iPad feel still needs hardware confirmation after updating.
+更新前にWindows操作へ戻し、入力送信を停止してからexeを差し替えます。サイズ・SHA-256・バージョンを検証し、設定は保持します。新しいアプリの起動確認に失敗した場合は元のexeへ戻して再起動します。書き込み可能なフォルダーで使用してください。自動更新の対象はexeで、同梱の説明書などはZIPで更新できます。更新後の入力先はWindowsです。
 
-## v1.01 history (return confirmation changed in v1.02)
+**v1.02以前からは、今回だけv1.03を手動でダウンロードしてください。** 以後の対応版はアプリ内で更新できます。
 
-Removes the optional iPad contact relay from settings, HID reports and diagnostics. Two-finger scrolling and pinch/swipe-to-key conversion remain available.
+![ダークモードのタイトルバー](docs/images/titlebar-dark-ja.png)
 
-Enable **Display layout → Switch automatically between Windows and iPad at the screen edge**. Moving toward the Windows-facing edge now returns control to Windows. **Return from iPad to Windows automatically** defaults to on, including profiles that disabled the old estimated-return option. Held keys/buttons prevent return; release them and make a fresh movement toward the edge. The Windows cursor lands 32 pixels inside the connected edge.
+## v1.02：小さな移動でWindowsへ戻る問題を修正
 
-**The return boundary is estimated from relative motion; the actual iPad pointer position is unavailable.** iPadOS acceleration and touch interaction can cause drift. Adjust **Estimated iPad range (width × height)** in Display layout if needed (default 1366 × 1024, each 320–8192). Ctrl+Alt+Q or Esc three times still returns control. Actual iPad return position and feel require hardware confirmation after updating.
+v1.01は推定位置を接続辺の近くから開始したため、小さな逆方向の移動でも復帰していました。推定の開始位置を中央に変更し、切り替え後1秒は自動復帰を抑止します。推定境界の到達だけでは戻らず、Windows方向へ最短300ms以上、一定距離を動かし続けたときだけ戻ります。「端に到着してから切り替わるまでの時間」が300msより長ければ、その値を使用します。
 
-Fully exit the old app before updating. If you used contact relay and iPad retains the old HID format, manually forget the PC and pair again only if reconnection fails.
+単発のフリック、細かな揺れ、停止後の小さな移動では戻りません。停止・反転・沿辺移動・スクロール・キー／ボタン操作で確認をやり直します。前回の境界超過量を持ち越しません。Windows→iPadの切り替え、通常のマウス感度、復帰ショートカットは維持します。
 
-## v1.00: edge handoff, precision and more actions
+実際のiPad座標は読めないため、復帰位置は引き続き推定です。合わない場合は「ディスプレイ配置」の推定範囲を調整するか、自動復帰だけをオフにしてCtrl+Alt+Q／Esc3回を使えます。iPad実機での操作感は更新後の確認が必要です。
 
-This is a regular release. Edge detection now samples the physical cursor after Windows finishes its mouse update. Arrival uses an approximately four-pixel band; connection checks tolerate up to 12 pixels of inward jitter. Leaving the portal, keys/buttons, lost readiness or changed settings cancels the request, which expires after five seconds. Diagnostics report the cancellation category without coordinates or input content. Enable edge switching in Display layout.
+## v1.01の履歴（復帰条件はv1.02で変更）
 
-Fast-pointer stabilization now carries fractional errors on both axes after the transfer, fixing shallow diagonal movement losing its smaller axis. A 1000-sample synthetic trace produced 249 minor-axis counts versus zero previously, against a 248.69-count mathematical reference, with cumulative error below 0.5 count. Compressed distance is never replayed after stopping. With stabilization off, Raw Input and sensitivity provide linear transfer. **Actual iPad wireless latency, host acceleration and parity with Apple's controls have not been measured.**
+iPad向けの接点転送機能を設定・HIDレポート・診断から削除しました。通常の2本指スクロールとピンチ／スワイプのキー変換は引き続き使えます。
 
-Seven actions join Home, Search and Next app. Enable each action, edit its binding, then Apply shortcuts. They remain ordinary keys on Windows.
+「ディスプレイ配置 → 画面端でWindowsとiPadを自動で切り替える」をオンにすると、iPad側からWindows側の辺へ動かして戻れます。「iPad側からWindowsへ自動で戻る」は初期値オンで、旧設定の推定復帰オフには引きずられません。キーやマウスボタンを押している間は自動復帰せず、離した後に改めて辺へ動かすと戻ります。Windowsへ戻る位置は接続した辺の32px内側です。
 
-| Added action | Default | Sent to iPad |
+**復帰境界は相対移動からの推定です。iPadの実カーソル位置は取得できません。** iPadOSの加速やタッチ操作でずれる場合は、同じ画面の「iPad側の推定範囲（幅 × 高さ）」を調整してください。初期値は1366 × 1024、各320～8192です。Ctrl+Alt+Q／Esc3回でも戻れます。iPad実機での復帰位置・操作感は更新後の確認が必要です。
+
+旧接点モードを使っていた場合は、アプリを完全終了して更新してください。接続先に旧HID形式が残って認識しない場合のみ、iPadのBluetooth設定からPCを手動で登録解除・再ペアリングしてください。
+
+## v1.00：画面端・精度・追加操作
+
+通常リリースです。画面端の処理を、マウス通知の後に確定した物理カーソル位置を確認する方式へ変更しました。端の到着は約4pxの帯、接続確認中は端から12pxまでの小さな揺れを許容します。端を離れた場合・キーやボタン操作・接続準備の消失・設定変更は取り消し、5秒で期限切れになります。拒否時の診断は原因別とし、座標や入力内容は記録しません。自動切り替えは「ディスプレイ配置」で有効にしてください。
+
+急な移動の抑制を使う場合も、変換後の小数をXYそれぞれ持ち越します。これにより、浅い斜め方向の短い軸が丸めで消える問題を修正しました。人工入力1000回では旧処理の短い軸0カウントに対して249カウント、計算上の基準248.69カウント、累積誤差0.5カウント未満でした。停止後に抑えた距離を再生しません。抑制オフはRaw Inputに感度だけを掛ける線形方式です。**iPadの実際の無線遅延・カーソル加速・純正と同等の操作感は測定していません。**
+
+ホーム・検索・次のアプリに、次の7操作を追加しました。各操作をオン／オフにし、キーを変更して「ショートカットを適用」で保存できます。Windows操作中は通常のキーです。
+
+| 追加操作 | 初期値 | iPadへの送信 |
 |---|---|---|
-| Previous app | Ctrl+Alt+P | ⇧⌘Tab |
-| Screenshot | Ctrl+Alt+C | ⇧⌘3 |
-| Undo / Redo | Ctrl+Alt+Z / Y | ⌘Z / ⇧⌘Z |
-| Zoom in / out | Ctrl+Alt+U / D | ⇧⌘= / ⌘− |
-| Close window | Ctrl+Alt+W, disabled by default | ⌘W |
+| 前のアプリ | Ctrl+Alt+P | ⇧⌘Tab |
+| スクリーンショット | Ctrl+Alt+C | ⇧⌘3 |
+| 取り消す／やり直す | Ctrl+Alt+Z／Y | ⌘Z／⇧⌘Z |
+| 拡大／縮小 | Ctrl+Alt+U／D | ⇧⌘=／⌘− |
+| ウィンドウを閉じる | Ctrl+Alt+W（初期値オフ） | ⌘W |
 
-Zoom and editing depend on the app. Home still uses the compatibility ⌘H path rather than emulating Globe. Remaining device acceptance checks are in the [test checklist](docs/MANUAL_TESTS.md).
+拡大・縮小や編集操作はアプリに依存します。ホームは引き続き⌘H互換で、Globeキーの生成ではありません。実機の最終受け入れ項目は[チェック手順](docs/MANUAL_TESTS.md)へ記載しています。
 
-## 0.5.0: iPad action shortcuts and edge switching
+## 0.5.0：iPad操作キーと画面端切り替え
 
-Dedicated actions work only while controlling iPad. Edit all five bindings together in **Input settings → Shortcuts**, then choose **Apply shortcuts**. Duplicate bindings are rejected. The three action chords remain ordinary keys while controlling Windows.
+iPadを操作している間だけ、次の専用ショートカットを使えます。「入力設定 → ショートカット」で5種類の操作をまとめて編集し、「ショートカットを適用」で保存します。重複する組み合わせは拒否します。Windowsを操作している間、3つのiPad操作キーは通常のキーとして使えます。
 
-| iPad action | Default | Sent keys |
+| iPad操作 | 初期値 | 送信するキー |
 |---|---|---|
-| Home | **Ctrl+Alt+H** | ⌘H, on compatible iPadOS/settings |
-| Search | **Ctrl+Alt+S** | ⌘Space |
-| Next app | **Ctrl+Alt+N** | ⌘Tab |
+| ホームへ戻る | **Ctrl+Alt+H** | ⌘H（対応するiPadOS／設定） |
+| 検索 | **Ctrl+Alt+S** | ⌘Space |
+| 次のアプリ | **Ctrl+Alt+N** | ⌘Tab |
 
-Holding a trigger runs the action once, without typing H/S/N. Release other character keys and mouse buttons first. The action shortcuts can be disabled independently. Home uses the compatibility ⌘H path; it does not emulate Apple's Globe key. **The new actions have not been verified on iPad hardware.** Apple's current iPadOS guidance uses Globe+H, so Home support depends on iPadOS and settings.
+長押しでも1回だけ実行し、文字としてのH／S／Nは送りません。ほかの文字キー・マウスボタンを離して使ってください。必要ならiPad操作キーだけをオフにできます。ホームは⌘Hの互換経路で、Apple固有のGlobeキーを生成しません。**新しい操作キーのiPad実機確認は未実施です。** 現行iPadOSの公式案内はGlobe+Hを使うため、ホームの対応はiPadOS／設定に依存します。
 
-**To switch at the edge:** start HID, select the connected iPad, then enable edge switching in **Display layout**. Select a Windows monitor and direction, or drag the iPad diagram above, below, left or right. Blue lines show the available portal. Move the cursor to that edge and wait for the configured delay: 300ms by default, adjustable from 150 to 1500ms. The wait completes even after mouse movement stops.
+**画面端で切り替えるには：** HID公開・接続先iPadの選択後、「ディスプレイ配置」で自動切り替えをオンにします。使用するWindowsモニターと方向を選ぶか、iPadの図を上下左右へドラッグします。青い線が有効な範囲です。その端にカーソルを移し、設定した時間（初期値300ms、150～1500ms）待つと操作先がiPadへ移ります。端で手を止めても待機を完了します。
 
-Shared Windows-monitor boundaries are excluded; partial adjacency leaves the uncovered segment usable. Leaving the edge, pressing a key/button or changing settings cancels a pending activation. Remaining at the same edge cannot repeatedly reactivate it. The UI explains off, HID waiting, missing target and readiness states. Edge switching is off by default. **The iPad's actual pointer coordinates cannot be read, so control resumes at its previous position there.** v1.01 adds estimated edge return as described above. Ctrl+Alt+Q or Esc three times remains available.
+Windowsモニター同士の境界は除外し、一部が隣接する場合は空いている範囲だけを使います。待機中に端から離れる・キーやボタンを押す・設定が変わると取り消します。同じ場所に留まっているだけでは再実行しません。画面にはオフ／HID待ち／端末未選択／準備完了などの理由を表示します。自動切り替えは初期値オフです。**iPadの実カーソル座標は取得しないため、切り替え後はiPad上の前回位置から操作します。** v1.01では上記の推定境界による自動復帰も利用できます。Ctrl+Alt+QまたはEsc3回は引き続き利用できます。
 
-[Settings screenshots — shortcuts](docs/images/shortcuts-en.png) · [Settings screenshots — layout](docs/images/layout-en.png)
+[設定画面 — shortcuts](docs/images/shortcuts-ja.png) · [設定画面 — layout](docs/images/layout-ja.png)
 
-## Quick start
+## 使い始める
 
-1. Exit older versions via **Settings & diagnostics → Exit application**. Extract the ZIP and launch `UniversalControl.exe` as a normal user.
-2. Select **日本語 / English / 简体中文 / System language** at the top right.
-3. Choose **Start Bluetooth HID**. Unsupported hardware or policy restrictions appear in the app.
-4. In iPad **Settings → Bluetooth**, select the **Windows PC's computer name**. Confirm pairing on both devices yourself.
-5. Select the iPad in the app. Pairing and both keyboard/mouse subscriptions must be ready.
-6. Press **Ctrl+Alt+I and release all keys**, or use the switch button. Test typing, clicks, and scrolling in Notes. Return with **Ctrl+Alt+Q** or **Esc three times**.
-7. Adjust sensitivity, gesture assignments, and shortcuts in **Input settings**. Shortcuts require **Apply shortcuts**; other changes save automatically. Enable edge switching after testing input.
+1. 旧版を「詳細・診断 → アプリを終了」で終了します。ZIPを展開し、通常権限で `UniversalControl.exe` を起動します。
+2. 右上で **日本語 / English / 简体中文 / システムの言語** を選べます。
+3. 「Bluetooth HIDを公開」を押します。非対応機器やポリシーの制限は画面に表示されます。
+4. iPadの「設定 → Bluetooth」で **Windows PCのコンピューター名** を選び、両端末で人がペアリング確認を行います。
+5. アプリでiPadを選び、ペア済み・キーボードとマウスの両購読が揃ったことを確認します。
+6. **Ctrl+Alt+Iを押して全キーを離す**、または切り替えボタンでiPadへ移ります。メモ等で入力・クリック・スクロールを試し、**Ctrl+Alt+Q** または **Escを3回** で戻ります。
+7. 「入力設定」で感度・ジェスチャー・キーを変更します。キーは「ショートカットを適用」で保存し、その他は自動保存。確認後に画面端切り替えを有効にしてください。
 
-During gesture capture, a small foreground window receives touchpad input. Focusing another Windows window returns control to Windows. Capture needs compatible **experimental Precision Touchpad APIs on Windows 11 24H2 or later**, checked at runtime. If unavailable, turn capture off to share keyboard/mouse only; Windows system gestures are then not blocked.
+ジェスチャー取得中は小さな受け取り画面が前面に出ます。別のWindows画面へフォーカスが移るとWindowsへ戻ります。**Windows 11 24H2以降の対応する実験的Precision Touchpad API**を実行時に確認します。未対応なら取得をオフにするとキー・マウスのみ使えます。この場合、Windowsのシステムジェスチャーは抑制しません。
 
-Upgrading from 0.1.x changes the mouse report from 6 to 7 bytes for horizontal scrolling. If mouse input stops, reconnect; if necessary, manually forget the PC on iPad and pair again.
+0.1.xからの更新は、横スクロール追加でマウスレポートが6→7バイトになります。動かなければ再接続し、必要ならiPad側で人がPC登録を解除・再ペアリングしてください。
 
-Since v0.3.1, **Input settings → Two-finger scroll sensitivity** adjusts captured touchpad scrolling independently of the mouse wheel. The recommended 3.00 is three times the previous default. Numeric input, 0.25 steps, and a reset button are available. Cumulative motion preserves movement at gesture onset and completion. Standard HID still uses whole scroll ticks rather than pixel scrolling; no extra momentum is simulated.
+v0.3.1以降は「入力設定 → 2本指スクロール感度」でマウスホイールとは独立して調整できます。推奨値3.00は旧版の既定値の3倍です。数値入力・0.25刻みの増減・推奨値へ戻す操作に対応し、動き始めと終了直前の移動量も累積値から拾います。標準HIDの整数スクロール単位であり、ピクセル単位の連続スクロールや追加の慣性は生成しません。
 
-## Privacy and recovery
+## プライバシーと復帰
 
-v0.3.4 introduced improved fine diagonal motion with centered rounding and fractional carry, keeps direction when splitting large movement, and uses a private high-resolution mouse report timer. The local cadence supports 8 ms when the BLE link allows it; the actual negotiated connection interval still applies. Adjacent unsent XY movement can coalesce under load, with keys, clicks, wheel/pan, reversal, and range limits kept as barriers. Existing sensitivity settings are retained. iPad cursor feel and wireless latency still need real-device verification.
+v0.3.4以降は、斜めの微小移動を小数持ち越し付きの最近傍丸めへ変更し、大きい移動を分割するときも方向を保ちます。マウス送信には専用の高精度タイマーを使い、BLE接続間隔が許す場合はローカルの最短周期を8msにします。送信待ちでは隣り合うXY移動だけを合流し、キー・クリック・縦横スクロール・方向反転・レポート上限を境界として保ちます。保存済み感度は変更しません。iPad実機の操作感・無線遅延は更新後の確認が必要です。
 
-v0.3.3 fixes a reproducible case where the iPad remained connected but switching was refused as “input held.” A JIS half/full key's IME mode value could remain in the local held-key check after returning to Windows. The physical OEM key is now checked instead, and released quarantine entries are cleaned up. Rejection diagnostics record only key counts and mouse/idle flags, without key identities or typed content. Other intermittent failures still need their own diagnostic evidence.
+v0.3.3では、iPadが接続済みでも「キー押下中」で切り替えを拒否する再現ケースを修正しました。半角／全角キーのIMEモード値がWindows復帰後の判定に残るため、物理OEMキーの状態を確認するよう変更し、解放済みの待機状態も整理します。拒否時の診断にはキー件数とマウス／入力待機の真偽だけを追加し、キー名や入力内容は記録しません。他の断続的な失敗がすべて解消したと確認したものではありません。
 
-After iPad sleep/wake, unlock the iPad and wait for both report subscriptions, then press your iPad activation shortcut again. Since v0.3.2 the app tracks replacement GATT sessions and recovers a failed sender after successfully releasing both keyboard and mouse. Input is never recaptured automatically; an unfinished timed-out send must complete before recovery can proceed. If the iPad remains disconnected, reconnect the PC from iPad Settings → Bluetooth.
+iPadのスリープ復帰後はロックを解除し、両購読が揃ってからiPadへの切り替えショートカットを押し直してください。v0.3.2以降は新しいGATTセッションを追跡し、キーボード・マウス両方の解放送信が成功した場合に送信処理を復帰します。自動で操作先をiPadへ戻さず、タイムアウトした送信が未完了なら完了まで復帰を拒否します。切断のままならiPad「設定 → Bluetooth」でPCへ接続してください。
 
-On a Windows Japanese keyboard, **半角/全角** (also Alt+半角/全角) now sends one **Control+Space** tap to cycle iPad input languages instead of typing punctuation. Holding the key does not repeatedly cycle languages. US backtick keeps its usual mapping. Add both Japanese and English in iPad Settings → General → Keyboard → Keyboards; language switching follows [iPad's external-keyboard shortcut](https://support.apple.com/en-euro/guide/ipad/ipaddd28d7ed/ipados). Keyboard layout/IME behavior still depends on iPadOS settings.
+Windowsが日本語キーボードとして認識している場合、**半角／全角**（Alt併用も対応）は記号を送らず、**Control+Spaceを1回**送ってiPadの入力言語を切り替えます。長押しで連続切り替えせず、US配列のバッククォートは維持します。iPad「設定 → 一般 → キーボード → キーボード」に日本語と英語を追加してください。[iPadの外付けキーボード用ショートカット](https://support.apple.com/en-euro/guide/ipad/ipaddd28d7ed/ipados)を使うため、配列やIMEの最終的な動作はiPadOSの設定に従います。
 
-Input text and HID payloads are not logged. Settings/connection diagnostics stay in `%LOCALAPPDATA%\UniversalBridge`; logs rotate at 1 MiB. No telemetry or runtime cloud service is used.
+入力文字列やHIDペイロードは記録しません。設定・接続診断は `%LOCALAPPDATA%\UniversalBridge` に置き、ログは1MiBでローテーションします。テレメトリーはありません。任意の更新確認・ダウンロード時のみGitHubへ接続します。
 
-Connection, subscriptions, input hooks, and released keys are checked before switching. Disconnects, capture focus loss, queue failure, sleep, and session changes return control to Windows. Reconnecting never captures input automatically. Sudden termination cannot send release reports to iPad; recovery there depends on Bluetooth disconnect handling.
+接続・両購読・フック・キー解放の確認後だけ切り替えます。切断、取得中のフォーカス喪失、キュー異常、スリープ、セッション変更でWindowsへ戻り、再接続時に自動捕捉しません。強制終了時はiPadへ解放レポートを送れず、iPad側の復帰はBluetooth切断処理に依存します。
 
-To uninstall, disable optional startup, exit, and remove the extracted folder. Remove local settings and iPad pairing separately if desired.
+削除時は自動起動をオフにしてアプリを終了し、展開フォルダを削除します。設定フォルダ・iPadのペアリングは必要に応じて個別に削除してください。
 
-## Build and test
+## ビルドとテスト
 
-Windows 11 x64, PowerShell 7, **.NET SDK 10.0.402**. Restore needs internet; runtime does not. Minimum OS build: 22000; gesture capture additionally needs supported APIs on build 26100 or later.
+Windows 11 x64、PowerShell 7、**.NET SDK 10.0.402**。依存取得時のみインターネットが必要です。最低OSはbuild22000、ジェスチャーにはbuild26100以降の対応APIが必要です。
 
 ```powershell
-# Optional: Microsoft's verified SDK, local to this folder.
+# 任意：Microsoft公式SDKを作業フォルダ内だけに準備
 pwsh -File scripts/Setup-Sdk.ps1
-# Build, tests, and self-contained Windows package.
 pwsh -File scripts/Build.ps1 -Test -Publish
-# Binary/source archives and checksums.
 pwsh -File scripts/Package.ps1
 ```
 
-SDK/packages stay under `.tools/`. Windows SDK projection: `10.0.26100.87`; experimental APIs are isolated and checked. No drivers, registry workarounds, VMs, or OS security changes are installed.
+SDKとパッケージは `.tools/` に保存。Windows SDK projectionは `10.0.26100.87` 固定で、実験的APIは分離・対応確認します。ドライバー、制限回避レジストリ、VM、OSのセキュリティ変更は導入しません。
 
-**244 automated tests** cover HID, diagonal precision and splitting, motion backpressure/order, sleep/reconnect recovery, JIS input, shortcuts, translations, and language persistence. GUI smoke tests exercise three languages without capturing input. These do not replace iPad hardware tests.
+**自動テスト276件**でHID・斜め移動と分割・送信待ちの合流と順序・スリープ／再接続・JISキー・ショートカット・翻訳・言語保存を検証します。GUIテストは入力を捕捉せず3言語を確認し、iPad実機確認とは区別します。
 
-See [contributing/translations](CONTRIBUTING.md), [architecture](ARCHITECTURE.md), [limitations](KNOWN_LIMITATIONS.md), [verification](TEST_REPORT.md), and [hardware checks](docs/MANUAL_TESTS.md). Detailed engineering notes are currently Japanese. GitHub Actions tests pushes/PRs; version tags build downloadable releases.
+[開発・翻訳参加](CONTRIBUTING.md)、[構成](ARCHITECTURE.md)、[制約](KNOWN_LIMITATIONS.md)、[検証結果](TEST_REPORT.md)、[実機チェック](docs/MANUAL_TESTS.md)を参照してください。GitHub Actionsでpush・PRをビルド／テストし、バージョンタグから通常Releaseを生成します。
 
-## License and credits
+## ライセンスと謝辞
 
-[MIT](LICENSE). HID descriptor/keymap portions adapted from [windows-ble-hid](https://github.com/abhishek-raj/windows-ble-hid); OpenSpan reviewed as research. Attribution and runtime notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), [licenses](licenses).
+[MIT](LICENSE)。HID descriptor/keymapの一部を [windows-ble-hid](https://github.com/abhishek-raj/windows-ble-hid) から改変し、OpenSpanを調査資料として参照しています。出典・同梱通知は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) と [licenses](licenses) に収録しています。

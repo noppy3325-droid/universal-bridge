@@ -100,5 +100,11 @@
   "ReturnAtEdgeHelp": "iPadの実座標は取得できません。切り替え後1秒は復帰せず、推定端でWindows方向へ動かし続けた場合だけ戻ります（最短300ms、下の待ち時間で延長）。小さな揺れ・停止・反転では戻りません。位置が合わなければ推定範囲を調整するか、この復帰だけオフにできます。",
   "ReturnSizeLabel": "iPad側の推定範囲（幅 × 高さ）",
   "ReturnWidthLabel": "iPad側の推定範囲の幅",
-  "ReturnHeightLabel": "iPad側の推定範囲の高さ"
+  "ReturnHeightLabel": "iPad側の推定範囲の高さ",
+  "UpdateHeading": "アプリの更新",
+  "UpdateAutomatic": "起動時に自動で更新を確認する",
+  "UpdateHelp": "更新の確認・ダウンロード時にGitHubへ接続します。新版は「更新して再起動」で適用します。設定を保持し、起動に失敗した場合は元のexeへ戻します。",
+  "UpdateCheck": "更新を確認",
+  "UpdateInstall": "更新して再起動",
+  "UpdateReleases": "配布ページ"
 }
