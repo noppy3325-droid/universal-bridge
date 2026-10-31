@@ -39,8 +39,13 @@ public sealed class SleepRecoveryTests
     {
         var fake = new FakeTransport(); await using var sender = new ReportDispatcher(fake);
         var router = new InputRouter(fake, sender); Assert.True(await router.ActivateAsync("iPad", () => true));
+        var returned = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        router.Changed += () => { if (!router.IsRemote) returned.TrySetResult(); };
         fake.BeforeSend = _ => { fake.Ready = false; throw new IOException("iPad sleeping"); };
         router.Key(0x41, 0x1E, false, true, 0);
+        // IsRemote becomes false before GoLocal queues its neutral reports. Observe the completed
+        // transition first, then wait for those reports, rather than racing that intermediate state.
+        await returned.Task.WaitAsync(TimeSpan.FromSeconds(2));
         await FakeTransport.Until(() => !sender.Healthy && !router.IsRemote && !sender.Settling);
         router.Key(0x41, 0x1E, false, false, 1);
         fake.BeforeSend = null; fake.Ready = true; router.CheckConnection();

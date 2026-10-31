@@ -3,6 +3,7 @@
 検証日: **2026-10-31 / Asia/Tokyo**。
 
 - **335成功、0失敗、0スキップ**、ビルド警告0／エラー0。追加30件で、感度0.02～4、四方向・斜め、最後の小反転、境界保持、150ms間隔と長い休止、小往復の非累積、キー／ボタン／スクロール混在を検証。更新は実ZIPの少量取得と同一exe生成、切断／停滞後の4096バイト位置からの再開、Range無視時の再取得、不正範囲／破損／余分なentry／パス付きentry／不正SHA拒否、旧形式、既存出力保護、キャンセルを確認しました。`artifacts/tests/tests.trx`。
+- GitHub初回では既存のSleepRecoveryテストが復帰途中のIsRemote=falseを先に観測し、neutral解放開始との競合で失敗しました。完了通知Changedを待ってからSettlingを確認するように修正し、製品側の解放中の切り替え拒否は維持します。
 - 配布exeのGUIは**3言語・42画像・Success=True**。タイトルバーテーマ、アイコン、設定往復、右下カードの配置とforeground不変を確認。共有・更新通信・入力抑制なし。`artifacts/201-final-smoke-test/gui-smoke.json`。
 - 配布exeの`--verify-edge-return`は四方向で成功。進入猶予、単発フリック、静止、ドラッグ、復帰位置の内側配置を確認。`--verify-pointer-precision`も成功し、通常のマウス転送精度を維持。入力フック・実カーソル移動・Bluetooth公開は行っていません。`artifacts/201-final-verify-edge-return/edge-return.json`、`artifacts/201-final-verify-pointer-precision/pointer-precision.json`。
 - 圧縮版で`--verify-clipboard`が成功。専用CAのDPAPI保持、独自CA検証つき実TLS、Unicode往復、失効、公開証明書のみの取得、非表示のジェスチャー受け取りwindow登録を確認しました。実クリップボード・信頼ストア・入力は変更しません。`artifacts/201-final-verify-clipboard/clipboard-verification.json`。
