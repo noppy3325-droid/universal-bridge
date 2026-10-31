@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.03（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v1.04（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,11 +32,11 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v1.03](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03)** から取得します。
+**[Releases — v1.04](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04)** から取得します。
 
-- **[UniversalBridge-1.0.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalBridge-1.0.3-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-1.0.3-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
-- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalControl.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- **[UniversalBridge-1.0.4-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalBridge-1.0.4-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.4-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalControl.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -63,7 +63,7 @@ GitHubで標準表示するREADMEを日本語にしました。英語は[README.
 
 更新前にWindows操作へ戻し、入力送信を停止してからexeを差し替えます。サイズ・SHA-256・バージョンを検証し、設定は保持します。新しいアプリの起動確認に失敗した場合は元のexeへ戻して再起動します。書き込み可能なフォルダーで使用してください。自動更新の対象はexeで、同梱の説明書などはZIPで更新できます。更新後の入力先はWindowsです。
 
-**v1.02以前からは、今回だけv1.03を手動でダウンロードしてください。** 以後の対応版はアプリ内で更新できます。
+**v1.02以前からは、今回だけ最新版を手動でダウンロードしてください。** 以後の対応版はアプリ内で更新できます。
 
 ![ダークモードのタイトルバー](docs/images/titlebar-dark-ja.png)
 

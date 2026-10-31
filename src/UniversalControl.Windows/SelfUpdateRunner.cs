@@ -70,7 +70,7 @@ public static class SelfUpdateRunner
     }
     public static async Task<int> ApplyAsync(string jobPath)
     {
-        UpdateJob? job = null; Process? replacement = null; var swapped = false; var stage = Path.GetDirectoryName(Full(jobPath))!;
+        UpdateJob? job = null; Process? replacement = null; var swapped = false; var ownerExited = false; var stage = Path.GetDirectoryName(Full(jobPath))!;
         try
         {
             job = ReadJob(jobPath);
@@ -82,6 +82,7 @@ public static class SelfUpdateRunner
             await ValidatePayload(stage, job.Manifest);
             await File.WriteAllTextAsync(Path.Combine(stage, "ready"), job.Id);
             await parent.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(90));
+            ownerExited = true;
             if (await Hash(job.Target) != job.PreviousHash) throw new InvalidDataException("Executable changed while waiting for exit.");
             await ValidatePayload(stage, job.Manifest);
             var temporary = Path.Combine(Path.GetDirectoryName(job.Target)!, $".UniversalControl-{job.Id}.tmp");
@@ -112,6 +113,17 @@ public static class SelfUpdateRunner
                     if (rolledBack) using (StartTarget(job, jobPath, rollback: true)) { }
                 }
                 catch (Exception rollback) { ex = new AggregateException(ex, rollback); }
+            }
+            else if (ownerExited && job is not null)
+            {
+                try
+                {
+                    // A sharing violation can prevent replacement after the old app has exited.
+                    // Resume only our verified old executable; never restart a changed target.
+                    if (await Hash(job.Target) == job.PreviousHash)
+                    { using (StartTarget(job, jobPath, rollback: true)) { } rolledBack = true; }
+                }
+                catch (Exception restart) { ex = new AggregateException(ex, restart); }
             }
             // Only write beside a validated job, never beside an arbitrary command-line path.
             if (job is not null) await Result(stage, new(false, rolledBack, ex.Message));

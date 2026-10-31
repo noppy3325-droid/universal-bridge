@@ -1,4 +1,12 @@
-# Verification report — v1.03 / 1.0.3
+# Verification report — v1.04 / 1.0.4
+
+検証日: **2026-10-31 / Asia/Tokyo**。
+
+- 276件の自動テスト成功、3言語・33画像のGUI成功を維持しました。`artifacts/104-final-gui/gui-smoke.json`。
+- 専用コピーのtarget exeを実際にFileShare.Readでロックし、差し替えに失敗しても元のSHAを再検証して旧アプリを再起動することを確認しました。親が終了していない場合やexeが外部変更された場合は再起動しません。SharingViolationRecovery=True、NormalAppTouched=Falseです。従来の成功・起動失敗時復旧・破損拒否も成功しました。`artifacts/104-local-verify-self-update/self-update.json`。
+- v1.03の公開exeでは公開manifest・サイズ・SHA・asset digestの照合と、実際の自動更新経路によるダウンロードが成功しました。`artifacts/103-public-verify-update-feed/update-feed.json`。以下はv1.03の検証と過去の履歴です。
+
+## v1.03 / 1.0.3
 
 検証日: **2026-10-31 / Asia/Tokyo**。
 

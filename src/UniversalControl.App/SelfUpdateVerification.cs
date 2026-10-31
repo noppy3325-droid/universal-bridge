@@ -18,8 +18,8 @@ public static class SelfUpdateVerification
                 var data = Path.Combine(directory, "data"); var stage = SelfUpdateRunner.CreateStage(data);
                 var payload = Path.Combine(stage, "Payload.exe"); File.Copy(Environment.ProcessPath!, payload);
                 var hash = await SelfUpdateRunner.Hash(payload); if (value == "3") hash = new string('0', 64);
-                var manifest = new UpdateManifest(1, SelfUpdateRunner.CurrentVersion.ToString(3), "v1.03", "UniversalControl.exe", new FileInfo(payload).Length, hash);
-                var job = await SelfUpdateRunner.LaunchHelperAsync(stage, data, manifest, int.Parse(value));
+                var manifest = new UpdateManifest(1, SelfUpdateRunner.CurrentVersion.ToString(3), "v1.04", "UniversalControl.exe", new FileInfo(payload).Length, hash);
+                var job = await SelfUpdateRunner.LaunchHelperAsync(stage, data, manifest, value == "4" ? 1 : int.Parse(value));
                 await File.WriteAllTextAsync(Path.Combine(directory, "job-path.txt"), job); return 0;
             }
             catch (Exception ex) { await File.WriteAllTextAsync(Path.Combine(directory, "fixture-error.txt"), ex.Message); return 3; }
@@ -35,12 +35,13 @@ public static class SelfUpdateVerification
         try
         {
             var outcomes = new List<object>();
-            for (var mode = 1; mode <= 3; mode++)
+            for (var mode = 1; mode <= 4; mode++)
             {
                 var root = Path.Combine(directory, $"transaction-{mode}-{Guid.NewGuid():N}", "更新 テスト space"); Directory.CreateDirectory(root);
                 var target = Path.Combine(root, mode == 1 ? "UniversalBridge custom.exe" : "UniversalControl.exe"); File.Copy(Environment.ProcessPath!, target);
                 Directory.CreateDirectory(Path.Combine(root, "data")); var settings = Path.Combine(root, "data", "settings-sentinel.txt");
                 await File.WriteAllTextAsync(settings, "preserve-settings"); var originalHash = await SelfUpdateRunner.Hash(target);
+                using var sharingLock = mode == 4 ? new FileStream(target, FileMode.Open, FileAccess.Read, FileShare.Read) : null;
                 using var parent = SelfUpdateRunner.Start(target, "--update-fixture-parent", mode.ToString());
                 await parent.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(45));
                 if (mode == 3)
@@ -56,18 +57,18 @@ public static class SelfUpdateVerification
                 { if (timer.Elapsed > TimeSpan.FromSeconds(45)) throw new TimeoutException("Update fixture result timed out."); await Task.Delay(100); }
                 var result = JsonSerializer.Deserialize<UpdateResult>(await File.ReadAllTextAsync(Path.Combine(stage, "result.json")))!;
                 if (mode == 1 && (!result.Success || result.RolledBack || !File.Exists(Path.Combine(stage, "healthy")))) throw new InvalidOperationException("Successful update failed health confirmation.");
-                if (mode == 2)
+                if (mode is 2 or 4)
                 {
                     while (!File.Exists(Path.Combine(stage, "rollback-restarted")))
                     { if (timer.Elapsed > TimeSpan.FromSeconds(45)) throw new TimeoutException("Rollback did not restart the old application."); await Task.Delay(100); }
                     if (result.Success || !result.RolledBack || await SelfUpdateRunner.Hash(target) != originalHash) throw new InvalidOperationException("Rollback did not restore the old executable.");
                 }
                 if (await File.ReadAllTextAsync(settings) != "preserve-settings") throw new InvalidOperationException("Update changed settings.");
-                outcomes.Add(new { Mode = mode == 1 ? "success" : "rollback", result.Success, result.RolledBack, SettingsPreserved = true });
+                outcomes.Add(new { Mode = mode == 1 ? "success" : mode == 2 ? "rollback" : "sharing-violation-recovery", result.Success, result.RolledBack, SettingsPreserved = true });
             }
             await File.WriteAllTextAsync(Path.Combine(directory, "self-update.json"), JsonSerializer.Serialize(new { Success = true, Outcomes = outcomes,
                 RealProcessReplacement = true, RestartHealthConfirmed = true, RollbackConfirmed = true, HashFailureRejected = true, SpaceAndUnicodePaths = true,
-                SameVersionFixture = true, RenamedExecutableSupported = true, NormalAppTouched = false, InputCaptured = false, BluetoothAdvertised = false }, new JsonSerializerOptions { WriteIndented = true })); return 0;
+                SameVersionFixture = true, RenamedExecutableSupported = true, SharingViolationRecovery = true, NormalAppTouched = false, InputCaptured = false, BluetoothAdvertised = false }, new JsonSerializerOptions { WriteIndented = true })); return 0;
         }
         catch (Exception ex) { await File.WriteAllTextAsync(Path.Combine(directory, "self-update-error.txt"), ex.ToString()); return 2; }
     }

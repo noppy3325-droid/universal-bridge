@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app or extra hardware is needed. Input sharing works offline; optional update checks/downloads contact GitHub. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**v1.03 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v1.04 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,11 +32,11 @@ This is an **unsigned release** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v1.03](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03)**:
+Open **[Releases — v1.04](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04)**:
 
-- **[UniversalBridge-1.0.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalBridge-1.0.3-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-1.0.3-source.zip` — source without SDKs, caches, settings, or logs.
-- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalControl.exe) — Standalone executable for updates; the ZIP also includes documentation.
+- **[UniversalBridge-1.0.4-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalBridge-1.0.4-win-x64.zip)** — extract and run `UniversalControl.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-1.0.4-source.zip` — source without SDKs, caches, settings, or logs.
+- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalControl.exe) — Standalone executable for updates; the ZIP also includes documentation.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -63,7 +63,7 @@ Use **Settings & diagnostics → App updates** to enable/disable automatic check
 
 The app returns control to Windows and stops input before replacing its executable. Size, SHA-256 and executable version are verified; settings stay in place. A startup failure restores and restarts the previous executable. Keep the app in a writable folder. The updater replaces the exe; use the ZIP to refresh bundled documents. Control remains on Windows after restarting.
 
-**From v1.02 or earlier, download v1.03 manually once.** Subsequent compatible releases can update inside the app.
+**From v1.02 or earlier, download the latest ZIP manually once.** Subsequent compatible releases can update inside the app.
 
 ![Dark title bar](docs/images/titlebar-dark-en.png)
 

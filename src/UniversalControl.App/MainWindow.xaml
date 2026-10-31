@@ -10,7 +10,7 @@
           <Button x:Name="InputNav" Content="{DynamicResource L002}" Tag="InputPage" Click="Navigate" HorizontalContentAlignment="Left" Margin="0,0,0,9"/>
           <Button x:Name="SettingsNav" Content="{DynamicResource L003}" Tag="SettingsPage" Click="Navigate" HorizontalContentAlignment="Left"/>
         </StackPanel>
-        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="1.03" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
+        <StackPanel Grid.Row="2"><TextBlock Text="{DynamicResource L004}" FontSize="12" Foreground="{DynamicResource Muted}"/><TextBlock Text="1.04" FontSize="11" Foreground="{DynamicResource Muted}" Margin="0,7,0,0"/></StackPanel>
       </Grid>
     </Border>
     <Grid Grid.Column="1" Margin="32,28,32,22"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>

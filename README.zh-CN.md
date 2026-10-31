@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用或额外硬件。输入共享可离线使用，仅检查和下载更新时连接 GitHub。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v1.03（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.04（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,11 +32,11 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v1.03](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.03)**：
+前往 **[Releases — v1.04](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04)**：
 
-- **[UniversalBridge-1.0.3-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalBridge-1.0.3-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-1.0.3-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
-- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.03/UniversalControl.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
+- **[UniversalBridge-1.0.4-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalBridge-1.0.4-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.4-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalControl.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -63,7 +63,7 @@ GitHub默认README改为日语，保留[英语](README.en.md)和本中文版本�
 
 更新前返回Windows并停止输入，验证大小、SHA-256及exe版本后替换程序，保留设置。新版启动失败时恢复并重启原exe。请放在可写入的文件夹中。自动更新仅替换exe，同捆文档可通过ZIP更新。重启后输入目标为Windows。
 
-**v1.02及更早版本需手动下载v1.03一次。** 此后可在应用内更新兼容版本。
+**v1.02及更早版本需手动下载最新版一次。** 此后可在应用内更新兼容版本。
 
 ![深色标题栏](docs/images/titlebar-dark-zh-Hans.png)
 
