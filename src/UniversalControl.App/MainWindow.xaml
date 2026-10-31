@@ -139,7 +139,7 @@
               <TextBlock Text="{DynamicResource UpdateHeading}" FontSize="18" FontWeight="SemiBold"/>
               <CheckBox x:Name="AutoUpdateCheck" Content="{DynamicResource UpdateAutomatic}" Click="SaveUpdatePreference" Margin="0,10,0,4"/>
               <TextBlock Text="{DynamicResource UpdateHelp}" Foreground="{DynamicResource Muted}" FontSize="12"/>
-              <TextBlock x:Name="UpdateStatus" Foreground="{DynamicResource Accent}" Margin="0,10,0,10"/>
+              <TextBlock x:Name="UpdateStatus" Foreground="{DynamicResource Accent}" Margin="0,10,0,10" TextWrapping="Wrap"/>
               <WrapPanel><Button x:Name="CheckUpdateButton" Content="{DynamicResource UpdateCheck}" Click="CheckUpdateClicked"/><Button x:Name="InstallUpdateButton" Content="{DynamicResource UpdateInstall}" Click="InstallUpdateClicked" IsEnabled="False" Margin="10,0,0,0"/><Button Content="{DynamicResource UpdateReleases}" Click="OpenReleases" Margin="10,0,0,0"/></WrapPanel>
             </StackPanel></Border>
             <Border Style="{StaticResource Card}"><StackPanel><CheckBox x:Name="TrayCheck" Content="{DynamicResource L075}" Click="SaveControls"/><CheckBox x:Name="ReconnectCheck" Content="{DynamicResource L076}" Click="SaveControls"/><CheckBox x:Name="AutostartCheck" Content="{DynamicResource L077}" Click="SaveControls"/><TextBlock Text="{DynamicResource L078}" Foreground="{DynamicResource Muted}" FontSize="12" Margin="0,10,0,0"/></StackPanel></Border>

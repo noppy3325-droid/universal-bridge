@@ -362,5 +362,6 @@
   "証明書の設定後は、下のHTTPSのURLを開き、6桁の接続コードを入力します。": "After certificate setup, open the HTTPS URL below and enter the six-digit connection code.",
   "新しい接続コード": "New connection code",
   "コードは5分間・1回だけ有効です。更新すると、接続済みの共有画面も切断します。": "The code expires after five minutes and can be used once. A new code also disconnects previously authorized pages.",
-  "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。": "Windows → iPad: copy on Windows, fetch in Safari, then tap Copy to iPad. iPad → Windows: paste into the Safari text box and tap Send to Windows. Plain text only, up to 64 KiB in UTF-8. Automatic sync, images and files are not supported."
+  "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。": "Windows → iPad: copy on Windows, fetch in Safari, then tap Copy to iPad. iPad → Windows: paste into the Safari text box and tap Send to Windows. Plain text only, up to 64 KiB in UTF-8. Automatic sync, images and files are not supported.",
+  "更新をダウンロードしています… {0:P0} · {1:F1}/{2:F1} MiB · {3:F1} MiB/s": "Downloading update… {0:P0} · {1:F1}/{2:F1} MiB · {3:F1} MiB/s"
 }

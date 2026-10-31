@@ -79,8 +79,10 @@ public partial class MainWindow
         {
             var stage = SelfUpdateRunner.CreateStage(_dataDirectory);
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_updateStop.Token); timeout.CancelAfter(TimeSpan.FromMinutes(10));
-            await new ReleaseUpdateClient(_updateHttp).DownloadAsync(update, System.IO.Path.Combine(stage, "Payload.exe"),
-                new Progress<double>(value => UpdateStatus.Text = L.F("更新をダウンロードしています… {0:P0}", value)), timeout.Token);
+            var transfer = new Progress<UpdateTransferProgress>(value => UpdateStatus.Text = L.F("更新をダウンロードしています… {0:P0} · {1:F1}/{2:F1} MiB · {3:F1} MiB/s",
+                value.Fraction, value.ReceivedBytes / 1048576d, value.TotalBytes / 1048576d, value.BytesPerSecond / 1048576d));
+            await Task.Run(() => new ReleaseUpdateClient(_updateHttp).DownloadAsync(update, System.IO.Path.Combine(stage, "Payload.exe"),
+                null, timeout.Token, transfer), timeout.Token);
             UpdateStatus.Text = L.T("更新を適用して再起動します…");
             Controller.Router.GoLocal();
             await StopClipboardAsync();

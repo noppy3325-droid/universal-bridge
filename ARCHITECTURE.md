@@ -1,5 +1,13 @@
 # Architecture
 
+## v2.0.1の復帰と転送
+
+InputRouterは各flushの感度調整前XYを合算し、最後のサンプルの符号ではなく合計を復帰判定へ渡します。PointerMotion／HID／VirtualCursorの移動量はそのまま維持します。EdgeReturnGuardは物理移動量の純法線方向96カウントと300ms以上の新しい圧力を必要とし、到着パケットの距離を加算しません。候補中のみ1～12 HIDカウント（感度に合わせた3倍）の境界保持帯を使用。最大2カウントの小逆移動を計4カウントまで許容して純距離から減算し、前進で許容量を回復します。連続する逆方向・沿辺移動・操作混在は解除。最大間隔は180ms、進入保護は1000msです。
+
+EnableCompressionInSingleFileで単体exeも縮小。update.jsonはSchema=1と従来のexe欄を保持し、追加のArchive（固定名UniversalBridge-update.zip、サイズ、SHA）を任意項目とします。旧クライアントはexeを利用し、新版はArchiveのasset URL／size／digest／checksumを照合して取得します。ZIPは正確にUniversalBridge.exe一件だけ、展開サイズとSHAも照合し、固定のCreateNew出力先へだけ書き込みます。
+
+ダウンロードはGUIからTask.Runで呼び、I/OはConfigureAwait(false)、256 KiBバッファ、進捗は約100ms間隔です。ヘッダーは20秒、各readは15秒で期限を設け、通信障害時は最大2回再試行。206のContent-Rangeを厳密に照合し、Rangeを無視した200なら先頭から安全に再開します。キャンセルや検証失敗では自分の作成した一時ファイルだけを削除。既存ファイルは上書きしません。
+
 ## v2.0.0の共有と状態表示
 
 ClipboardBridgeServerは指定したprivate IPv4の2ポートだけを使用します。43182のHTTPは公開CA証明書と設定案内のみ。43183のHTTPSだけが共有ページとJSON APIを持ち、TLS 1.2/1.3、IP SAN、SHA-256署名を使用します。CA秘密鍵はAppDataのclipboard-authority.binにCurrentUser DPAPIで保護し、iPadへはDER公開証明書だけを渡します。Schannel用のleaf秘密鍵はOS管理の一時UserKeySetで、PersistKeySetや信頼ストアの変更は行いません。

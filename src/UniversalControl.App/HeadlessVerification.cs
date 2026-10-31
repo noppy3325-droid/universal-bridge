@@ -21,11 +21,16 @@ public static class HeadlessVerification
                     ?? throw new InvalidOperationException("No published update manifest.");
                 if (ReleaseUpdateClient.ParseVersion(update.Manifest.Version) != SelfUpdateRunner.CurrentVersion) throw new InvalidOperationException("Published manifest does not match the downloaded executable.");
                 var payload = Path.Combine(directory, "UpdatePayload-" + Guid.NewGuid().ToString("N") + ".exe");
-                await client.DownloadAsync(update, payload, null, timeout.Token);
+                var transfer = await client.DownloadAsync(update, payload, null, timeout.Token);
+                if (update.Manifest.Archive is { } archive && (!transfer.Compressed || transfer.NetworkBytes < archive.Size))
+                    throw new InvalidOperationException("Compressed release transfer was not used.");
                 if (SelfUpdateRunner.VersionOf(payload) != SelfUpdateRunner.CurrentVersion || await SelfUpdateRunner.Hash(payload) != await SelfUpdateRunner.Hash(Environment.ProcessPath!))
                     throw new InvalidOperationException("Updater downloaded different executable bytes.");
                 await WriteAsync(directory, "update-feed.json", new { Success = true, update.Manifest.Tag, update.Manifest.Version, PublicFeedValidated = true,
-                    PublicDownloadVerified = true, IdenticalToReleaseExecutable = true, InstalledByProbe = false, InputCaptured = false, BluetoothAdvertised = false }); return 0;
+                    PublicDownloadVerified = true, IdenticalToReleaseExecutable = true, transfer.Compressed, transfer.NetworkBytes, transfer.Requests,
+                    ElapsedSeconds = transfer.Elapsed.TotalSeconds, MiBPerSecond = transfer.NetworkBytes / 1048576d / transfer.Elapsed.TotalSeconds,
+                    ExecutableBytes = update.Manifest.Size, ArchiveBytes = update.Manifest.Archive?.Size,
+                    InstalledByProbe = false, InputCaptured = false, BluetoothAdvertised = false }); return 0;
             }
             if (mode == "--verify-edge-return")
             {

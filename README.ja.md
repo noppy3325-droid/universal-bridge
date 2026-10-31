@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v2.0.0（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v2.0.1（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,11 +32,11 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v2.0.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0)** から取得します。
+**[Releases — v2.0.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1)** から取得します。
 
-- **[UniversalBridge-2.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge-2.0.0-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-2.0.0-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- **[UniversalBridge-2.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge-2.0.1-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-2.0.1-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -54,6 +54,14 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 | 常駐と診断 | 専用アプリ／トレイアイコン、ライト／ダーク、任意のサインイン時起動、接続診断、回数制限付き再接続。 |
 
 ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
+
+## v2.0.1：斜め方向の復帰と更新ダウンロードを改善
+
+iPadからWindowsへ押し戻す判定を、マウス感度や高速抑制の影響を受けない移動量へ変更しました。斜め移動の最後に小さな反転が混ざっても、まとまった移動の向きで判断します。境界での微小な揺れと短い間隔のばらつきに対応し、切り替え後1秒の保護・最短300msの継続移動・静止／キー／ドラッグ／スクロール時の誤復帰防止は維持します。iPadの実座標を読み取る機能ではありません。
+
+配布exeを圧縮し、以前の約203MBから約85MBへ削減しました。新版は圧縮した更新専用ZIPを優先し、途中切断や15秒の転送停止では範囲を指定して再開します。読み書きは画面の処理と分け、進捗表示は約100ms間隔。取得済み量と速度も表示します。圧縮ZIPと展開後exeの両方でサイズ・SHA-256を照合します。起動時の展開には小さな追加コストがあります。
+
+v2.0.0から通常のアプリ内更新で移行できます。この最初の更新は旧版の取得方式ですが、取得するexe自体が小さくなっています。
 
 ## v2.0.0：Safariでクリップボード共有・右下の操作カード
 

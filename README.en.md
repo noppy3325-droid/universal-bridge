@@ -10,9 +10,9 @@ Share a Windows PC's keyboard, mouse, and supported trackpad gestures with an iP
 
 No iPad companion app or extra hardware is needed. Input sharing works offline; optional update checks/downloads contact GitHub. The PC's Bluetooth adapter and driver must support the **BLE Peripheral** role.
 
-**v2.0.0 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
+**v2.0.1 — regular release.** Basic keyboard and mouse input has been confirmed by a user on iPad. Gesture mappings, app-specific shortcuts, and different hardware still need real-device testing. This project is independent of Apple and Microsoft.
 
-**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
+**[Download](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1) · [Check requirements](#before-you-download) · [Quick start](#quick-start)**
 
 ![Universal Bridge dashboard](docs/images/dashboard-en.png)
 
@@ -32,11 +32,11 @@ This is an **unsigned release** with limited real-device coverage. If your hardw
 
 ## Download
 
-Open **[Releases — v2.0.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0)**:
+Open **[Releases — v2.0.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1)**:
 
-- **[UniversalBridge-2.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge-2.0.0-win-x64.zip)** — extract and run `UniversalBridge.exe`. Includes .NET; no separate runtime installation.
-- `UniversalBridge-2.0.0-source.zip` — source without SDKs, caches, settings, or logs.
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge.exe) — Standalone executable for updates; the ZIP also includes documentation.
+- **[UniversalBridge-2.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge-2.0.1-win-x64.zip)** — extract and run `UniversalBridge.exe`. Includes .NET; no separate runtime installation.
+- `UniversalBridge-2.0.1-source.zip` — source without SDKs, caches, settings, or logs.
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge.exe) — Standalone executable for updates; the ZIP also includes documentation.
 - `SHA256SUMS.txt` — SHA-256 checksums for the executable and archives.
 
 Windows x64 only. The executable is unsigned; no installer, MSIX, or code signing is provided.
@@ -54,6 +54,14 @@ Windows x64 only. The executable is unsigned; no installer, MSIX, or code signin
 | Desktop integration | Custom application/tray icon, light/dark theme, optional sign-in startup, diagnostics, and bounded reconnect attempts. |
 
 **Gestures** generate standard scroll reports and supported keyboard shortcuts. Magic Trackpad's proprietary protocol is not used. Zoom, Home, and other actions depend on iPadOS and the app.
+
+## v2.0.1: more reliable diagonal returns and faster updates
+
+Return pressure is measured before mouse sensitivity and fast-motion filtering. A small reversed sample at the end of a diagonal batch no longer cancels its net direction. Boundary jitter and modest sampling gaps are tolerated while preserving the one-second entry guard, a minimum 300 ms deliberate push, and protections during idle, keys, dragging and scrolling. iPad cursor coordinates remain an estimate.
+
+The standalone executable is compressed from about 203 MB to about 85 MB. New updaters prefer a compressed update-only ZIP and resume after a connection break or 15-second read stall. File/network work runs away from the UI, with progress limited to roughly 100 ms intervals and a byte/rate display. Both the ZIP and extracted executable are size/SHA-256 verified. Compression adds a small startup cost.
+
+Update normally from v2.0.0. That first update uses the older download path, but the executable it receives is already smaller.
 
 ## v2.0.0: Safari clipboard sharing and a corner status card
 

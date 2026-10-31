@@ -48,7 +48,7 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
           } else {
             $existing = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$tag" | ConvertFrom-Json
-            $expected = @("UniversalBridge-$version-win-x64.zip", "UniversalBridge-$version-source.zip", 'UniversalBridge.exe', 'update.json', 'SHA256SUMS.txt')
+            $expected = @("UniversalBridge-$version-win-x64.zip", "UniversalBridge-$version-source.zip", 'UniversalBridge.exe', 'UniversalBridge-update.zip', 'update.json', 'SHA256SUMS.txt')
             if (!$existing.draft -and @($expected | Where-Object { $_ -notin $existing.assets.name }).Count -eq 0) {
               $digest = 'sha256:' + (Get-FileHash dist/UniversalBridge.exe -Algorithm SHA256).Hash.ToLowerInvariant()
               if (($existing.assets | Where-Object name -eq 'UniversalBridge.exe').digest -ne $digest) { throw 'Published executable differs. Existing assets are never overwritten.' }
@@ -56,7 +56,7 @@ jobs:
               exit 0
             }
           }
-          gh release upload $tag "dist/UniversalBridge-$version-win-x64.zip" "dist/UniversalBridge-$version-source.zip" dist/UniversalBridge.exe dist/update.json dist/SHA256SUMS.txt
+          gh release upload $tag "dist/UniversalBridge-$version-win-x64.zip" "dist/UniversalBridge-$version-source.zip" dist/UniversalBridge.exe dist/UniversalBridge-update.zip dist/update.json dist/SHA256SUMS.txt
           if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed. Existing assets are never overwritten automatically.' }
           gh release edit $tag --draft=false --latest
           if ($LASTEXITCODE -ne 0) { throw 'Release publication failed.' }

@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用或额外硬件。输入共享可离线使用，仅检查和下载更新时连接 GitHub。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v2.0.0（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v2.0.1（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,11 +32,11 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v2.0.0](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.0)**：
+前往 **[Releases — v2.0.1](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v2.0.1)**：
 
-- **[UniversalBridge-2.0.0-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge-2.0.0-win-x64.zip)**：解压并运行 `UniversalBridge.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-2.0.0-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
-- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.0/UniversalBridge.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
+- **[UniversalBridge-2.0.1-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge-2.0.1-win-x64.zip)**：解压并运行 `UniversalBridge.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-2.0.1-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v2.0.1/UniversalBridge.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -54,6 +54,14 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 | 桌面集成 | 专用应用／托盘图标、浅色／深色主题、可选登录启动、诊断和有限次数重连。 |
 
 手势转换为标准滚动报告和受支持的按键操作。不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
+
+## v2.0.1：改善斜向返回与更新下载
+
+返回力度使用鼠标灵敏度和高速抑制之前的移动量。斜向移动批次末尾的小反向采样不再取消整体方向，容忍边界轻微抖动和短暂的采样间隔变化。保留切换后一秒保护、至少300ms持续推回，以及静止、按键、拖动、滚动时的防误返回机制。iPad光标坐标仍为估算。
+
+独立exe从约203MB压缩至约85MB。新版优先下载专用压缩更新ZIP，连接中断或15秒无数据时尝试续传。文件和网络处理离开界面线程，进度约每100ms更新，显示已下载大小和速度。ZIP与展开后的exe均验证大小和SHA-256。压缩会略微增加启动时间。
+
+可从v2.0.0正常应用内更新；首次仍使用旧下载方式，但下载的exe已经缩小。
 
 ## v2.0.0：Safari剪贴板共享与右下角状态卡片
 

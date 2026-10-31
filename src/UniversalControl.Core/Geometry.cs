@@ -137,6 +137,11 @@ public sealed class VirtualCursor
     }
     public static bool TowardWindows(double dx, double dy, ScreenEdge edge) => edge switch
     { ScreenEdge.Right => dx < 0, ScreenEdge.Left => dx > 0, ScreenEdge.Top => dy > 0, _ => dy < 0 };
+    public bool AtReturnBoundary(AppSettings settings, double tolerance = 0) => settings.Edge switch
+    {
+        ScreenEdge.Right => X <= tolerance, ScreenEdge.Left => X >= settings.VirtualWidth - 1 - tolerance,
+        ScreenEdge.Top => Y >= settings.VirtualHeight - 1 - tolerance, _ => Y <= tolerance
+    };
     public static double EntryAlong(PixelPoint point, DisplayInfo display, AppSettings s)
     {
         var along = s.Edge is ScreenEdge.Left or ScreenEdge.Right

@@ -13,7 +13,9 @@ if ($properties.AssemblyName -ne 'UniversalBridge' -or (Test-Path -LiteralPath (
 }
 $exeInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
 if ($exeInfo.ProductName -ne 'Universal Bridge' -or $exeInfo.ProductVersion.Split('+')[0] -ne $version) { throw 'Executable product or version differs from the release configuration.' }
-$manifest = [ordered]@{Schema=1;Version=$version;Tag=$properties.ReleaseTag;File='UniversalBridge.exe';Size=(Get-Item -LiteralPath $exe).Length;Sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()}
+$updateZip = Join-Path $projectRoot 'dist/UniversalBridge-update.zip'
+Compress-Archive -LiteralPath $exe -DestinationPath $updateZip -CompressionLevel Optimal -Force
+$manifest = [ordered]@{Schema=1;Version=$version;Tag=$properties.ReleaseTag;File='UniversalBridge.exe';Size=(Get-Item -LiteralPath $exe).Length;Sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant();Archive=[ordered]@{File='UniversalBridge-update.zip';Size=(Get-Item -LiteralPath $updateZip).Length;Sha256=(Get-FileHash -LiteralPath $updateZip -Algorithm SHA256).Hash.ToLowerInvariant()}}
 $manifest | ConvertTo-Json | Set-Content -LiteralPath 'dist/update.json' -Encoding utf8
 Copy-Item -LiteralPath $exe -Destination 'dist/UniversalBridge.exe' -Force
 Copy-Item README*.md,CONTRIBUTING.md,SETUP.md,ARCHITECTURE.md,KNOWN_LIMITATIONS.md,TEST_REPORT.md,LICENSE,THIRD_PARTY_NOTICES.md -Destination $published -Force
@@ -33,7 +35,7 @@ foreach ($folder in 'src','tests','scripts','docs','licenses','.github') {
   }
 }
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $sourceZip -Force
-$hashes = foreach ($asset in @((Join-Path $published 'UniversalBridge.exe'), $binaryZip, $sourceZip, (Join-Path $projectRoot 'dist/update.json'))) {
+$hashes = foreach ($asset in @((Join-Path $published 'UniversalBridge.exe'), $binaryZip, $sourceZip, $updateZip, (Join-Path $projectRoot 'dist/update.json'))) {
   $hash = Get-FileHash -LiteralPath $asset -Algorithm SHA256
   $hash.Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($asset)
 }

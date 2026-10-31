@@ -362,5 +362,6 @@
   "証明書の設定後は、下のHTTPSのURLを開き、6桁の接続コードを入力します。": "証明書の設定後は、下のHTTPSのURLを開き、6桁の接続コードを入力します。",
   "新しい接続コード": "新しい接続コード",
   "コードは5分間・1回だけ有効です。更新すると、接続済みの共有画面も切断します。": "コードは5分間・1回だけ有効です。更新すると、接続済みの共有画面も切断します。",
-  "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。": "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。"
+  "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。": "Windows → iPad：Windowsでコピーし、Safariで取得して「iPadへコピー」。iPad → Windows：Safariの欄に貼り付けて「Windowsへ送信」。テキストのみ、UTF-8で64 KiBまで。自動同期・画像・ファイルの共有には対応していません。",
+  "更新をダウンロードしています… {0:P0} · {1:F1}/{2:F1} MiB · {3:F1} MiB/s": "更新をダウンロードしています… {0:P0} · {1:F1}/{2:F1} MiB · {3:F1} MiB/s"
 }

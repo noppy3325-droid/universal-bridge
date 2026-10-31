@@ -27,6 +27,10 @@ public sealed class InputRouter
     private int _escapes;
     private volatile bool _remote;
     private bool _returnMotionEligible;
+    private double _returnX, _returnY;
+    private bool _returnBlocked;
+    private void ResetReturnMotion(bool blockBatch = true)
+    { _returnX = _returnY = 0; _returnMotionEligible = false; _returnBlocked = blockBatch; _edgeReturn.Reset(); }
     public bool LastReturnAtEdge { get; private set; }
     private AppSettings _settings = new();
     public bool IsRemote => _remote;
@@ -43,7 +47,7 @@ public sealed class InputRouter
         _transport = transport; _dispatcher = dispatcher;
         _dispatcher.Failed += GoLocal;
     }
-    public void Configure(AppSettings settings) { lock (_gate) { _settings = settings.Normalize(); _edgeReturn.Reset(); _returnMotionEligible = false; } }
+    public void Configure(AppSettings settings) { lock (_gate) { _settings = settings.Normalize(); ResetReturnMotion(); } }
 
     public async Task<bool> ActivateAsync(string target, Func<bool> captureAvailable)
         => await TryActivateAsync(target, captureAvailable) == ActivationStatus.Activated;
@@ -65,7 +69,7 @@ public sealed class InputRouter
                 if (status != ActivationStatus.Activated) return status;
                 _target = target; _epoch++; _dispatcher.SetEpoch(_epoch);
                 _remote = true; LastReturnAtEdge = false; _returnMotionEligible = false; _motion.Clear(); _pointer.Clear(); _horizontalScroll.Clear(); _touchpadScroll.Reset(); _touchpadWheel.Clear();
-                _remoteStarted = _lastPointerReport = _clock.GetTimestamp(); _edgeReturn.Reset(); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
+                _remoteStarted = _lastPointerReport = _clock.GetTimestamp(); ResetReturnMotion(false); _escapes = 0; Cursor.Enter(_settings); Reason = L.T("iPadへ入力を送信中");
             }
             Changed?.Invoke(); return ActivationStatus.Activated;
         }
@@ -82,7 +86,7 @@ public sealed class InputRouter
         return ActivationStatus.Activated;
     }
 
-    public void SetEntryAlong(double along) { lock (_gate) { if (_remote) { Cursor.Enter(_settings, along); _remoteStarted = _clock.GetTimestamp(); _edgeReturn.Reset(); } } }
+    public void SetEntryAlong(double along) { lock (_gate) { if (_remote) { Cursor.Enter(_settings, along); _remoteStarted = _clock.GetTimestamp(); ResetReturnMotion(false); } } }
 
     public void GoLocal(string? reason = null) => GoLocalCore(reason, false);
     private void GoLocalCore(string? reason, bool edgeReturn)
@@ -92,7 +96,7 @@ public sealed class InputRouter
         lock (_gate)
         {
             previous = _remote ? _target : null;
-            LastReturnAtEdge = _remote && edgeReturn; _returnMotionEligible = false; _edgeReturn.Reset();
+            LastReturnAtEdge = _remote && edgeReturn; ResetReturnMotion();
             _remote = false; _epoch++; _dispatcher.SetEpoch(_epoch);
             _quarantine.UnionWith(_remoteKeys.Keys);
             _quarantineButtons |= _remoteButtons;
@@ -116,7 +120,7 @@ public sealed class InputRouter
             CheckConnection();
             var id = Identity(vk, scan, extended);
             var wasDown = _physical.ContainsKey(id);
-            _returnMotionEligible = false; _edgeReturn.Reset();
+            ResetReturnMotion();
             if (down) _physical[id] = PhysicalInputState.PollingKey(vk, scan, extended); else _physical.Remove(id);
             if (down && !wasDown)
             {
@@ -182,7 +186,7 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection();
-            _returnMotionEligible = false; _edgeReturn.Reset();
+            ResetReturnMotion();
             if (down) _physicalButtons |= button; else _physicalButtons &= ~button;
             if ((_quarantineButtons & button) != 0)
             { if (!down) _quarantineButtons &= ~button; return true; }
@@ -200,8 +204,8 @@ public sealed class InputRouter
         {
             CheckConnection(); if (!_remote) return;
             var x = dx * _settings.MouseSensitivity; var y = dy * _settings.MouseSensitivity;
-            if (dx != 0 || dy != 0) _returnMotionEligible = PhysicalIdle && VirtualCursor.TowardWindows(dx, dy, _settings.Edge);
-            if (wheelDelta != 0) { _edgeReturn.Reset(); _returnMotionEligible = false; }
+            if (dx != 0 || dy != 0) { _returnX += dx; _returnY += dy; _returnMotionEligible = true; }
+            if (wheelDelta != 0) ResetReturnMotion();
             _pointer.Add(x, y); _motion.Add(0, 0, wheelDelta / 120d * _settings.ScrollSensitivity);
         }
     }
@@ -219,9 +223,12 @@ public sealed class InputRouter
             wheel -= wheelOverflow; pan -= panOverflow;
             var now = _clock.GetTimestamp(); var elapsed = _clock.GetElapsedTime(_lastPointerReport, now).TotalMilliseconds; _lastPointerReport = now;
             var (x, y) = _pointer.Take(_settings.StabilizeFastPointer, elapsed);
-            var canReturn = _returnMotionEligible && PhysicalIdle && VirtualCursor.TowardWindows(x, y, _settings.Edge);
-            _returnMotionEligible = false;
-            if (_edgeReturn.Observe(Cursor.Move(x, y, _settings), x, y, canReturn, PhysicalIdle, _settings,
+            var rawX = _returnX; var rawY = _returnY;
+            var canReturn = _returnMotionEligible && !_returnBlocked && PhysicalIdle;
+            _returnX = _returnY = 0; _returnMotionEligible = false; _returnBlocked = false;
+            Cursor.Move(x, y, _settings);
+            var boundary = Cursor.AtReturnBoundary(_settings, _edgeReturn.Pending ? Math.Clamp(3 * _settings.MouseSensitivity, 1, 12) : 0);
+            if (_edgeReturn.Observe(boundary, rawX, rawY, canReturn, PhysicalIdle, _settings,
                 (long)_clock.GetElapsedTime(_remoteStarted, now).TotalMilliseconds))
             { GoLocalCore(L.T("推定境界でWindows方向への移動が続いたためWindowsへ戻しました"), true); return; }
             if (x != 0 || y != 0 || wheel != 0 || pan != 0) _dispatcher.EnqueueMotion(_target!, _epoch, HidReports.Mouse(_remoteButtons, x, y, wheel, pan));
@@ -232,18 +239,18 @@ public sealed class InputRouter
         lock (_gate)
         {
             CheckConnection(); if (!_remote) return;
-            _edgeReturn.Reset(); _returnMotionEligible = false;
+            ResetReturnMotion();
             _motion.Add(0, 0, verticalDelta / 120 * _settings.ScrollSensitivity);
             _horizontalScroll.Add(0, 0, horizontalDelta / 120 * _settings.ScrollSensitivity);
         }
     }
-    public void BeginTouchpadScroll() { lock (_gate) { _touchpadScroll.Reset(); _edgeReturn.Reset(); _returnMotionEligible = false; } }
+    public void BeginTouchpadScroll() { lock (_gate) { _touchpadScroll.Reset(); ResetReturnMotion(); } }
     public void ScrollTouchpad(double cumulativeX, double cumulativeY)
     {
         lock (_gate)
         {
             CheckConnection(); if (!_remote) return;
-            _edgeReturn.Reset(); _returnMotionEligible = false;
+            ResetReturnMotion();
             var (vertical, horizontal) = _touchpadScroll.Update(cumulativeX, cumulativeY, _settings.TouchpadScrollSensitivity);
             _touchpadWheel.Add(horizontal / 120, vertical / 120, 0);
         }
@@ -254,7 +261,7 @@ public sealed class InputRouter
         {
             CheckConnection();
             if (!_remote || _remoteKeys.Count != 0 || _remoteButtons != 0) return false;
-            _edgeReturn.Reset(); _returnMotionEligible = false;
+            ResetReturnMotion();
             var (modifiers, usage) = TouchpadGestures.Shortcut(action);
             if (usage == 0) return false;
             FlushMotion();
