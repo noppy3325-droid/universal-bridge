@@ -20,7 +20,7 @@ public static class SelfUpdateRunner
     {
         var path = Path.Combine(Full(dataDirectory), "updates", Guid.NewGuid().ToString("N")); Directory.CreateDirectory(path); return path;
     }
-    public static string Backup(UpdateJob job) => Path.Combine(Path.GetDirectoryName(job.Target)!, $"UniversalControl.{job.Id}.previous.exe");
+    public static string Backup(UpdateJob job) => Path.Combine(Path.GetDirectoryName(job.Target)!, $"UniversalBridge.{job.Id}.previous.exe");
     public static async Task<string> LaunchHelperAsync(string stage, string dataDirectory, UpdateManifest manifest, int fixtureMode = 0)
     {
         var target = Full(Environment.ProcessPath!);
@@ -55,13 +55,13 @@ public static class SelfUpdateRunner
     {
         var job = JsonSerializer.Deserialize<UpdateJob>(File.ReadAllText(jobPath)) ?? throw new InvalidDataException("Missing update job.");
         if (!Guid.TryParseExact(job.Id, "N", out _) || !Same(jobPath, Path.Combine(job.DataDirectory, "updates", job.Id, "job.json")) ||
-            !Path.GetExtension(job.Target).Equals(".exe", StringComparison.OrdinalIgnoreCase) || job.FixtureMode is < 0 or > 2)
+            !Path.GetExtension(job.Target).Equals(".exe", StringComparison.OrdinalIgnoreCase) || job.FixtureMode is < 0 or > 3)
             throw new InvalidDataException("Invalid update job paths.");
         return job;
     }
     private static async Task ValidatePayload(string stage, UpdateManifest manifest)
     {
-        if (manifest.Schema != 1 || manifest.File != "UniversalControl.exe") throw new InvalidDataException("Invalid update payload manifest.");
+        if (manifest.Schema != 1 || manifest.File != "UniversalBridge.exe") throw new InvalidDataException("Invalid update payload manifest.");
         _ = ReleaseUpdateClient.AssetUrl(manifest.Tag, manifest.File);
         await ReleaseUpdateClient.VerifyFileAsync(Path.Combine(stage, "Payload.exe"), manifest.Size, manifest.Sha256);
         var info = FileVersionInfo.GetVersionInfo(Path.Combine(stage, "Payload.exe"));
@@ -85,7 +85,7 @@ public static class SelfUpdateRunner
             ownerExited = true;
             if (await Hash(job.Target) != job.PreviousHash) throw new InvalidDataException("Executable changed while waiting for exit.");
             await ValidatePayload(stage, job.Manifest);
-            var temporary = Path.Combine(Path.GetDirectoryName(job.Target)!, $".UniversalControl-{job.Id}.tmp");
+            var temporary = Path.Combine(Path.GetDirectoryName(job.Target)!, $".UniversalBridge-{job.Id}.tmp");
             File.Copy(Path.Combine(stage, "Payload.exe"), temporary, false);
             await ReleaseUpdateClient.VerifyFileAsync(temporary, job.Manifest.Size, job.Manifest.Sha256);
             await Retry(() => File.Replace(temporary, job.Target, Backup(job))); swapped = true;
@@ -93,7 +93,7 @@ public static class SelfUpdateRunner
             var timer = Stopwatch.StartNew(); var healthy = Path.Combine(stage, "healthy");
             while (timer.Elapsed < TimeSpan.FromSeconds(30) && !replacement.HasExited)
             {
-                if (File.Exists(healthy) && await File.ReadAllTextAsync(healthy) == job.Id)
+                if (await StartupConfirmedAsync(healthy, job.Id))
                 { swapped = false; await Result(stage, new(true, false, null)); return 0; }
                 await Task.Delay(100);
             }
@@ -134,7 +134,7 @@ public static class SelfUpdateRunner
     private static Process StartTarget(UpdateJob job, string jobPath, bool rollback)
     {
         if (job.FixtureMode != 0)
-            return Start(job.Target, rollback ? "--update-fixture-rollback" : job.FixtureMode == 1 ? "--update-fixture-healthy" : "--update-fixture-fail", jobPath);
+            return Start(job.Target, rollback ? "--update-fixture-rollback" : job.FixtureMode == 1 ? "--update-fixture-healthy" : job.FixtureMode == 3 ? "--update-fixture-locked-marker" : "--update-fixture-fail", jobPath);
         return Start(job.Target, "--data-dir", job.DataDirectory, rollback ? "--update-rollback" : "--updated", jobPath);
     }
     public static async Task ConfirmStartupAsync(string jobPath)
@@ -142,7 +142,7 @@ public static class SelfUpdateRunner
         var job = ReadJob(jobPath);
         if (!Same(job.Target, Environment.ProcessPath!)) throw new InvalidDataException("Unexpected updated executable.");
         await ReleaseUpdateClient.VerifyFileAsync(job.Target, job.Manifest.Size, job.Manifest.Sha256);
-        await File.WriteAllTextAsync(Path.Combine(Path.GetDirectoryName(jobPath)!, "healthy"), job.Id);
+        await WriteMarkerAsync(Path.Combine(Path.GetDirectoryName(jobPath)!, "healthy"), job.Id);
     }
     public static async Task<string> Hash(string path)
     { await using var input = File.OpenRead(path); return Convert.ToHexString(await SHA256.HashDataAsync(input)).ToLowerInvariant(); }
@@ -152,7 +152,22 @@ public static class SelfUpdateRunner
         foreach (var argument in arguments) start.ArgumentList.Add(argument);
         return Process.Start(start) ?? throw new IOException("Could not start the update process.");
     }
-    private static Task Result(string stage, UpdateResult result) => File.WriteAllTextAsync(Path.Combine(stage, "result.json"), JsonSerializer.Serialize(result));
+    private static async Task<bool> StartupConfirmedAsync(string path, string id)
+    {
+        try { return File.Exists(path) && await File.ReadAllTextAsync(path) == id; }
+        catch (IOException) { return false; } // A temporary reader/scanner lock must not roll back a healthy app.
+    }
+    private static async Task WriteMarkerAsync(string path, string content)
+    {
+        var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            await File.WriteAllTextAsync(temporary, content);
+            File.Move(temporary, path, true); // Publish only a complete, closed marker.
+        }
+        finally { File.Delete(temporary); }
+    }
+    private static Task Result(string stage, UpdateResult result) => WriteMarkerAsync(Path.Combine(stage, "result.json"), JsonSerializer.Serialize(result));
     private static async Task Retry(Action action)
     {
         for (var attempt = 0; ; attempt++)

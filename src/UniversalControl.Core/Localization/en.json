@@ -166,7 +166,7 @@
   "再接続しても入力先は自動では切り替わりません。アプリ再起動後に接続できない場合、iPad側で再接続またはペアリングのやり直しが必要になることがあります。": "Reconnecting never captures input automatically. After restarting the app, you may need to reconnect or pair again from iPad.",
   "指定したショートカットは他のアプリで使用中です。元の設定を維持しました。": "The selected shortcut is in use by another app. Your previous settings were retained.",
   "次のアプリ（⌘Tab）": "Next app (⌘Tab)",
-  "自動起動は配布版のUniversalControl.exeから設定してください。": "Configure startup using the published UniversalControl.exe.",
+  "自動起動は配布版のUniversalBridge.exeから設定してください。": "Configure startup using the published UniversalBridge.exe.",
   "実行ファイルのパスを取得できません。": "Could not get the executable path.",
   "修飾キーとキーを選択してください。": "Select modifiers and a key.",
   "修飾キーと英数字・F1～F24を選び、「適用」を押してください。変更時はWindowsへ戻ります。Escを3回の緊急復帰は常に利用できます。": "Choose modifiers and a letter, digit, or F1–F24, then apply. Changes return control to Windows. Pressing Esc three times always provides emergency return.",

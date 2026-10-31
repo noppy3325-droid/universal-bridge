@@ -5,12 +5,17 @@ Set-Location -LiteralPath $projectRoot
 $version = ([xml](Get-Content -LiteralPath 'src/UniversalControl.App/UniversalControl.App.csproj' -Raw)).Project.PropertyGroup.Version
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'A semantic source version is required.' }
 $published = (Resolve-Path -LiteralPath $PublishDirectory).Path
-if (!(Test-Path -LiteralPath (Join-Path $published 'UniversalControl.exe'))) { throw 'Publish the app before packaging.' }
+if (!(Test-Path -LiteralPath (Join-Path $published 'UniversalBridge.exe'))) { throw 'Publish the app before packaging.' }
 $properties = ([xml](Get-Content -LiteralPath 'src/UniversalControl.App/UniversalControl.App.csproj' -Raw)).Project.PropertyGroup
-$exe = Join-Path $published 'UniversalControl.exe'
-$manifest = [ordered]@{Schema=1;Version=$version;Tag=$properties.ReleaseTag;File='UniversalControl.exe';Size=(Get-Item -LiteralPath $exe).Length;Sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()}
+$exe = Join-Path $published 'UniversalBridge.exe'
+if ($properties.AssemblyName -ne 'UniversalBridge' -or (Test-Path -LiteralPath (Join-Path $published 'UniversalControl.exe'))) {
+  throw 'Release executable names must be UniversalBridge.exe. Use a new, empty publish directory.'
+}
+$exeInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($exe)
+if ($exeInfo.ProductName -ne 'Universal Bridge' -or $exeInfo.ProductVersion.Split('+')[0] -ne $version) { throw 'Executable product or version differs from the release configuration.' }
+$manifest = [ordered]@{Schema=1;Version=$version;Tag=$properties.ReleaseTag;File='UniversalBridge.exe';Size=(Get-Item -LiteralPath $exe).Length;Sha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()}
 $manifest | ConvertTo-Json | Set-Content -LiteralPath 'dist/update.json' -Encoding utf8
-Copy-Item -LiteralPath $exe -Destination 'dist/UniversalControl.exe' -Force
+Copy-Item -LiteralPath $exe -Destination 'dist/UniversalBridge.exe' -Force
 Copy-Item README*.md,CONTRIBUTING.md,SETUP.md,ARCHITECTURE.md,KNOWN_LIMITATIONS.md,TEST_REPORT.md,LICENSE,THIRD_PARTY_NOTICES.md -Destination $published -Force
 Copy-Item docs,licenses -Destination $published -Recurse -Force
 $binaryZip = Join-Path $projectRoot "dist/UniversalBridge-$version-win-x64.zip"
@@ -28,7 +33,7 @@ foreach ($folder in 'src','tests','scripts','docs','licenses','.github') {
   }
 }
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $sourceZip -Force
-$hashes = foreach ($asset in @((Join-Path $published 'UniversalControl.exe'), $binaryZip, $sourceZip, (Join-Path $projectRoot 'dist/update.json'))) {
+$hashes = foreach ($asset in @((Join-Path $published 'UniversalBridge.exe'), $binaryZip, $sourceZip, (Join-Path $projectRoot 'dist/update.json'))) {
   $hash = Get-FileHash -LiteralPath $asset -Algorithm SHA256
   $hash.Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($asset)
 }

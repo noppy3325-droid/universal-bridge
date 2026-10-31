@@ -10,6 +10,9 @@ $env:DOTNET_NOLOGO = '1'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $dotnetExe = Join-Path $projectRoot '.tools/dotnet/dotnet.exe'
 if (!(Test-Path -LiteralPath $dotnetExe)) { $dotnetExe = (Get-Command dotnet -ErrorAction Stop).Source }
+if ($Publish -and (Test-Path -LiteralPath (Join-Path $PublishDirectory 'UniversalControl.exe'))) {
+  throw 'The publish directory contains a legacy executable. Use a new, empty publish directory for UniversalBridge.exe.'
+}
 & $dotnetExe build UniversalControl.sln -c Release
 if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 if ($Test) {

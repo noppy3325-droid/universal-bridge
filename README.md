@@ -10,9 +10,9 @@ Windows PCのキーボード・マウスと対応するトラックパッド操�
 
 iPad用アプリ、追加機器は不要です。入力共有はオフラインで利用でき、更新の確認・ダウンロード時だけGitHubへ接続します。Bluetoothアダプターとドライバーには **BLE Peripheral** 対応が必要です。
 
-**v1.04（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
+**v1.05（通常リリース）。** 基本のキーボード入力・マウス操作はiPadでの成功報告があります。ジェスチャー変換、アプリ固有キー、異なる機器は実機確認が残ります。Apple・Microsoftの公式製品ではありません。
 
-**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
+**[ダウンロード](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05) · [必要な環境](#ダウンロード前に) · [使い始める](#使い始める)**
 
 ![接続ダッシュボード](docs/images/dashboard-ja.png)
 
@@ -32,11 +32,11 @@ Appleの[ユニバーサルコントロールにはMacが必要](https://support
 
 ## ダウンロード
 
-**[Releases — v1.04](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04)** から取得します。
+**[Releases — v1.05](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05)** から取得します。
 
-- **[UniversalBridge-1.0.4-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalBridge-1.0.4-win-x64.zip)**：展開して `UniversalControl.exe` を起動。.NET同梱で別途ランタイムは不要です。
-- `UniversalBridge-1.0.4-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
-- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalControl.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
+- **[UniversalBridge-1.0.5-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge-1.0.5-win-x64.zip)**：展開して `UniversalBridge.exe` を起動。.NET同梱で別途ランタイムは不要です。
+- `UniversalBridge-1.0.5-source.zip`：SDK・キャッシュ・設定・診断ログを含まないソースです。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge.exe) — 自動更新用の単体exe。初回は説明書付きZIPも利用できます。
 - `SHA256SUMS.txt`：exeとZIPのSHA-256チェックサムです。
 
 Windows x64専用、署名なしのexeです。インストーラー・MSIX・コード署名は提供していません。
@@ -55,6 +55,12 @@ Windows x64専用、署名なしのexeです。インストーラー・MSIX・�
 
 ジェスチャーは標準HIDのスクロール・対応キーへ変換します。Magic Trackpad固有プロトコルは使いません。拡大縮小・ホーム等はiPadOSやアプリに依存します。
 
+## v1.05：実行ファイル名をUniversal Bridgeへ統一
+
+単体ダウンロード、ZIP内の実行ファイル、ビルド出力、更新用ファイルを `UniversalBridge.exe` に統一しました。配布スクリプトで旧名の混入を検出するようにしました。
+
+v1.04以前の更新機能は旧ファイル名を固定しているため、今回だけ手動でダウンロードしてください。旧版を完全終了してから新版を起動すると設定を引き継ぎます。自動起動を利用している場合は、新版でオフ→オンにして起動先を登録し直してください。
+
 ## v1.03：日本語README・タイトルバー・アプリ内更新
 
 GitHubで標準表示するREADMEを日本語にしました。英語は[README.en.md](README.en.md)、中国語は[README.zh-CN.md](README.zh-CN.md)です。ダーク／ライトを切り替えると、Windowsのタイトルバー・文字・枠もアプリの配色に合わせて変わります。
@@ -63,7 +69,7 @@ GitHubで標準表示するREADMEを日本語にしました。英語は[README.
 
 更新前にWindows操作へ戻し、入力送信を停止してからexeを差し替えます。サイズ・SHA-256・バージョンを検証し、設定は保持します。新しいアプリの起動確認に失敗した場合は元のexeへ戻して再起動します。書き込み可能なフォルダーで使用してください。自動更新の対象はexeで、同梱の説明書などはZIPで更新できます。更新後の入力先はWindowsです。
 
-**v1.02以前からは、今回だけ最新版を手動でダウンロードしてください。** 以後の対応版はアプリ内で更新できます。
+**v1.04以前からは、今回だけv1.05を手動でダウンロードしてください。** exe名を `UniversalBridge.exe` に統一しました。旧版の更新機能は旧ファイル名を固定しているため、この移行には利用できません。旧版を完全終了してから新版を起動すると、保存済みの設定を引き継ぎます。Windows起動時の自動起動を利用している場合は、新版で一度オフ→オンにして新しい起動先を登録してください。以後の対応版はアプリ内で更新できます。
 
 ![ダークモードのタイトルバー](docs/images/titlebar-dark-ja.png)
 
@@ -123,7 +129,7 @@ Windowsモニター同士の境界は除外し、一部が隣接する場合は�
 
 ## 使い始める
 
-1. 旧版を「詳細・診断 → アプリを終了」で終了します。ZIPを展開し、通常権限で `UniversalControl.exe` を起動します。
+1. 旧版を「詳細・診断 → アプリを終了」で終了します。ZIPを展開し、通常権限で `UniversalBridge.exe` を起動します。
 2. 右上で **日本語 / English / 简体中文 / システムの言語** を選べます。
 3. 「Bluetooth HIDを公開」を押します。非対応機器やポリシーの制限は画面に表示されます。
 4. iPadの「設定 → Bluetooth」で **Windows PCのコンピューター名** を選び、両端末で人がペアリング確認を行います。

@@ -10,9 +10,9 @@
 
 无需 iPad 配套应用或额外硬件。输入共享可离线使用，仅检查和下载更新时连接 GitHub。电脑的蓝牙适配器和驱动程序必须支持 **BLE 外围设备角色（Peripheral）**。
 
-**v1.04（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
+**v1.05（正式发布）。** 已有用户确认 iPad 的基本键盘和鼠标输入可用。手势映射、应用特定快捷键和不同硬件仍需实机验证。本项目并非 Apple 或 Microsoft 官方产品。
 
-**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
+**[下载](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05) · [查看要求](#下载前请确认) · [快速开始](#快速开始)**
 
 ![连接面板](docs/images/dashboard-zh-Hans.png)
 
@@ -32,11 +32,11 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 ## 下载
 
-前往 **[Releases — v1.04](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.04)**：
+前往 **[Releases — v1.05](https://github.com/noppy3325-droid/universal-bridge/releases/tag/v1.05)**：
 
-- **[UniversalBridge-1.0.4-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalBridge-1.0.4-win-x64.zip)**：解压并运行 `UniversalControl.exe`，已包含 .NET，无需另装运行时。
-- `UniversalBridge-1.0.4-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
-- [UniversalControl.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.04/UniversalControl.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
+- **[UniversalBridge-1.0.5-win-x64.zip](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge-1.0.5-win-x64.zip)**：解压并运行 `UniversalBridge.exe`，已包含 .NET，无需另装运行时。
+- `UniversalBridge-1.0.5-source.zip`：不含 SDK、缓存、用户设置或诊断日志的源码。
+- [UniversalBridge.exe](https://github.com/noppy3325-droid/universal-bridge/releases/download/v1.05/UniversalBridge.exe) — 用于自动更新的独立exe；ZIP另外包含文档。
 - `SHA256SUMS.txt`：可执行文件和压缩包的 SHA-256 校验值。
 
 仅支持 Windows x64。可执行文件未签名，不提供安装程序、MSIX 或代码签名。
@@ -55,6 +55,12 @@ Apple 的[通用控制需要一台 Mac](https://support.apple.com/en-us/102459)�
 
 手势转换为标准滚动报告和受支持的按键操作。不使用Magic Trackpad专用协议。缩放、主屏幕等功能取决于 iPadOS 和应用支持。
 
+## v1.05：统一Universal Bridge可执行文件名称
+
+独立下载、ZIP内可执行文件、构建输出和更新元数据统一使用 `UniversalBridge.exe`。打包时会检查旧文件名是否混入。
+
+v1.04及更早版本的更新程序固定使用旧文件名，因此此次需手动下载。完全退出旧版后启动新版，设置会保留。如果启用了随Windows启动，请在新版中关闭后重新开启，以注册新路径。
+
 ## v1.03：日语默认README、标题栏主题与应用内更新
 
 GitHub默认README改为日语，保留[英语](README.en.md)和本中文版本。切换深色／浅色模式时，Windows原生标题栏、文字和边框也会采用应用配色。
@@ -63,7 +69,7 @@ GitHub默认README改为日语，保留[英语](README.en.md)和本中文版本�
 
 更新前返回Windows并停止输入，验证大小、SHA-256及exe版本后替换程序，保留设置。新版启动失败时恢复并重启原exe。请放在可写入的文件夹中。自动更新仅替换exe，同捆文档可通过ZIP更新。重启后输入目标为Windows。
 
-**v1.02及更早版本需手动下载最新版一次。** 此后可在应用内更新兼容版本。
+**从v1.04及更早版本升级时，请手动下载v1.05一次。** 可执行文件统一为 `UniversalBridge.exe`，旧更新程序固定使用旧文件名，无法完成此次迁移。完全退出旧版后启动新版，已有设置会保留。如果启用了随Windows启动，请在新版中关闭后重新开启，以注册新路径。之后可在应用内更新兼容版本。
 
 ![深色标题栏](docs/images/titlebar-dark-zh-Hans.png)
 
@@ -123,7 +129,7 @@ Windows显示器之间的边界会被排除，部分相邻时仅使用未覆盖�
 
 ## 快速开始
 
-1. 通过“设置与诊断 → 退出应用”关闭旧版。解压 ZIP，以普通权限运行 `UniversalControl.exe`。
+1. 通过“设置与诊断 → 退出应用”关闭旧版。解压 ZIP，以普通权限运行 `UniversalBridge.exe`。
 2. 在右上角选择 **日本語 / English / 简体中文 / 跟随系统语言**。
 3. 点击“启动蓝牙 HID”。不支持的硬件或策略限制会显示在应用中。
 4. 在 iPad“设置 → 蓝牙”中选择 **Windows 电脑的计算机名**，由使用者在两台设备上确认配对。

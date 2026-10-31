@@ -1,4 +1,15 @@
-# Verification report — v1.04 / 1.0.4
+# Verification report — v1.05 / 1.0.5
+
+検証日: **2026-10-31 / Asia/Tokyo**。
+
+- **276成功、0失敗、0スキップ**、ビルド警告0／エラー0。更新のHTTP・metadata・checksum・破損拒否テストを新しいUniversalBridge.exe名で実行しました。
+- 配布exeの製品名Universal Bridge、内部ファイル名UniversalBridge.dll、版番号1.0.5を確認しました。旧名exeを混入させた出力先でBuildとPackageがともに拒否することも確認しました。`artifacts/105-branding-verification.json`。
+- AssemblyName変更後のGUIは3言語・33画像・Success=True。アイコン・タイトルバーテーマ・言語・設定の保存を確認しました。入力抑制・更新通信なし。`artifacts/105-local-gui/gui-smoke.json`。
+- 専用コピーの実プロセス更新で、成功、起動失敗時復旧、破損拒否、exe占有時の元アプリ再起動が成功しました。起動確認ファイルの読み書き競合を検証中に再現し、完了後の公開と一時的な読取競合の再試行へ修正しました。追加した「起動確認ファイルを700ms排他的に占有する」ケースも成功し、誤ったロールバックはありませんでした。`artifacts/105-final-self-update/self-update.json`。
+- 更新の実プロセス検証は同一バージョンの専用コピーを対象とします。普段の作業用アプリ、通常設定、入力、Bluetoothへは触れていません。v1.04以前は旧名を固定しているため、この移行は手動です。旧版からの自動移行成功を主張するものではありません。
+- 日本語README.md／README.ja.mdの一致と、3言語の現行ダウンロード案内に旧exe名が残っていないことを確認しました。以下は過去版の検証履歴です。
+
+## v1.04 / 1.0.4
 
 検証日: **2026-10-31 / Asia/Tokyo**。
 

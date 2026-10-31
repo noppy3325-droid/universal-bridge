@@ -1,5 +1,9 @@
 # Architecture
 
+## v1.05の実行ファイル名
+
+AppのAssemblyNameをUniversalBridgeへ変更し、配布exe・更新manifest・checksum・Release workflowをUniversalBridge.exeに統一しました。プロジェクトパスと名前空間、ユーザー設定フォルダ、単一起動mutexは維持します。旧名exeを含む出力先はBuild／Packageが拒否し、PackageはProductNameとProductVersionも照合します。v1.04以前のクライアントは旧名を固定しているため、この移行は手動です。新しい実行ファイルのパスを自動起動に使う場合は、GUIから登録し直します。
+
 ## v1.03のタイトルバーと自動更新
 
 `NativeWindowTheme`はDwmSetWindowAttributeの20／34／35／36を使用し、immersive dark modeとcaption／text／borderのCOLORREFをアプリ配色に合わせます。高コントラストでは色を既定へ戻します。設定用属性のHRESULTで成功を確認し、native window全体をPrintWindowで取得して目視します。存在が保証されないDwmGetの読み戻しには依存しません。[Microsoftの属性一覧](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwmwindowattribute)。

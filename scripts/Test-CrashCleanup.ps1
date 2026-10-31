@@ -1,7 +1,7 @@
 param([string]$AppPath)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
-if (!$AppPath) { $AppPath = Join-Path $projectRoot 'dist/UniversalBridge-win-x64/UniversalControl.exe' }
+if (!$AppPath) { $AppPath = Join-Path $projectRoot 'dist/UniversalBridge-win-x64/UniversalBridge.exe' }
 $appExecutable = (Resolve-Path -LiteralPath $AppPath).Path
 $resultDirectory = Join-Path $projectRoot ('artifacts/crash-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 $childDirectory = Join-Path $resultDirectory 'child'

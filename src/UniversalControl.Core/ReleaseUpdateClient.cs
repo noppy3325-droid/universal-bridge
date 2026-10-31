@@ -18,7 +18,7 @@ public sealed class ReleaseUpdateClient(HttpClient http)
         => Regex.IsMatch(value ?? "", @"^\d+\.\d+\.\d+$") && Version.TryParse(value, out var version) ? version : throw new InvalidDataException("Invalid update version.");
     public static Uri AssetUrl(string tag, string name)
     {
-        if (!Regex.IsMatch(tag ?? "", @"^v\d+\.\d+(?:\.\d+)?$") || name is not ("update.json" or "UniversalControl.exe" or "SHA256SUMS.txt"))
+        if (!Regex.IsMatch(tag ?? "", @"^v\d+\.\d+(?:\.\d+)?$") || name is not ("update.json" or "UniversalBridge.exe" or "SHA256SUMS.txt"))
             throw new InvalidDataException("Unexpected release asset.");
         return new($"{Repository}/releases/download/{tag}/{name}");
     }
@@ -49,23 +49,23 @@ public sealed class ReleaseUpdateClient(HttpClient http)
         var manifest = JsonSerializer.Deserialize<UpdateManifest>(await ReadLimitedAsync(manifestResponse, 16384, cancellationToken))
             ?? throw new InvalidDataException("Missing update manifest.");
         var version = ParseVersion(manifest.Version);
-        if (manifest.Schema != 1 || manifest.Tag != tag || manifest.File != "UniversalControl.exe" || manifest.Size is < 1024 or > MaximumExeBytes ||
+        if (manifest.Schema != 1 || manifest.Tag != tag || manifest.File != "UniversalBridge.exe" || manifest.Size is < 1024 or > MaximumExeBytes ||
             !Regex.IsMatch(manifest.Sha256 ?? "", "^[a-fA-F0-9]{64}$")) throw new InvalidDataException("Invalid update manifest.");
         if (version <= current) return null;
-        var executable = Asset("UniversalControl.exe"); _ = Asset("SHA256SUMS.txt");
+        var executable = Asset("UniversalBridge.exe"); _ = Asset("SHA256SUMS.txt");
         if (executable.GetProperty("size").GetInt64() != manifest.Size) throw new InvalidDataException("Update size mismatch.");
         if (executable.TryGetProperty("digest", out var digest) && digest.ValueKind == JsonValueKind.String &&
             !string.Equals(digest.GetString(), "sha256:" + manifest.Sha256, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Update digest mismatch.");
         using var sumsResponse = await GetAsync(AssetUrl(tag, "SHA256SUMS.txt"), cancellationToken);
         sumsResponse.EnsureSuccessStatusCode();
         var sums = System.Text.Encoding.UTF8.GetString(await ReadLimitedAsync(sumsResponse, 65536, cancellationToken));
-        var hashes = sums.Split('\n').Select(line => Regex.Match(line.Trim().TrimStart('\uFEFF'), @"^([a-fA-F0-9]{64})\s+UniversalControl\.exe$")).Where(m => m.Success).ToArray();
+        var hashes = sums.Split('\n').Select(line => Regex.Match(line.Trim().TrimStart('\uFEFF'), @"^([a-fA-F0-9]{64})\s+UniversalBridge\.exe$")).Where(m => m.Success).ToArray();
         if (hashes.Length != 1 || !hashes[0].Groups[1].Value.Equals(manifest.Sha256, StringComparison.OrdinalIgnoreCase)) throw new InvalidDataException("Update checksum manifest mismatch.");
-        return new(manifest, AssetUrl(tag, "UniversalControl.exe"));
+        return new(manifest, AssetUrl(tag, "UniversalBridge.exe"));
     }
     public async Task DownloadAsync(ReleaseUpdate update, string path, IProgress<double>? progress, CancellationToken cancellationToken)
     {
-        if (update.DownloadUrl != AssetUrl(update.Manifest.Tag, "UniversalControl.exe")) throw new InvalidDataException("Unexpected update URL.");
+        if (update.DownloadUrl != AssetUrl(update.Manifest.Tag, "UniversalBridge.exe")) throw new InvalidDataException("Unexpected update URL.");
         if (update.Manifest.Size is < 1024 or > MaximumExeBytes) throw new InvalidDataException("Invalid update size.");
         var created = false;
         try

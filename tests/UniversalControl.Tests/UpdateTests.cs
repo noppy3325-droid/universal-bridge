@@ -23,10 +23,10 @@ public sealed class UpdateTests
         public Server()
         {
             var hash = Convert.ToHexString(SHA256.HashData(Payload)).ToLowerInvariant();
-            Manifest = JsonSerializer.SerializeToNode(new UpdateManifest(1, "1.0.4", "v1.04", "UniversalControl.exe", Payload.Length, hash))!.AsObject();
-            Release = new JsonObject { ["draft"] = false, ["prerelease"] = false, ["tag_name"] = "v1.04", ["assets"] = new JsonArray() };
-            foreach (var name in new[] { "update.json", "UniversalControl.exe", "SHA256SUMS.txt" })
-                Release["assets"]!.AsArray().Add(new JsonObject { ["name"] = name, ["state"] = "uploaded", ["browser_download_url"] = ReleaseUpdateClient.AssetUrl("v1.04", name).AbsoluteUri,
+            Manifest = JsonSerializer.SerializeToNode(new UpdateManifest(1, "1.0.5", "v1.05", "UniversalBridge.exe", Payload.Length, hash))!.AsObject();
+            Release = new JsonObject { ["draft"] = false, ["prerelease"] = false, ["tag_name"] = "v1.05", ["assets"] = new JsonArray() };
+            foreach (var name in new[] { "update.json", "UniversalBridge.exe", "SHA256SUMS.txt" })
+                Release["assets"]!.AsArray().Add(new JsonObject { ["name"] = name, ["state"] = "uploaded", ["browser_download_url"] = ReleaseUpdateClient.AssetUrl("v1.05", name).AbsoluteUri,
                     ["size"] = name.EndsWith(".exe") ? Payload.Length : 1000, ["digest"] = name.EndsWith(".exe") ? "sha256:" + hash : null });
         }
         public JsonObject Exe => Release["assets"]!.AsArray()[1]!.AsObject();
@@ -38,8 +38,8 @@ public sealed class UpdateTests
             var status = url == ReleaseUpdateClient.LatestApi ? LatestStatus : HttpStatusCode.OK;
             HttpContent content = url == ReleaseUpdateClient.LatestApi ? new StringContent(Release.ToJsonString())
                 : url.EndsWith("update.json") ? new StringContent(Manifest.ToJsonString())
-                : url.EndsWith("SHA256SUMS.txt") ? new StringContent(Sums ?? Manifest["Sha256"]!.GetValue<string>() + "  UniversalControl.exe\n")
-                : url.EndsWith("UniversalControl.exe") ? new ByteArrayContent(Payload) : throw new InvalidOperationException("Unexpected URL");
+                : url.EndsWith("SHA256SUMS.txt") ? new StringContent(Sums ?? Manifest["Sha256"]!.GetValue<string>() + "  UniversalBridge.exe\n")
+                : url.EndsWith("UniversalBridge.exe") ? new ByteArrayContent(Payload) : throw new InvalidOperationException("Unexpected URL");
             if (url.EndsWith(".exe") && PayloadLength.HasValue) content.Headers.ContentLength = PayloadLength;
             return Task.FromResult(new HttpResponseMessage(status) { Content = content, RequestMessage = Redirect is null ? request : new(HttpMethod.Get, Redirect) });
         }
@@ -47,10 +47,10 @@ public sealed class UpdateTests
     [Fact] public async Task StableReleaseRequiresMatchingMetadataAndChecksums()
     {
         using var server = new Server(); using var http = new HttpClient(server); var update = await new ReleaseUpdateClient(http).CheckAsync(new(1, 0, 3), default);
-        Assert.NotNull(update); Assert.Equal("1.0.4", update.Manifest.Version); Assert.Equal(3, server.Requests.Count);
+        Assert.NotNull(update); Assert.Equal("1.0.5", update.Manifest.Version); Assert.Equal(3, server.Requests.Count);
         Assert.All(server.Requests, uri => Assert.Equal("https", uri.Scheme));
     }
-    [Theory] [InlineData("1.0.4")][InlineData("1.1.0")]
+    [Theory] [InlineData("1.0.5")][InlineData("1.1.0")]
     public async Task EqualOrOlderVersionNeverReplacesCurrentApp(string current)
     { using var server = new Server(); using var http = new HttpClient(server); Assert.Null(await new ReleaseUpdateClient(http).CheckAsync(Version.Parse(current), default)); }
     [Theory] [InlineData("draft")][InlineData("prerelease")]
@@ -59,7 +59,7 @@ public sealed class UpdateTests
     [Fact] public async Task OlderReleaseWithoutUpdaterManifestIsCompatible()
     { using var server = new Server(); server.Release["assets"]!.AsArray().RemoveAt(0); using var http = new HttpClient(server); Assert.Null(await new ReleaseUpdateClient(http).CheckAsync(new(1, 0, 3), default)); }
     [Theory]
-    [InlineData("Schema", "2")][InlineData("Version", "1.0.4-preview")][InlineData("Tag", "v1.05")]
+    [InlineData("Schema", "2")][InlineData("Version", "1.0.5-preview")][InlineData("Tag", "v1.06")]
     [InlineData("File", "../other.exe")][InlineData("Size", "0")][InlineData("Size", "999999999")][InlineData("Sha256", "invalid")]
     public async Task InvalidManifestCannotSupplyAnExecutable(string property, string value)
     {
@@ -72,17 +72,17 @@ public sealed class UpdateTests
         using var server = new Server();
         switch (mutation)
         {
-            case "url": server.Exe["browser_download_url"] = "https://example.org/UniversalControl.exe"; break;
+            case "url": server.Exe["browser_download_url"] = "https://example.org/UniversalBridge.exe"; break;
             case "digest": server.Exe["digest"] = "sha256:" + new string('0', 64); break;
             case "size": server.Exe["size"] = 4096; break;
             case "state": server.Exe["state"] = "new"; break;
             case "duplicate": server.Release["assets"]!.AsArray().Add(server.Exe.DeepClone()); break;
-            case "sums": server.Sums = new string('0', 64) + "  UniversalControl.exe"; break;
+            case "sums": server.Sums = new string('0', 64) + "  UniversalBridge.exe"; break;
         }
         using var http = new HttpClient(server); await Assert.ThrowsAsync<InvalidDataException>(() => new ReleaseUpdateClient(http).CheckAsync(new(1, 0, 3), default));
         Assert.DoesNotContain(server.Requests, uri => uri.Host == "example.org");
     }
-    [Theory] [InlineData("v1.04/../../file")][InlineData("v1.04-preview")][InlineData("https://example.org")]
+    [Theory] [InlineData("v1.05/../../file")][InlineData("v1.05-preview")][InlineData("https://example.org")]
     public async Task ReleaseTagCannotEscapeRepository(string tag)
     { using var server = new Server(); server.Release["tag_name"] = tag; using var http = new HttpClient(server); await Assert.ThrowsAsync<InvalidDataException>(() => new ReleaseUpdateClient(http).CheckAsync(new(1, 0, 3), default)); Assert.Single(server.Requests); }
     [Theory] [InlineData("http://github.com/file")][InlineData("https://example.org/file")]
